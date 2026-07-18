@@ -119,7 +119,9 @@ paths:
       description: >-
         Returns UP only when PostgreSQL is available and the outbox worker has
         completed a successful poll in the last 45 seconds, after a 45-second
-        startup grace. It never discloses which dependency is degraded.
+        startup grace. A successful poll finishes its full batch and durably
+        records every delivery decision; exceptions and failed state writes do
+        not advance the heartbeat. It never discloses which dependency is degraded.
       responses:
         '200':
           description: The application is ready to accept lead traffic.

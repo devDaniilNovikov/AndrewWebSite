@@ -509,10 +509,18 @@ class ContainerContractTest {
     @Test
     void dockerfileIsMultiStageNonRootAndChecksLiveness() throws Exception {
         String dockerfile = Files.readString(Path.of("Dockerfile"));
-        assertThat(dockerfile).contains("AS build", "USER 10001:10001");
+        assertThat(dockerfile).contains(
+                "AS backend-build",
+                "COPY Dockerfile Dockerfile",
+                "COPY --from=backend-build",
+                "USER 10001:10001");
         assertThat(dockerfile).contains("/actuator/health/liveness");
         assertThat(dockerfile).doesNotContain("ENV SPRING_DATASOURCE_PASSWORD");
         assertThat(dockerfile).doesNotContain("ENV TELEGRAM_BOT_TOKEN");
+        int dockerfileCopy = dockerfile.indexOf("COPY Dockerfile Dockerfile");
+        int mavenVerify = dockerfile.indexOf("RUN ./mvnw -B verify");
+        assertThat(dockerfileCopy).isGreaterThanOrEqualTo(0);
+        assertThat(mavenVerify).isGreaterThan(dockerfileCopy);
     }
 }
 ```
@@ -526,11 +534,12 @@ Expected: FAIL because `Dockerfile` does not exist.
 Create `Dockerfile`:
 
 ```dockerfile
-FROM eclipse-temurin:25-jdk AS build
+FROM eclipse-temurin:25-jdk AS backend-build
 WORKDIR /workspace
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
 RUN ./mvnw -B -DskipTests dependency:go-offline
+COPY Dockerfile Dockerfile
 COPY src src
 RUN ./mvnw -B verify
 
@@ -541,7 +550,7 @@ RUN apt-get update \
     && groupadd --gid 10001 app \
     && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /app
-COPY --from=build --chown=10001:10001 /workspace/target/andrew-website-0.0.1-SNAPSHOT.jar application.jar
+COPY --from=backend-build --chown=10001:10001 /workspace/target/andrew-website-0.0.1-SNAPSHOT.jar application.jar
 USER 10001:10001
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --start-period=30s --retries=3 \
@@ -563,7 +572,7 @@ target
 
 Run: `./mvnw -B -Dtest=ContainerContractTest test`
 
-Expected: PASS.
+Expected: PASS. The Maven invocation inside `backend-build` can read the copied root `Dockerfile`, and the same stage name remains valid when the static plan later adds a disposable frontend stage.
 
 - [ ] **Step 3: REFACTOR — build and smoke the exact image without secrets**
 

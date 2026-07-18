@@ -209,6 +209,7 @@ git commit -m "feat(static-jar-integration): embed frontend export in the JAR"
 - Create: `src/main/java/ru/andrew/website/web/StaticAssetPolicy.java`
 - Create: `src/main/java/ru/andrew/website/web/StaticPageController.java`
 - Create: `src/test/java/ru/andrew/website/web/StaticPageControllerTest.java`
+- Test: `src/test/java/ru/andrew/website/deployment/ContainerContractTest.java` unchanged against the final Dockerfile
 - Modify: `Dockerfile`
 - Modify: `.dockerignore`
 - Create: `scripts/smoke-final-container.sh`
@@ -369,6 +370,7 @@ WORKDIR /workspace
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
 RUN ./mvnw -B -DskipTests dependency:go-offline
+COPY Dockerfile Dockerfile
 COPY src src
 COPY --from=frontend-build /workspace/frontend/out frontend/out
 RUN ./mvnw -B verify
@@ -424,6 +426,21 @@ docker network create "$network" >/dev/null
 docker run --detach --name "$database" --network "$network" \
   --env POSTGRES_DB=smoke --env POSTGRES_USER=smoke \
   --env POSTGRES_PASSWORD=smoke-only-not-a-secret postgres:17-alpine >/dev/null
+
+for attempt in $(seq 1 15); do
+  if docker exec "$database" pg_isready --quiet --timeout=1 \
+      --username smoke --dbname smoke; then
+    break
+  fi
+  if [[ "$attempt" -eq 15 ]]; then
+    echo 'PostgreSQL smoke fixture did not become ready within 15 bounded attempts' >&2
+    docker inspect --format '{{json .State}}' "$database" >&2
+    docker logs --tail 50 "$database" >&2
+    exit 1
+  fi
+  sleep 1
+done
+
 docker run --detach --name "$application" --network "$network" --publish 18080:8080 \
   --env SPRING_PROFILES_ACTIVE=local \
   --env SPRING_DATASOURCE_URL=jdbc:postgresql://andrew-final-smoke-postgres:5432/smoke \
@@ -460,7 +477,7 @@ curl --fail --silent http://127.0.0.1:18080/actuator/health/readiness
 test "$(docker inspect --format '{{.Config.User}}' "$application")" = "10001:10001"
 ```
 
-The script obtains the actual hashed asset path from built `index.html`, asserts the lead response status is 202 with an empty body, and cleans up only its exact named resources in a trap.
+The script runs at most 15 one-second `pg_isready` probes, with a one-second pause after each non-final failure, before it starts the application. On terminal failure it emits only the database container state plus the last 50 fixture log lines; it never inspects environment variables or expands credentials. It then obtains the actual hashed asset path from built `index.html`, asserts the lead response status is 202 with an empty body, and cleans up only its exact named resources in a trap. Maven verification inside the final `backend-build` stage reruns the unchanged `ContainerContractTest` after `Dockerfile` has been copied, so its stage-name and copy-order assertions remain executable.
 
 - [ ] **Step 4: REFACTOR, verify one-runtime topology, and commit**
 

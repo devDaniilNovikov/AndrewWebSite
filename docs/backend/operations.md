@@ -95,6 +95,8 @@ Do not export restored lead rows for diagnosis. If the backup provider cannot en
 
 The outbox worker polls every 15 seconds and claims at most 10 due records per transaction. Its claim query orders by `next_attempt_at, id`, excludes leads at or beyond the 29-day privacy threshold, uses `FOR UPDATE SKIP LOCKED`, updates state/attempt/lease in the same transaction, and commits before Telegram HTTP. A two-minute lease and random lease token prevent stale completion writes. Expired leases recover to due `retry`.
 
+The worker advances its successful-poll heartbeat only after the full claimed batch completes. A delivered response, expected retryable response, or permanent response counts only after the corresponding `delivered`, `retry`, or `blocked` update commits successfully; a privacy-invalidated reload may be safely skipped. Any reload, gateway, or persistence exception, and any lease-token update that affects no row, leaves the prior heartbeat unchanged. An empty poll advances heartbeat after recovery and claiming complete successfully.
+
 Operator-visible aggregate signals are queue depth by bounded state, oldest eligible queue age, successful-poll age, delivery outcomes, retry outcomes, and privacy blocks. They never include request IDs, source paths, names, phone numbers, comments, fingerprints, Telegram bodies, exception messages, or arbitrary tags.
 
 When the queue grows:

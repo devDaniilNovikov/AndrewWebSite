@@ -20,7 +20,7 @@
 - The outbox claim and immediate pre-send reload exclude leads at or beyond 29 days. A stale worker's lease-token update cannot reverse privacy blocking.
 - A retained request ID with null fingerprint always produces the same empty safe `202`, creates no new lead/outbox, and never returns 409 for changed payload.
 - PostgreSQL backup retention and Telegram auto-delete must each be no more than 30 days before production release.
-- Liveness is dependency-free. Readiness uses only PostgreSQL availability and outbox-worker success within 45 seconds after a 45-second startup grace; public bodies contain only `status`.
+- Liveness is dependency-free. Readiness uses only PostgreSQL availability and an outbox-worker full-batch success within 45 seconds after a 45-second startup grace; reload/send/state-write exceptions and false lease-token updates do not advance that heartbeat; public bodies contain only `status`.
 - Retention runs hourly; its successful full-pass heartbeat is stale after two hours and alerts but does not change readiness.
 - OTLP is introduced only in `task-backend-observability`; no self-hosted Prometheus/Grafana and no public `/actuator/metrics` or `/actuator/prometheus`.
 - Logs/problems/metrics never include name, phone, comment, request/canonical body, source path tag, request ID tag, fingerprint, Telegram content/credentials, database URL/credentials, OTLP authorization, environment dump, SQL parameters, or unbounded exception text.
@@ -264,39 +264,62 @@ git commit -m "feat(lead-retention): enforce lead privacy lifecycle"
 ```java
 package ru.andrew.website.observability;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.andrew.website.testing.PostgresTestConfiguration;
 import ru.andrew.website.telegram.WorkerHeartbeat;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(PostgresTestConfiguration.class)
 class HealthContractIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired WorkerHeartbeat workerHeartbeat;
+    @Autowired JdbcClient jdbc;
+    @Autowired Clock clock;
+
+    @BeforeEach
+    void postgresFixtureIsAvailableAndMigrated() {
+        assertThat(jdbc.sql("select 1").query(Integer.class).single()).isEqualTo(1);
+    }
 
     @Test
     void staleWorkerMakesOnlyReadinessDown() throws Exception {
-        workerHeartbeat.success(java.time.Instant.EPOCH);
+        workerHeartbeat.success(clock.instant().minusSeconds(46));
         mvc.perform(get("/actuator/health/liveness"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("UP"));
         mvc.perform(get("/actuator/health/readiness"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(content().json("{\"status\":\"DOWN\"}", true));
     }
+
+    @Test
+    void migratedPostgresAndFreshWorkerMakeReadinessUpWithoutDetails() throws Exception {
+        workerHeartbeat.success(clock.instant());
+        mvc.perform(get("/actuator/health/readiness"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"status\":\"UP\"}", true))
+                .andExpect(jsonPath("$.components").doesNotExist());
+    }
 }
 ```
 
-Create focused test methods for PostgreSQL down while liveness remains UP, fresh worker+database readiness UP, no health details, retention staleness not changing readiness, `/actuator/metrics|prometheus|env|configprops|heapdump|shutdown` forbidden, meter tag allowlist, finite queue gauges, and captured structured logs lacking fictional name/phone/comment/request ID/token/chat/database URL/OTLP authorization.
+The imported, Spring-owned `PostgresTestConfiguration` is the established PostgreSQL 17 Testcontainers fixture from the database plan; Flyway completes against it before these methods execute. Create focused test methods for PostgreSQL down while liveness remains UP, retention staleness not changing readiness, `/actuator/metrics|prometheus|env|configprops|heapdump|shutdown` forbidden, meter tag allowlist, finite queue gauges, and captured structured logs lacking fictional name/phone/comment/request ID/token/chat/database URL/OTLP authorization.
 
 Run: `./mvnw -B -Dtest=HealthContractIntegrationTest,TelemetryPrivacyTest test`
 

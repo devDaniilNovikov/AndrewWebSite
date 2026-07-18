@@ -22,7 +22,7 @@
 - Expired leases recover to due `retry`; a crash after Telegram accepts but before `delivered` commits may duplicate the message, and `requestId` supports human recognition.
 - Claim and pre-send reload exclude leads at or beyond the 29-day operational privacy threshold. `privacy_expired` is terminal and cannot be delivered.
 - PII hard limit is 30 days; fingerprint/name/phone/comment clear at 29 days; technical rows delete after 12 months; PostgreSQL backup and Telegram auto-delete are each at most 30 days.
-- Liveness is dependency-free; readiness is PostgreSQL plus a successful worker poll within 45 seconds with no detail; OTLP is deferred to `task-backend-observability`.
+- Liveness is dependency-free; readiness is PostgreSQL plus a full-batch worker success within 45 seconds with no detail; reload/send/state-write exceptions and false lease-token updates never advance the heartbeat; OTLP is deferred to `task-backend-observability`.
 - Micrometer tags are bounded enums/status classes only; never name, phone, comment, source path, request ID, Telegram body, exception message, token, or chat ID.
 - No stacked PRs; each task starts after the prior PR merges, follows strict RED → GREEN → REFACTOR, produces one reviewable PR, and is never auto-merged.
 - Every AI-authored commit adds the executing agent's own `Co-Authored-By` attribution footer and never attributes a human identity.
@@ -347,6 +347,7 @@ git commit -m "feat(telegram-client): add safe Telegram gateway"
 - Create: `src/main/java/ru/andrew/website/telegram/TelegramWorkerProperties.java`
 - Modify: `src/main/resources/application.yml`
 - Create: `src/test/java/ru/andrew/website/telegram/RetryPolicyTest.java`
+- Create: `src/test/java/ru/andrew/website/telegram/TelegramWorkerHeartbeatTest.java`
 - Create: `src/test/java/ru/andrew/website/telegram/TelegramWorkerIntegrationTest.java`
 - Create: `src/test/java/ru/andrew/website/telegram/TwoWorkerClaimIntegrationTest.java`
 
@@ -382,9 +383,95 @@ class RetryPolicyTest {
 }
 ```
 
-Integration tests seed deterministic due rows and assert: order by `next_attempt_at,id`; maximum 10; two simultaneous workers receive disjoint IDs; claim commits before a gateway fake observes `TransactionSynchronizationManager.isActualTransactionActive() == false`; attempt increments; two-minute lease; success to delivered; 429/retry-after, 5xx, timeout, and network to retry; non-429 4xx to blocked; expired lease to retry and reclaim; stale lease token cannot mark; application restart recovers; privacy-aged lead is not claimed; queue metrics have bounded tags and no PII.
+Create the heartbeat regression test with no database or wall-clock sleep. It proves that a gateway exception and a failed lease-token state write leave the heartbeat untouched, while a durably recorded expected result advances it only after the batch:
 
-Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest test`
+```java
+package ru.andrew.website.telegram;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class TelegramWorkerHeartbeatTest {
+    private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
+    private static final UUID LEASE = UUID.fromString("11111111-1111-4111-8111-111111111111");
+    private static final Instant PRIVACY_CUTOFF = NOW.minus(Duration.ofDays(29));
+
+    @Mock OutboxRepository outbox;
+    @Mock TelegramGateway gateway;
+    @Mock WorkerHeartbeat heartbeat;
+    private TelegramWorker worker;
+
+    @BeforeEach
+    void setUp() {
+        worker = new TelegramWorker(outbox, gateway,
+                new RetryPolicy(Duration.ofSeconds(30), Duration.ofHours(6)),
+                heartbeat, Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    @Test
+    void gatewayExceptionDoesNotAdvanceHeartbeat() {
+        arrangeOneClaim();
+        when(gateway.send(any())).thenThrow(new IllegalStateException("fictional gateway failure"));
+        assertThatThrownBy(worker::poll).hasMessage("fictional gateway failure");
+        verify(heartbeat, never()).success(any());
+    }
+
+    @Test
+    void unsuccessfulStateWriteDoesNotAdvanceHeartbeat() {
+        arrangeOneClaim();
+        when(gateway.send(any())).thenReturn(new TelegramDeliveryResult.Delivered());
+        when(outbox.markDelivered(7L, LEASE, NOW)).thenReturn(false);
+        assertThatThrownBy(worker::poll)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Outbox state transition was not persisted");
+        verify(heartbeat, never()).success(any());
+    }
+
+    @Test
+    void durablyCompletedBatchAdvancesHeartbeatAfterStateWrite() {
+        arrangeOneClaim();
+        when(gateway.send(any())).thenReturn(new TelegramDeliveryResult.Delivered());
+        when(outbox.markDelivered(7L, LEASE, NOW)).thenReturn(true);
+        worker.poll();
+        var order = org.mockito.Mockito.inOrder(outbox, heartbeat);
+        order.verify(outbox).markDelivered(7L, LEASE, NOW);
+        order.verify(heartbeat).success(NOW);
+    }
+
+    private void arrangeOneClaim() {
+        TelegramLeadMessage message = new TelegramLeadMessage(9L,
+                UUID.fromString("22222222-2222-4222-8222-222222222222"),
+                "Тест", "79990000000", null, "/service/", "repair", NOW);
+        ClaimedDelivery claim = new ClaimedDelivery(
+                7L, 9L, LEASE, 1, NOW.plus(Duration.ofMinutes(2)), message);
+        when(outbox.claimDue(NOW, PRIVACY_CUTOFF, 10, Duration.ofMinutes(2)))
+                .thenReturn(List.of(claim));
+        when(outbox.reloadDeliverable(7L, LEASE, PRIVACY_CUTOFF))
+                .thenReturn(Optional.of(message));
+    }
+}
+```
+
+Integration tests seed deterministic due rows and assert: order by `next_attempt_at,id`; maximum 10; two simultaneous workers receive disjoint IDs; claim commits before a gateway fake observes `TransactionSynchronizationManager.isActualTransactionActive() == false`; attempt increments; two-minute lease; success to delivered; 429/retry-after, 5xx, timeout, and network to retry; non-429 4xx to blocked; expired lease to retry and reclaim; stale lease token cannot mark; application restart recovers; privacy-aged lead is not claimed; an empty successful poll advances heartbeat; retry/blocked decisions advance heartbeat only after their state writes return true; queue metrics have bounded tags and no PII.
+
+Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest test`
 
 Expected: FAIL because worker types do not exist.
 
@@ -489,8 +576,10 @@ public final class TelegramWorker {
         Instant now = clock.instant();
         outbox.recoverExpiredLeases(now);
         var claims = outbox.claimDue(now, now.minus(PRIVACY_THRESHOLD), 10, Duration.ofMinutes(2));
-        heartbeat.success(now);
-        claims.forEach(this::deliver);
+        for (ClaimedDelivery claim : claims) {
+            deliver(claim);
+        }
+        heartbeat.success(clock.instant());
     }
 
     private void deliver(ClaimedDelivery claim) {
@@ -500,21 +589,30 @@ public final class TelegramWorker {
     }
 
     private void apply(ClaimedDelivery claim, TelegramDeliveryResult result, Instant now) {
+        boolean persisted;
         if (result instanceof TelegramDeliveryResult.Delivered) {
-            outbox.markDelivered(claim.outboxId(), claim.leaseToken(), now);
+            persisted = outbox.markDelivered(claim.outboxId(), claim.leaseToken(), now);
         } else if (result instanceof TelegramDeliveryResult.Retryable retryable) {
             Duration delay = retryPolicy.delay(claim.attemptCount(), retryable.retryAfter());
-            outbox.markRetry(claim.outboxId(), claim.leaseToken(), retryable.code(), now.plus(delay), now);
+            persisted = outbox.markRetry(
+                    claim.outboxId(), claim.leaseToken(), retryable.code(), now.plus(delay), now);
         } else if (result instanceof TelegramDeliveryResult.PermanentFailure failure) {
-            outbox.markBlocked(claim.outboxId(), claim.leaseToken(), failure.code(), now);
+            persisted = outbox.markBlocked(claim.outboxId(), claim.leaseToken(), failure.code(), now);
+        } else {
+            throw new IllegalStateException("Unknown Telegram delivery result");
+        }
+        if (!persisted) {
+            throw new IllegalStateException("Outbox state transition was not persisted");
         }
     }
 }
 ```
 
+`heartbeat.success` is deliberately the final line of a successful `poll()`. Expected Telegram outcomes are not poll failures when their state transition returns true. An exception from recovery, claim, reload, gateway send, or state persistence propagates to the scheduler boundary; a false compare-and-set state update becomes the fixed PII-free exception shown above. Neither case reaches the heartbeat.
+
 Record counters through a `TelegramMetrics` wrapper with meter `andrew.telegram.delivery`, tag `outcome=delivered|retry|blocked`, and bounded `reason=success|network|telegram_429|telegram_4xx|telegram_5xx|lease_expired|privacy_expired`. Queue depth uses only the five state values. Do not tag path, request ID, raw status text, exception, or message.
 
-Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest test`
+Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest test`
 
 Expected: PASS for all state, ordering, concurrency, transaction-boundary, retry, recovery, privacy, and telemetry assertions.
 
