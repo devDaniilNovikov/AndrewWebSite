@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: andrew-website
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
