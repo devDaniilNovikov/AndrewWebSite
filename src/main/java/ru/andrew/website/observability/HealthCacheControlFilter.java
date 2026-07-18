@@ -16,19 +16,25 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public final class HealthCacheControlFilter extends OncePerRequestFilter {
+    private static final String ACTUATOR_ROOT = "/actuator";
     private static final String NO_STORE = "no-store";
     private static final Set<String> PATHS = Set.of(
             "/actuator/health/liveness", "/actuator/health/readiness");
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI().substring(request.getContextPath().length());
-        return !PATHS.contains(path);
+        String path = contextRelativePath(request);
+        return !path.equals(ACTUATOR_ROOT) && !path.startsWith(ACTUATOR_ROOT + "/");
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
+        if (!PATHS.contains(contextRelativePath(request))) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
         HttpServletResponse exact = new HttpServletResponseWrapper(response) {
             @Override
             public void setHeader(String name, String value) {
@@ -50,5 +56,14 @@ public final class HealthCacheControlFilter extends OncePerRequestFilter {
         };
         exact.setHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
         chain.doFilter(request, exact);
+    }
+
+    private String contextRelativePath(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        if (contextPath == null || contextPath.isEmpty() || !requestUri.startsWith(contextPath)) {
+            return requestUri;
+        }
+        return requestUri.substring(contextPath.length());
     }
 }

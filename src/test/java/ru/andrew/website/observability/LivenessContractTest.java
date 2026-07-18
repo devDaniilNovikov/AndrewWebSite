@@ -7,7 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -44,6 +47,12 @@ class LivenessContractTest {
                 .andExpect(jsonPath("$.status").value("UP"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/actuator", "/actuator/health", "/actuator/metrics", "/actuator/env"})
+    void unapprovedActuatorPathsAreNotExternallyAvailable(String path) throws Exception {
+        mvc.perform(get(path)).andExpect(status().isNotFound());
+    }
+
     @Test
     void healthFilterPreservesNonCacheHeadersWhilePinningNoStore() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/actuator/health/liveness");
@@ -58,5 +67,50 @@ class LivenessContractTest {
         org.assertj.core.api.Assertions.assertThat(response.getHeader("X-Outcome")).isEqualTo("ok");
         org.assertj.core.api.Assertions.assertThat(response.getHeader(HttpHeaders.CACHE_CONTROL))
                 .isEqualTo("no-store");
+    }
+
+    @Test
+    void healthFilterRejectsDownstreamCacheControlReplacement() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/actuator/health/liveness");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        new HealthCacheControlFilter().doFilterInternal(request, response, (ignoredRequest, wrapped) ->
+                ((HttpServletResponse) wrapped).setHeader(HttpHeaders.CACHE_CONTROL, "max-age=60"));
+
+        org.assertj.core.api.Assertions.assertThat(response.getHeader(HttpHeaders.CACHE_CONTROL))
+                .isEqualTo("no-store");
+    }
+
+    @Test
+    void healthFilterRecognizesLivenessBelowServletContextPath() {
+        MockHttpServletRequest request =
+                new MockHttpServletRequest("GET", "/website/actuator/health/liveness");
+        request.setContextPath("/website");
+
+        org.assertj.core.api.Assertions.assertThat(
+                        new HealthCacheControlFilter().shouldNotFilter(request))
+                .isFalse();
+    }
+
+    @Test
+    void unapprovedActuatorPathStopsTheFilterChain() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/actuator/health");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean chainInvoked = new AtomicBoolean();
+
+        new HealthCacheControlFilter().doFilterInternal(
+                request, response, (ignoredRequest, ignoredResponse) -> chainInvoked.set(true));
+
+        org.assertj.core.api.Assertions.assertThat(response.getStatus()).isEqualTo(404);
+        org.assertj.core.api.Assertions.assertThat(chainInvoked).isFalse();
+    }
+
+    @Test
+    void nonActuatorPathRemainsOutsideTheFilter() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/");
+
+        org.assertj.core.api.Assertions.assertThat(
+                        new HealthCacheControlFilter().shouldNotFilter(request))
+                .isTrue();
     }
 }
