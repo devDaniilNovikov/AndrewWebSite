@@ -16,6 +16,22 @@ All Jules work follows the canonical
 [`Git Flow`](../.agents/workflows/GIT_FLOW.md), including branch naming, required
 checks, explicit user merge authorization, squash merge, and cleanup.
 
+## Shared-memory context for Jules
+
+Every Jules task prompt must direct Jules to read root
+[`AGENTS.md`](../AGENTS.md),
+[shared-memory routing](../.agents/memory/README.md),
+[the handoff index](../.agents/memory/HANDOFFS.md), and the indexed current
+handoff before editing. Jules must also verify live Git/GitHub state and
+reconcile [`TASKS.md`](../TASKS.md); memory is context and evidence, not a
+replacement for those live sources, canonical task documents, or its assigned
+plan.
+
+Jules may update shared memory only inside its explicitly assigned scope and
+under Codex review. A pause, transfer, or completion writes a committed,
+predecessor-linked handoff and index update. Never copy secrets, credentials,
+PII, raw issue text, transcripts, or tool output into memory or a handoff.
+
 ## One-time Jules setup
 
 1. Install and authorize the Google Labs Jules GitHub App for

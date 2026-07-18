@@ -18,8 +18,9 @@
 
 ## Sources of Truth
 - Repository: `devDaniilNovikov/AndrewWebSite`; default branch: `main`.
-- Read `README.md`, `.agents/workflows/GIT_FLOW.md`, `.github/JULES_AUTOMATION.md`, `docs/handoffs/2026-07-18-101804-branch-retention-handoff.md`, task-specific docs, and the live Git/GitHub state before editing.
-- Treat committed files under `docs/handoffs/` as append-only episodic project memory: create a uniquely named current snapshot that links to its predecessor, and never overwrite a historical handoff.
+- Before editing, use the startup routing in `.agents/memory/README.md`: verify live Git/GitHub first, reconcile `TASKS.md` as the living queue, then read Git Flow, role ownership, task-specific canonical docs, shared memory/current handoff, and the assigned executable plan.
+- Shared memory and handoffs provide context and evidence; they never override live state, `TASKS.md`, canonical contracts, ownership, or an explicit current user decision.
+- The active controller creates a uniquely named committed handoff for a pause, transfer, or completion and updates `.agents/memory/HANDOFFS.md` in the same task branch. A successor link makes the prior handoff historical and immutable; handoffs are never deleted.
 - Read `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and `.planning/config.json` when present.
 - Approved user decisions override older planning text; never invent missing business or legal facts.
 

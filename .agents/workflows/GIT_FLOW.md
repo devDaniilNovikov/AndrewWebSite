@@ -31,7 +31,10 @@ fix-<short-kebab-case-description>
 
 ## Task Lifecycle
 
-1. Fetch `origin`, inspect open pull requests, and verify the prerequisite state.
+1. Fetch `origin`, inspect open pull requests, verify the prerequisite state,
+   then read `.agents/memory/README.md`, `.agents/memory/HANDOFFS.md`, the
+   indexed current handoff, and `TASKS.md`. Live Git/GitHub and reconciled
+   `TASKS.md` remain authoritative for mutable state.
 2. Create a dedicated external worktree and branch from fresh `origin/main`.
 3. Record the task scope, owned paths, dependencies, and a plan of at most three steps.
 4. Implement the smallest complete change; use RED, GREEN, REFACTOR for testable behavior.
@@ -46,6 +49,18 @@ fix-<short-kebab-case-description>
 13. Confirm `main`, close the linked issue, verify the remote source branch is preserved,
     and remove the worktree only when it is clean and no longer needed. Worktree removal
     never authorizes branch deletion.
+
+## Shared-memory handoffs
+
+- For a task pause, transfer, or completion, the active controller creates a
+  uniquely named committed handoff in `docs/handoffs/` and updates
+  `.agents/memory/HANDOFFS.md` in the same task branch.
+- A handoff records verified scope and evidence, links its predecessor, and
+  gives conditional next steps that require a live check. It never substitutes
+  for live Git/GitHub, `TASKS.md`, canonical docs, or the assigned plan.
+- The current handoff may receive focused corrections only until a successor
+  links to it. After that it is historical and immutable. Handoffs are never
+  deleted; only superseded non-handoff records may enter `.agents/memory/archive/`.
 
 ## Pull Request Contract
 

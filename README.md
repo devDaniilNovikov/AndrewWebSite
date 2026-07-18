@@ -67,5 +67,6 @@ AndrewWebSite — русскоязычный B2B-сайт компании по 
 - [Codex: спецификация, контекст и общие правила](.agents/AGENTS.md)
 - [Claude Code: frontend-спецификация](.agents/CLAUDE.md)
 - [Единый Git Flow](.agents/workflows/GIT_FLOW.md)
+- [Общая память агентов: маршрутизация и handoff-индекс](.agents/memory/README.md)
 - [Jules: документация автоматизации](.agents/workflows/JULES_AUTOMATION.md)
 - [Каноническое руководство автоматизации Jules](.github/JULES_AUTOMATION.md)
