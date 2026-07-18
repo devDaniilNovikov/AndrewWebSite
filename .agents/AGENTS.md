@@ -18,16 +18,18 @@
 
 ## Sources of Truth
 - Repository: `devDaniilNovikov/AndrewWebSite`; default branch: `main`.
-- Read `README.md`, `.agents/workflows/GIT_FLOW.md`, `.github/JULES_AUTOMATION.md`, `docs/handoffs/2026-07-18-094835-backend-skeleton-ready-handoff.md`, task-specific docs, and the live Git/GitHub state before editing.
+- Read `README.md`, `.agents/workflows/GIT_FLOW.md`, `.github/JULES_AUTOMATION.md`, `docs/handoffs/2026-07-18-101804-branch-retention-handoff.md`, task-specific docs, and the live Git/GitHub state before editing.
 - Treat committed files under `docs/handoffs/` as append-only episodic project memory: create a uniquely named current snapshot that links to its predecessor, and never overwrite a historical handoff.
 - Read `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and `.planning/config.json` when present.
 - Approved user decisions override older planning text; never invent missing business or legal facts.
 
 
 ## Repository State and Package Manager
-- The repository currently contains GitHub/Jules automation and documentation; application scaffolds have not landed.
-- No package manager is configured. After scaffolding, use only committed manifests and lockfiles.
-- Do not invent application commands, dependencies, paths, or conventions before their manifests exist.
+- The backend skeleton is merged: one root Maven module, Spring Boot 4.1.0, Java 25,
+  Maven Wrapper 3.3.4, and Maven 3.9.16 are committed.
+- Use the committed `./mvnw` wrapper for backend commands. The frontend scaffold and its
+  package-manager manifest/lockfile have not landed; do not invent frontend commands,
+  dependencies, paths, or conventions before they do.
 
 ## File-Scoped Commands
 | Task | Command |
