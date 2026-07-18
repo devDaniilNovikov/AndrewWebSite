@@ -18,6 +18,10 @@
 
 Jules owns the atomic CI implementation described by Task 2 of [`2026-07-18-backend-foundation.md`](../superpowers/plans/2026-07-18-backend-foundation.md): Temurin Java 25, `./mvnw -B verify`, the existing JaCoCo threshold of at least 80%, Testcontainers-compatible GitHub-hosted execution, dependency review, Java security analysis, Maven caching, immutable action SHAs, and least-privilege permissions.
 
+On 2026-07-18 the user explicitly approved replacing the unavailable GitHub Dependency Review gate with OWASP Dependency-Check at a CVSS 7.0 failure threshold. This is a scoped supersession only; merge remains unauthorized.
+
+PR #100 was created from Jules branch `task-ci-backend-gates-1319287162273816626`. Its GitHub Dependency Review job failed because the repository does not provide that service, and Jules' `continue-on-error` workaround was rejected as a gate weakening. A local OWASP scan without an NVD API key reproduced NVD rate limiting with HTTP 429; the user then confirmed that the `NVD_API_KEY` GitHub Actions secret was added. The secret value was never read or recorded. Fresh GitHub Actions execution remains the required proof that the replacement gate works.
+
 Dispatch must use a sanitized Issue authored by the allowed repository owner and exactly one `jules-action` label. The `jules` label is forbidden. Jules may open a reviewable Draft PR and must never merge it. `task-backend-deploy-stub` remains blocked until this task's PR is separately reviewed, explicitly authorized, and merged.
 
 ## Conditional continuation
