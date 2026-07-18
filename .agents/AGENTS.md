@@ -18,7 +18,7 @@
 
 ## Sources of Truth
 - Repository: `devDaniilNovikov/AndrewWebSite`; default branch: `main`.
-- Read `README.md`, `.agents/workflows/GIT_FLOW.md`, `.github/JULES_AUTOMATION.md`, `docs/handoffs/2026-07-17-backend-superpowers-handoff.md`, task-specific docs, and the live Git/GitHub state before editing.
+- Read `README.md`, `.agents/workflows/GIT_FLOW.md`, `.github/JULES_AUTOMATION.md`, `docs/handoffs/2026-07-18-backend-skeleton-handoff.md`, task-specific docs, and the live Git/GitHub state before editing.
 - Read `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and `.planning/config.json` when present.
 - Approved user decisions override older planning text; never invent missing business or legal facts.
 

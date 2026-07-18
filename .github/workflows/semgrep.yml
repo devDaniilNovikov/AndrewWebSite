@@ -1,0 +1,48 @@
+name: Semgrep
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # A randomly selected non-round weekly slot reduces contention with common scheduled workflows.
+    - cron: "23 3 * * 4"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name }}-${{
+    github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep policy scan
+    if: >-
+      vars.SEMGREP_ENABLED == 'true' &&
+      (github.event_name != 'workflow_dispatch' ||
+      github.actor == github.repository_owner) &&
+      (github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor == github.repository_owner &&
+      github.event.pull_request.user.login == github.repository_owner &&
+      github.event.pull_request.user.login != 'dependabot[bot]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: semgrep/semgrep:1.170.0@sha256:c98f8829eea377274ee4b10656458b078b88232469b2ff913f091c2317347c9d
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run Semgrep policies
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: semgrep ci
