@@ -19,7 +19,7 @@ This handoff is the current episodic snapshot. It may receive focused correction
 - Defined semantic, episodic, and procedural memory, including the authority map, startup routing, one-controller rule, conflict metadata, handoff lifecycle, archive policy, and security boundary.
 - Indexed all existing committed handoffs and set this snapshot as current.
 - Added concise read/write hooks to Codex, Claude Code, Git Flow, and Jules guidance; added the repository entry link.
-- Reconciled `TASKS.md` for the PR #19 merge and this task's in-progress state.
+- Reconciled `TASKS.md` for the PR #19 merge and this task's Draft PR state.
 - Kept application code, backend contracts and plans, frontend, workflows, and CI/CD design outside this task.
 
 ## Current evidence and boundary
