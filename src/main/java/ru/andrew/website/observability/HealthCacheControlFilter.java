@@ -12,25 +12,44 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public final class HealthCacheControlFilter extends OncePerRequestFilter {
     private static final String ACTUATOR_ROOT = "/actuator";
+    private static final String GET = "GET";
     private static final String NO_STORE = "no-store";
     private static final Set<String> PATHS = Set.of(
             "/actuator/health/liveness", "/actuator/health/readiness");
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = contextRelativePath(request);
-        return !path.equals(ACTUATOR_ROOT) && !path.startsWith(ACTUATOR_ROOT + "/");
+        String rawPath = contextRelativePath(request);
+        if (isRawActuatorCandidate(rawPath)) {
+            return false;
+        }
+        try {
+            return !isActuatorPath(normalizedPath(request));
+        } catch (IllegalArgumentException invalidEncoding) {
+            return true;
+        }
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
-        if (!PATHS.contains(contextRelativePath(request))) {
+        String rawPath = contextRelativePath(request);
+        String normalizedPath;
+        try {
+            normalizedPath = normalizedPath(request);
+        } catch (IllegalArgumentException invalidEncoding) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        if (!GET.equals(request.getMethod())
+                || !rawPath.equals(normalizedPath)
+                || !PATHS.contains(normalizedPath)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
@@ -56,6 +75,20 @@ public final class HealthCacheControlFilter extends OncePerRequestFilter {
         };
         exact.setHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
         chain.doFilter(request, exact);
+    }
+
+    private boolean isActuatorPath(String path) {
+        return path.equals(ACTUATOR_ROOT) || path.startsWith(ACTUATOR_ROOT + "/");
+    }
+
+    private boolean isRawActuatorCandidate(String path) {
+        return isActuatorPath(path)
+                || path.startsWith(ACTUATOR_ROOT + ";")
+                || path.regionMatches(true, 0, ACTUATOR_ROOT + "%", 0, ACTUATOR_ROOT.length() + 1);
+    }
+
+    private String normalizedPath(HttpServletRequest request) {
+        return UrlPathHelper.defaultInstance.getPathWithinApplication(request);
     }
 
     private String contextRelativePath(HttpServletRequest request) {
