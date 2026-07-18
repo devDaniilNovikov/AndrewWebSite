@@ -10,7 +10,7 @@
 - GitHub repository setting `delete_branch_on_merge`: `false`, verified live after the user changed the policy.
 - Current policy fix: `fix-preserve-merged-branches`, parent `1fb0eb14076b6f42c776cf9b0b7fa8118980ee17`.
 - Current worktree: `/Users/daniilnovikov/.codex/worktrees/preserve-merged-branches/AndrewWorkWebSite`.
-- Pull request: [PR #19](https://github.com/devDaniilNovikov/AndrewWebSite/pull/19), Draft at the recorded snapshot; always reverify live state.
+- Pull request: [PR #19](https://github.com/devDaniilNovikov/AndrewWebSite/pull/19), Ready after PR CI and Semgrep succeed on the latest head; always reverify live state.
 - Previous episodic snapshot: [backend skeleton Ready handoff](2026-07-18-094835-backend-skeleton-ready-handoff.md).
 
 This file supersedes the previous handoff, which is now historical and immutable. Always reverify the latest branches, pull requests, repository settings, and checks live before acting.
@@ -47,9 +47,10 @@ The squash commit on `main` contains the intended Codex attribution as text, but
 - The GitHub setting change and restored skeleton branch are already complete external-state corrections authorized by the user.
 - `task-ci-backend-gates` remains blocked by this non-stacked policy PR and requires a separate explicit dispatch instruction after this PR merges.
 - The user explicitly authorized squash-merging PR #19 only after its fresh PR gates are green, followed by fresh post-merge CI/CD verification on `main`.
+- Before merge, confirm the ready metadata commit itself has fresh green PR CI/Semgrep; the PR relay may remain skipped while `PR_WEBHOOK_ENABLED=false`.
 - Preserve both `fix-preserve-merged-branches` and `task-backend-skeleton`; neither the merge nor worktree cleanup authorizes branch deletion.
 - Do not create the Jules Issue as part of this policy task.
 
 ## Immediate next step
 
-Read the live `fix-preserve-merged-branches` branch and PR #19 state. Complete only the remaining metadata commit, fresh checks, independent review, and CI needed to reach Ready; do not repeat completed setting or branch restoration actions. When all PR gates are green, perform the authorized squash merge, verify the merge commit and preserved remote branches, then wait for and verify fresh post-merge CI/CD on `main`. Do not create a Jules Issue. If PR #19 is already merged, do not repeat the merge; reconcile `main` and preserve both source branches.
+Read the live `fix-preserve-merged-branches` branch and PR #19 state. After the ready metadata commit has fresh green PR checks, perform the authorized squash merge, verify the merge commit and preserved remote branches, then wait for and verify fresh post-merge CI/CD on `main`. Do not create a Jules Issue. If PR #19 is already merged, do not repeat the merge; reconcile `main` and preserve both source branches.
