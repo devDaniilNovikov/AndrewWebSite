@@ -8,6 +8,13 @@
 - Do not dispatch agents or make architectural/product decisions without explicit user approval.
 - Claude Code owns frontend product UI; Jules owns CI, regression infrastructure, dependency updates, and isolated maintenance.
 
+## Agent Documentation
+- Codex context and common rules: [`.agents/AGENTS.md`](AGENTS.md) (this document).
+- Claude Code specification: [`.agents/CLAUDE.md`](CLAUDE.md).
+- Jules documentation entry point: [`.agents/workflows/JULES_AUTOMATION.md`](workflows/JULES_AUTOMATION.md).
+- Canonical Jules automation guide: [`.github/JULES_AUTOMATION.md`](../.github/JULES_AUTOMATION.md).
+- Root [`AGENTS.md`](../AGENTS.md) and [`CLAUDE.md`](../CLAUDE.md) remain symbolic entry points to their matching documents in `.agents`.
+
 ## Sources of Truth
 - Repository: `devDaniilNovikov/AndrewWebSite`; default branch: `main`.
 - Read `README.md`, `.github/JULES_AUTOMATION.md`, `docs/handoffs/2026-07-17-backend-superpowers-handoff.md`, task-specific docs, and the live Git/GitHub state before editing.
