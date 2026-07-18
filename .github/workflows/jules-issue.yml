@@ -45,6 +45,7 @@ jobs:
             ${{ github.event.issue.body }}
 
             Constraints:
+            - Read and follow .agents/workflows/GIT_FLOW.md and .github/JULES_AUTOMATION.md.
             - Keep the change atomic and minimal.
             - Do not modify secrets or credentials.
             - Do not merge the pull request.
