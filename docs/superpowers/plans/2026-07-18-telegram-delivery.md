@@ -142,13 +142,13 @@ static Stream<Arguments> statusClassifications() {
     return Stream.of(
             Arguments.of(HttpStatus.OK, new TelegramDeliveryResult.Delivered()),
             Arguments.of(HttpStatus.BAD_REQUEST,
-                    new TelegramDeliveryResult.PermanentFailure("telegram_400")),
+                    new TelegramDeliveryResult.PermanentFailure("telegram_permanent_400")),
             Arguments.of(HttpStatus.UNAUTHORIZED,
-                    new TelegramDeliveryResult.PermanentFailure("telegram_401")),
+                    new TelegramDeliveryResult.PermanentFailure("telegram_permanent_401")),
             Arguments.of(HttpStatus.FORBIDDEN,
-                    new TelegramDeliveryResult.PermanentFailure("telegram_403")),
+                    new TelegramDeliveryResult.PermanentFailure("telegram_permanent_403")),
             Arguments.of(HttpStatus.NOT_FOUND,
-                    new TelegramDeliveryResult.PermanentFailure("telegram_404")),
+                    new TelegramDeliveryResult.PermanentFailure("telegram_permanent_404")),
             Arguments.of(HttpStatus.INTERNAL_SERVER_ERROR,
                     new TelegramDeliveryResult.Retryable("telegram_5xx", null)),
             Arguments.of(HttpStatus.SERVICE_UNAVAILABLE,
@@ -319,7 +319,9 @@ public final class TelegramRestClientGateway implements TelegramGateway {
     TelegramDeliveryResult classify(int status, String body) {
         if (status >= 200 && status < 300) return new TelegramDeliveryResult.Delivered();
         if (status == 429) return new TelegramDeliveryResult.Retryable("telegram_429", parseRetryAfter(body));
-        if (status >= 400 && status < 500) return new TelegramDeliveryResult.PermanentFailure("telegram_" + status);
+        if (status >= 400 && status < 500) {
+            return new TelegramDeliveryResult.PermanentFailure("telegram_permanent_" + status);
+        }
         return new TelegramDeliveryResult.Retryable("telegram_5xx", null);
     }
 
@@ -725,6 +727,9 @@ and immutable allowlists `delivered|retry|blocked` and
 `success|network|telegram_429|telegram_4xx|telegram_5xx|lease_expired|privacy_expired`;
 it throws `IllegalArgumentException("Unsupported Telegram metric tag")` before
 calling the registry for any other value.
+The worker persists the bounded detailed code `telegram_permanent_<status>` in
+`last_error_code` but always maps every such permanent result to the fixed
+metric reason `telegram_4xx`; raw status-specific values are never metric tags.
 
 Add a `TelegramWorkerIntegrationTest` using the same PostgreSQL configuration,
 `seedDueLead`, and `OutputCaptureExtension`. Its `privacyAgedLeadIsNeverSent`
