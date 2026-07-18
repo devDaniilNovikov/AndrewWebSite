@@ -13,6 +13,8 @@
 - No open pull request or Issue conflicts with `task-ci-backend-gates`.
 - The current GitHub actor matches the configured allowed Jules actor. Jules automation is enabled and the required `JULES_API_KEY` secret name is present; no secret value was read or recorded.
 - The user explicitly authorized dispatch of this task, but did not authorize merge of its future PR.
+- Owner-authored [Issue #22](https://github.com/devDaniilNovikov/AndrewWorkWebSite/issues/22) was created with exactly one label, `jules-action`; the `jules` label was not applied.
+- The guarded [Jules workflow run](https://github.com/devDaniilNovikov/AndrewWorkWebSite/actions/runs/29646383219) completed successfully, confirming dispatch. No Jules PR had been verified at this snapshot.
 
 ## Scope and boundaries
 
