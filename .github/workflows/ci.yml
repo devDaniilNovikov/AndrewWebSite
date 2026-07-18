@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - "task-*"
+      - "fix-*"
+      - "codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-policy:
+    name: Repository policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          persist-credentials: false
+
+      - name: Validate branch name
+        if: github.event_name == 'push'
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed='^(main|task-[a-z0-9][a-z0-9-]*|fix-[a-z0-9][a-z0-9-]*|codex/[a-z0-9][a-z0-9._/-]*)$'
+          if [[ ! "$BRANCH_NAME" =~ $allowed ]]; then
+            echo "Unsupported branch name: $BRANCH_NAME" >&2
+            exit 1
+          fi
+
+      - name: Validate pull request title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          conventional='^(feat|fix|docs|test|refactor|perf|chore|ci)(\([a-z0-9._/-]+\))?!?: .+'
+          if [[ ! "$PR_TITLE" =~ $conventional ]]; then
+            echo "PR title must follow Conventional Commits." >&2
+            exit 1
+          fi
+
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          archive_path="$RUNNER_TEMP/$archive"
+          url="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$archive"
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
+            --output "$archive_path" "$url"
+          printf '%s  %s\n' "$ACTIONLINT_SHA256" "$archive_path" | sha256sum --check --status
+          tar -xzf "$archive_path" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -version
+
+      - name: Validate GitHub Actions workflows
+        shell: bash
+        run: "$RUNNER_TEMP/actionlint -color"
+
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  application:
+    name: Application checks (pending scaffold)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Explain extension point
+        shell: bash
+        run: |
+          echo "Application checks will be added when the Next.js and Spring Boot scaffolds land."

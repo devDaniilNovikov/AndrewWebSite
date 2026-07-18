@@ -1,0 +1,105 @@
+name: Pull request event relay
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
+      - ready_for_review
+      - converted_to_draft
+      - closed
+
+permissions: {}
+
+jobs:
+  relay:
+    name: Send signed PR event
+    if: vars.PR_WEBHOOK_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Build, sign, and send payload
+        env:
+          PR_WEBHOOK_URL: ${{ secrets.PR_WEBHOOK_URL }}
+          PR_WEBHOOK_SECRET: ${{ secrets.PR_WEBHOOK_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$PR_WEBHOOK_URL" != https://* ]]; then
+            echo "PR_WEBHOOK_URL must be a configured HTTPS URL." >&2
+            exit 1
+          fi
+          if (( ${#PR_WEBHOOK_SECRET} < 32 )); then
+            echo "PR_WEBHOOK_SECRET must contain at least 32 characters." >&2
+            exit 1
+          fi
+
+          source_event_id="$(python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+
+          with open(os.environ["GITHUB_EVENT_PATH"], "rb") as event_file:
+              event = json.load(event_file)
+          canonical = json.dumps(
+              event, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+          ).encode("utf-8")
+          print(hashlib.sha256(canonical).hexdigest())
+          PY
+          )"
+          delivery_id="pr-${source_event_id}"
+          attempt_id="actions-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          sent_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+          jq \
+            --arg delivery_id "$delivery_id" \
+            --arg attempt_id "$attempt_id" \
+            --arg sent_at "$sent_at" \
+            '{
+            version: 1,
+            deliveryId: $delivery_id,
+            attemptId: $attempt_id,
+            sentAt: $sent_at,
+            event: "pull_request",
+            action: .action,
+            repository: .repository.full_name,
+            sender: .sender.login,
+            pullRequest: {
+              number: .number,
+              title: .pull_request.title,
+              state: .pull_request.state,
+              draft: .pull_request.draft,
+              merged: .pull_request.merged,
+              url: .pull_request.html_url,
+              base: .pull_request.base.ref,
+              head: .pull_request.head.ref,
+              headSha: .pull_request.head.sha,
+              updatedAt: .pull_request.updated_at,
+              mergedAt: .pull_request.merged_at
+            }
+          }' "$GITHUB_EVENT_PATH" > payload.json
+
+          signature="$(python3 - <<'PY'
+          import hashlib
+          import hmac
+          import os
+
+          with open("payload.json", "rb") as payload_file:
+              payload = payload_file.read()
+          secret = os.environ["PR_WEBHOOK_SECRET"].encode("utf-8")
+          print(hmac.new(secret, payload, hashlib.sha256).hexdigest())
+          PY
+          )"
+
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+            --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 30 \
+            --output /dev/null \
+            --header 'Content-Type: application/json' \
+            --header 'X-GitHub-Event: pull_request' \
+            --header "X-GitHub-Delivery: $delivery_id" \
+            --header "X-Hub-Signature-256: sha256=$signature" \
+            --data-binary @payload.json \
+            "$PR_WEBHOOK_URL"
