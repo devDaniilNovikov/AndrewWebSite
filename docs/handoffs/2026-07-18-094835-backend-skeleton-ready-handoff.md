@@ -2,16 +2,20 @@
 
 ## Snapshot
 
-- `snapshot_at`: `2026-07-18T09:48:35Z`.
+- `snapshot_at`: `2026-07-18T09:56:41Z` (the verified post-CI Ready state before this focused handoff correction).
 - Repository: `devDaniilNovikov/AndrewWebSite`; protected default branch `main`.
 - `base_sha`: `dbf4e184065a329c1708d65bed4bd5b5c1c8fe1b` (`origin/main`).
-- `head_sha_at_snapshot`: `dd63326e56394b61ca573a7d091df24c3d106dfc`.
+- `application_verified_head`: `9bd3a61bc35575ca5ace6ac849ee255fcbeba0d9` (the last commit that changed application code).
+- `handoff_parent_head`: `bcbc1b19d610bb6b2f6243d88917ec8112a1bb71` (the committed branch head immediately before this focused correction).
+- `merge_authorization_recorded_at`: `2026-07-18T10:05:40Z`; the user explicitly authorized the PR #18 squash merge after fresh green gates.
 - Task: `task-backend-skeleton`; branch: `task-backend-skeleton`.
 - Worktree: `/Users/daniilnovikov/.codex/worktrees/backend-skeleton/AndrewWorkWebSite`.
-- Pull request: [PR #18](https://github.com/devDaniilNovikov/AndrewWebSite/pull/18), open and Ready, reported `MERGEABLE`, with auto-merge disabled.
+- Pull request: [PR #18](https://github.com/devDaniilNovikov/AndrewWebSite/pull/18), open and Ready after successful checks, reported `CLEAN` and `MERGEABLE`, with auto-merge disabled.
 - Previous episodic snapshot: [backend skeleton execution handoff](2026-07-18-backend-skeleton-handoff.md).
 
-The SHA values describe the verified branch state immediately before the dedicated handoff commit. Historical handoffs remain unchanged.
+The pinned SHAs provide non-self-referential evidence: `application_verified_head` identifies the reviewed application state, while `handoff_parent_head` identifies the parent of this documentation correction. They do not attempt to predict the correction commit SHA. Always re-read the latest branch, pull request, and checks from live Git/GitHub before acting; live state takes precedence over this snapshot.
+
+This file is the current handoff and may receive focused corrections while it remains current. Once a later handoff links to it as its predecessor, it becomes historical and must not be edited.
 
 ## Completed task scope
 
@@ -33,17 +37,18 @@ The SHA values describe the verified branch state immediately before the dedicat
 - JaCoCo line coverage was 94.74% (36 of 38 lines).
 - Missing, unknown, and multiple profiles failed closed; liveness and readiness returned the exact minimal bodies and no-store header; unapproved Actuator routes returned 404.
 - Official Maven SHA-512 and the pinned wrapper/distribution SHA-256 values were verified.
-- Diff, scope, attribution, changed-text secret, and required CI checks passed on the implementation head.
-- A local Semgrep 1.170.0 scan reported no findings, and the remote `Semgrep policy scan` completed successfully on `dd63326e56394b61ca573a7d091df24c3d106dfc`.
+- Diff, scope, attribution, changed-text secret, and required CI checks passed on the verified application state.
+- Required `Repository policy` and `Application checks (pending scaffold)` checks completed successfully on `handoff_parent_head`.
+- A local Semgrep 1.170.0 scan reported no findings. The remote `Semgrep policy scan` also completed successfully on `handoff_parent_head`, reporting 0 findings and 0 blocking findings.
 
-## Known non-required check state
+## Non-required relay state
 
-The `Send signed PR event` check failed on the snapshot head because the pull-request relay was enabled before its public backend receiver existed. This check is not required and is unrelated to the application or Semgrep results. The user has now set `PR_WEBHOOK_ENABLED` to `false`; the next push must confirm that the relay no longer fails. Do not enable it again until the receiver, signature verification, replay protection, and rate limiting are implemented.
+The historical `Send signed PR event` failure occurred because the pull-request relay was enabled before its public backend receiver existed. The user then set `PR_WEBHOOK_ENABLED` to `false`; subsequent push and Ready events confirmed the relay check as `SKIPPED`. The prior failure is resolved, was never a Semgrep or application failure, and is not a required check. Keep the relay disabled until the receiver, signature verification, replay protection, and rate limiting are implemented.
 
 ## Boundaries and authorization
 
 - `task-backend-skeleton` is Ready, but Ready never grants merge permission.
-- Merge authorization for PR #18 has not been given. Do not merge or enable auto-merge.
+- PR #18 now has explicit authorization for a manual squash merge only after the latest head passes fresh checks and review. Auto-merge remains forbidden.
 - Do not create the `task-ci-backend-gates` Jules Issue before an explicitly authorized skeleton merge reaches `main`.
 - Do not create `.agents/memory` in this branch. The proposed `task-agent-memory` is a separate future task after an authorized skeleton merge.
 - Do not reuse, clean, reset, or remove unrelated or dirty worktrees.
@@ -51,4 +56,6 @@ The `Send signed PR event` check failed on the snapshot head because the pull-re
 
 ## Immediate next step
 
-Validate this documentation change, obtain an independent handoff review, commit it atomically with Codex attribution, push it to PR #18, and wait for fresh CI. Confirm the required checks and Semgrep are green and the disabled relay no longer fails, keep PR #18 Ready, then stop without merging or creating a Jules Issue.
+Follow only the authorized merge path and begin by rereading the latest branch and PR live. If PR #18 is still open, do not repeat implementation or handoff work: wait for the latest head's fresh checks and review, require the PR to be Ready, `CLEAN`, and `MERGEABLE`, require the required checks and Semgrep to be successful, keep the relay disabled and auto-merge off, then squash-merge using the approved Conventional Commit PR title. If PR #18 is already merged, do not attempt another merge.
+
+After the merge, verify the resulting commit on `origin/main`, confirm remote source-branch deletion, and remove only the clean skeleton worktree according to the canonical Git Flow. The `task-ci-backend-gates` Jules Issue and the separate `task-agent-memory` remain forbidden until the authorized skeleton merge is verified on `main`; neither is automatically authorized by the merge.
