@@ -2,7 +2,9 @@
 
 ## Model
 
-- Use trunk-based development with `main` as the only long-lived branch.
+- Use trunk-based development with `main` as the only integration branch.
+- Retain completed `task-*` and `fix-*` branches as read-only execution history; they
+  never become integration branches and must not be reused for new work.
 - Every change reaches `main` through a pull request; direct pushes are blocked.
 - Do not create `develop`, release, or agent-specific long-lived branches.
 - Start every task from the latest `origin/main`; stacked pull requests are forbidden.
@@ -41,7 +43,9 @@ fix-<short-kebab-case-description>
 10. Mark Ready only after required CI is green and Codex review is complete.
 11. Merge only after the user explicitly authorizes it.
 12. Squash-merge using the Conventional Commit PR title as the final commit subject.
-13. Confirm `main`, close the linked issue, prune the remote branch, and remove the clean worktree.
+13. Confirm `main`, close the linked issue, verify the remote source branch is preserved,
+    and remove the worktree only when it is clean and no longer needed. Worktree removal
+    never authorizes branch deletion.
 
 ## Pull Request Contract
 
@@ -73,15 +77,20 @@ fix-<short-kebab-case-description>
 - Enforce protection for administrators.
 - Require linear history; allow squash merge only.
 - Block force pushes and deletion of `main`.
-- Automatically delete remote source branches after merge.
+- Keep GitHub's **Automatically delete head branches** repository setting disabled.
+- Preserve every local and remote `task-*` and `fix-*` branch after merge, closure, or
+  supersession.
 
 ## Cleanup Safety
 
 - Remove a local worktree only after confirming it has no tracked or untracked work to preserve.
 - Never force-remove a dirty worktree; report it and leave it available for recovery.
-- Delete obsolete remote branches only after their PR is merged, closed as superseded, or
-  explicitly abandoned by the user.
-- Run `git fetch --prune` after cleanup.
+- Do not delete local or remote `task-*` or `fix-*` branches. A future exception requires
+  an explicit user decision and a merged Git Flow policy change before any deletion.
+- If a retained source branch disappears, stop, restore it from a verified local or pull
+  request head, and report the incident.
+- Run `git fetch --prune` after worktree cleanup to synchronize refs; pruning is not
+  permission to delete a remote branch.
 
 ## Hotfixes and Rollback
 
