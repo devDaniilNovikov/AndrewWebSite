@@ -11,13 +11,14 @@
 ## Agent Documentation
 - Codex context and common rules: [`.agents/AGENTS.md`](AGENTS.md) (this document).
 - Claude Code specification: [`.agents/CLAUDE.md`](CLAUDE.md).
+- Canonical Git Flow: [`.agents/workflows/GIT_FLOW.md`](workflows/GIT_FLOW.md).
 - Jules documentation entry point: [`.agents/workflows/JULES_AUTOMATION.md`](workflows/JULES_AUTOMATION.md).
 - Canonical Jules automation guide: [`.github/JULES_AUTOMATION.md`](../.github/JULES_AUTOMATION.md).
 - Root [`AGENTS.md`](../AGENTS.md) and [`CLAUDE.md`](../CLAUDE.md) remain symbolic entry points to their matching documents in `.agents`.
 
 ## Sources of Truth
 - Repository: `devDaniilNovikov/AndrewWebSite`; default branch: `main`.
-- Read `README.md`, `.github/JULES_AUTOMATION.md`, `docs/handoffs/2026-07-17-backend-superpowers-handoff.md`, task-specific docs, and the live Git/GitHub state before editing.
+- Read `README.md`, `.agents/workflows/GIT_FLOW.md`, `.github/JULES_AUTOMATION.md`, `docs/handoffs/2026-07-17-backend-superpowers-handoff.md`, task-specific docs, and the live Git/GitHub state before editing.
 - Read `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and `.planning/config.json` when present.
 - Approved user decisions override older planning text; never invent missing business or legal facts.
 
@@ -180,25 +181,18 @@ Delivery is at-least-once. A crash after Telegram accepts a request but before P
 
 ### Git and Superpowers Execution Protocol
 
-Every task follows this exact lifecycle:
+Follow [`.agents/workflows/GIT_FLOW.md`](workflows/GIT_FLOW.md) as the canonical
+branch, worktree, pull request, review, merge, rollback, and cleanup policy.
 
-1. Fetch `origin` and verify that the required previous PR has been merged.
-2. Create a new external worktree from fresh `origin/main`.
-3. Create exactly one branch named `task-<short-kebab-description>`; fixes use `fix-<short-kebab-description>`.
-4. Record a git-ignored task brief and `.superpowers/sdd/progress.md`.
-5. Dispatch one fresh implementer subagent. Do not run parallel implementers against the same task.
-6. Apply strict TDD for behavior:
-   - RED: write the test and observe the intended failure;
-   - GREEN: implement the smallest working change and observe the pass;
-   - REFACTOR: improve structure while keeping the suite green.
-7. Run implementer self-review and create conventional commits.
-8. Dispatch a fresh specification reviewer, followed by a quality/security reviewer.
-9. Fix every Critical and Important finding and repeat the relevant review.
-10. Run fresh verification in the same turn: tests, coverage, formatting, dependency/security scans, and container checks where applicable.
-11. Push and create a Draft PR.
-12. Wait for GitHub CI. After green CI and final review, mark the PR Ready.
-13. Never merge automatically. Stop until the user explicitly authorizes merge.
-14. After merge, remove the completed worktree and create the next task from the new `origin/main`.
+Codex-specific execution requirements:
+
+- Record a git-ignored task brief and `.superpowers/sdd/progress.md`.
+- Dispatch one fresh implementer for an approved implementation task; do not run
+  parallel implementers against the same scope.
+- Apply RED, GREEN, REFACTOR to testable behavior.
+- Run implementer self-review, specification review, then quality/security review.
+- Fix every Critical and Important finding and repeat the relevant review.
+- Run fresh verification in the same turn and report only checks that actually ran.
 
 Model allocation for ephemeral Superpowers workers:
 

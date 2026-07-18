@@ -20,12 +20,9 @@
 - This handoff document is prepared on `task-backend-execution-handoff`, created from the current `origin/main`.
 - Product implementation has not started.
 
-Open legacy Draft PRs:
-
-- PR #2, `task-claude-code-instructions`: conflicts with current `main`; refresh it only before Claude starts frontend work.
-- PR #3, `task-jules-instructions`: legacy instructions; do not treat it as the current automation implementation.
-- PR #4, `task-kimi-instructions`: obsolete because Kimi is no longer part of the project.
-- Do not close, merge, or rewrite these PRs without explicit user approval.
+Legacy instruction PRs #2–#4 are closed and superseded. Use `.agents/AGENTS.md`,
+`.agents/CLAUDE.md`, `.agents/workflows/GIT_FLOW.md`, and
+`.github/JULES_AUTOMATION.md` as the canonical agent and workflow documentation.
 
 Existing worktrees may contain unrelated or uncommitted user files. In particular, do not delete or commit `.DS_Store` and do not reuse the Jules instructions worktree for backend implementation.
 
@@ -172,25 +169,13 @@ Delivery is at-least-once. A crash after Telegram accepts a request but before P
 
 ## 4. Git and Superpowers execution protocol
 
-Every task follows this exact lifecycle:
+Follow [`.agents/workflows/GIT_FLOW.md`](../../.agents/workflows/GIT_FLOW.md) as
+the canonical branch, worktree, pull request, review, squash-merge, rollback,
+and cleanup protocol.
 
-1. Fetch `origin` and verify that the required previous PR has been merged.
-2. Create a new external worktree from fresh `origin/main`.
-3. Create exactly one branch named `task-<short-kebab-description>`; fixes use `fix-<short-kebab-description>`.
-4. Record a git-ignored task brief and `.superpowers/sdd/progress.md`.
-5. Dispatch one fresh implementer subagent. Do not run parallel implementers against the same task.
-6. Apply strict TDD for behavior:
-   - RED: write the test and observe the intended failure;
-   - GREEN: implement the smallest working change and observe the pass;
-   - REFACTOR: improve structure while keeping the suite green.
-7. Run implementer self-review and create conventional commits.
-8. Dispatch a fresh specification reviewer, followed by a quality/security reviewer.
-9. Fix every Critical and Important finding and repeat the relevant review.
-10. Run fresh verification in the same turn: tests, coverage, formatting, dependency/security scans, and container checks where applicable.
-11. Push and create a Draft PR.
-12. Wait for GitHub CI. After green CI and final review, mark the PR Ready.
-13. Never merge automatically. Stop until the user explicitly authorizes merge.
-14. After merge, remove the completed worktree and create the next task from the new `origin/main`.
+Backend execution additionally requires a git-ignored task brief and
+`.superpowers/sdd/progress.md`, strict TDD for behavior, implementer self-review,
+independent specification and quality/security reviews, and fresh verification.
 
 Model allocation for ephemeral Superpowers workers:
 

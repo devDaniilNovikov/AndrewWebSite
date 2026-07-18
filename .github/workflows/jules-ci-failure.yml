@@ -31,7 +31,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          allowed='^(main|task-[a-z0-9][a-z0-9-]*|fix-[a-z0-9][a-z0-9-]*|codex/[a-z0-9][a-z0-9._/-]*)$'
+          allowed='^(main|task-[a-z0-9][a-z0-9-]*|fix-[a-z0-9][a-z0-9-]*)$'
           if [[ ! "$STARTING_BRANCH" =~ $allowed ]]; then
             echo "Refusing untrusted branch: $STARTING_BRANCH" >&2
             exit 1
@@ -51,6 +51,7 @@ jobs:
             Commit: ${{ github.event.workflow_run.head_sha }}
 
             Constraints:
+            - Read and follow .agents/workflows/GIT_FLOW.md and .github/JULES_AUTOMATION.md.
             - Determine the root cause before editing.
             - Do not weaken a valid test or security check.
             - Do not modify secrets, credentials, or repository permissions.

@@ -68,6 +68,7 @@ Read before implementation:
 - this `CLAUDE.md`
 - the closest applicable nested `CLAUDE.md`, when one exists
 - `AGENTS.md`, `README.md`, and task-specific documentation
+- `.agents/workflows/GIT_FLOW.md`
 - `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and
   `.planning/config.json`, when present
 - `/Users/daniilnovikov/Desktop/VibeCoding/Андрей/Техническое_задание_на_разработку_сайта.md`,
@@ -364,23 +365,16 @@ unavailable checks explicitly; do not claim they passed.
 
 ## Git and parallel-work protocol
 
-Branch names:
+Follow [`.agents/workflows/GIT_FLOW.md`](workflows/GIT_FLOW.md) for canonical
+branch naming, worktrees, pull requests, required checks, squash merge, rollback,
+and cleanup.
 
-```text
-task-<short-kebab-case-description>
-fix-<short-kebab-case-description>
-```
+Claude-specific rules:
 
-Rules:
-
-- one atomic issue equals one branch and one pull request
-- start from the current `origin/main`; stacked PRs are forbidden
 - use a dedicated Claude Code worktree, never the Codex primary checkout
 - do not reuse another agent's branch or worktree
 - declare owned files before editing and change only those files
-- use Conventional Commits and keep unrelated changes out
 - do not rewrite shared history or use destructive Git commands
-- create a Draft PR after applicable local checks
 - Ready requires green CI and resolved Codex review
 - merge only after an explicit user command
 

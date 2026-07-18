@@ -12,6 +12,10 @@ This repository has three independent event paths:
 All automation creates reviewable pull requests. Nothing in these workflows
 merges a pull request.
 
+All Jules work follows the canonical
+[`Git Flow`](../.agents/workflows/GIT_FLOW.md), including branch naming, required
+checks, explicit user merge authorization, squash merge, and cleanup.
+
 ## One-time Jules setup
 
 1. Install and authorize the Google Labs Jules GitHub App for
@@ -45,7 +49,7 @@ create a PR, so every generated PR must receive human review before merge.
 
 `.github/workflows/jules-ci-failure.yml` listens for the workflow named `CI`.
 It accepts only failed `push` runs from this repository on `main`, `task-*`,
-`fix-*`, or `codex/**` branches, and only when the push actor matches
+or `fix-*` branches, and only when the push actor matches
 `JULES_ALLOWED_ACTOR`. It deliberately ignores fork, pull-request, bot, and
 Jules-generated runs; Jules' native CI fixer can handle failures on PRs created
 by Jules.

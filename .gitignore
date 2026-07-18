@@ -14,3 +14,7 @@
 *.pfx
 *.jks
 *.private-key.pem
+
+# Agent-local workflow state and operating-system metadata
+.superpowers/
+.DS_Store
