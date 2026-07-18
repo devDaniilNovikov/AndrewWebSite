@@ -14,7 +14,10 @@
   <version>0.0.1-SNAPSHOT</version>
   <properties>
     <java.version>25</java.version>
+    <dependency-check.version>12.2.2</dependency-check.version>
     <jacoco.version>0.8.14</jacoco.version>
+    <log4j2.version>2.25.5</log4j2.version>
+    <tomcat.version>11.0.24</tomcat.version>
   </properties>
   <dependencies>
     <dependency>
@@ -74,6 +77,20 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.owasp</groupId>
+        <artifactId>dependency-check-maven</artifactId>
+        <version>${dependency-check.version}</version>
+        <configuration>
+          <failBuildOnCVSS>7.0</failBuildOnCVSS>
+          <failOnError>true</failOnError>
+          <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+          <formats>
+            <format>HTML</format>
+            <format>JSON</format>
+          </formats>
+        </configuration>
       </plugin>
     </plugins>
   </build>

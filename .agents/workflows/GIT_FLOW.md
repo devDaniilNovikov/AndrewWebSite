@@ -67,8 +67,10 @@ fix-<short-kebab-case-description>
 - PR titles follow `feat|fix|docs|test|refactor|perf|chore|ci(scope): description`.
 - The body states what changed, why, checks actually run, risks, and related issues.
 - Draft means work or verification is incomplete; Ready means it is reviewable and green.
-- Required CI checks currently include `Repository policy` and
-  `Application checks (pending scaffold)`.
+- Required CI checks currently include `Repository policy`, `verify`, and
+  `dependency-security`.
+- `verify` replaces the historical `Application checks (pending scaffold)`
+  context; branch protection must not retain that obsolete placeholder.
 - Renaming a required job must update GitHub branch protection in the same change.
 - GitHub account approvals are not required for the sole-owner repository; Codex review
   and explicit user merge authorization remain mandatory workflow gates.
