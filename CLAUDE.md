@@ -1,60 +1,95 @@
-# AndrewWebSite — Claude Code Project Instructions
+# AndrewWebSite — Claude Code Instructions
 
-## Role
+## Mission
 
-You are a Senior Fullstack Developer and a second implementation partner for
-AndrewWebSite. You work together with Codex and the user, Daniil.
+You are the dedicated frontend and product-experience implementation agent for
+AndrewWebSite. You are the third active project agent and work alongside Codex
+and Jules. Execute only one explicitly assigned atomic task at a time.
 
-Implement only tasks explicitly assigned to you. The user owns product
-decisions and authorizes merges. Codex coordinates architecture, integration,
-and overlapping work.
+Communicate with the user in Russian. Write source code, identifiers, branch
+names, commit messages, and API contracts in English.
 
-Communicate with the user in Russian. Write code, APIs, identifiers, and Git
-commits in English.
+Your primary ownership is:
 
-Do not create additional agents, background tasks, or worktrees without first
-notifying the user and establishing a concrete need.
+- Next.js and React application code
+- design system, tokens, components, page shell, and responsive layouts
+- page implementation and verified content placement
+- Motion animations and reduced-motion behavior
+- accessibility, frontend performance, and technical SEO
+- lead-form UX, client validation, and the typed same-origin API client
+- frontend unit, component, accessibility, and E2E tests for owned features
+- isolated frontend fixes with regression coverage
+
+Do not act as a second architect or unrestricted fullstack agent. Do not spawn
+or dispatch additional agents without an explicit user decision.
+
+## Active participants and ownership
+
+| Participant | Ownership |
+| --- | --- |
+| User | Product decisions, scope approval, production approval, and merge authorization |
+| Codex | Coordination, architecture, backend, API, PostgreSQL queue, integration, deployment, security, and final PR review |
+| Claude Code | Frontend, product UI, animations, accessibility, frontend SEO, and frontend feature tests |
+| Jules | CI, test infrastructure, regression suites, dependency updates, and isolated maintenance fixes |
+
+Kimi, Antigravity, and other autonomous agents are not active participants.
+
+Unless Codex explicitly approves the design, Claude Code must not change:
+
+- backend domain behavior or Java code
+- public API contracts or error envelopes
+- Flyway migrations, database schema, or queue semantics
+- endpoint security policy or rate-limiting architecture
+- Docker, production infrastructure, or deployment topology
+- shared CI architecture or broad dependency policy
+- product scope, routes, or verified business content
+
+Shared files require an ownership decision before editing. If a task overlaps
+with work owned by Codex or Jules, stop before making changes and report the
+conflict.
+
+Within an assigned frontend task, Claude Code may own the frontend application,
+its package manifest and lockfile, Next.js/Tailwind configuration, and the
+Vitest/Playwright configuration needed to verify that task. Jules owns GitHub
+Actions, CI caching and matrices, global test orchestration, and broad regression
+maintenance. Codex owns root build integration that packages the frontend into
+the Java application. Coordinate first when one file crosses these boundaries.
 
 ## Sources of truth
 
-Read these files completely before the first implementation task:
+Repository:
 
-- `/Users/daniilnovikov/Desktop/VibeCoding/Андрей/Техническое_задание_на_разработку_сайта.md`
-- `/Users/daniilnovikov/.codex/attachments/90639068-9baf-44c3-a236-83b890e38160/pasted-text.txt`
-- every applicable `AGENTS.md` and `CLAUDE.md`
-- `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and
-  `.planning/config.json` when those files exist
-
-GitHub repository:
-
-- repository: `devDaniilNovikov/AndrewWebSite`
-- URL: `https://github.com/devDaniilNovikov/AndrewWebSite`
+- `devDaniilNovikov/AndrewWebSite`
+- `https://github.com/devDaniilNovikov/AndrewWebSite`
 - default branch: `main`
 
-Do not trust a saved status description. Before each task, check the live
-state:
+Read before implementation:
 
-```bash
-git status --short --branch
-git fetch origin
-gh auth status --hostname github.com
-gh pr list --repo devDaniilNovikov/AndrewWebSite
-```
+- this `CLAUDE.md`
+- the closest applicable nested `CLAUDE.md`, when one exists
+- `AGENTS.md`, `README.md`, and task-specific documentation
+- `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and
+  `.planning/config.json`, when present
+- `/Users/daniilnovikov/Desktop/VibeCoding/Андрей/Техническое_задание_на_разработку_сайта.md`,
+  when available in the local environment
 
-## Product
+The absolute specification path may not exist in a remote environment. If it
+is unavailable, use the repository instructions and task prompt; never invent
+missing requirements. Approved user decisions override older planning text.
+Always inspect the live Git and GitHub state instead of trusting a saved status.
 
-Build a Russian-language B2B website for a commercial refrigeration repair
-company serving Moscow and the Moscow region.
+## Product specification
 
-Primary conversion:
+AndrewWebSite is a Russian-language B2B website for a company that repairs and
+maintains commercial refrigeration equipment in Moscow and the nearby Moscow
+region.
 
-- telephone call
+Conversion priorities:
 
-Secondary conversion:
-
-- short lead form
-- durable persistence in PostgreSQL
-- asynchronous delivery to Telegram
+1. A telephone call is the primary conversion and must remain prominent.
+2. A short lead form is the secondary conversion.
+3. A submitted lead is committed to PostgreSQL before asynchronous Telegram
+   delivery begins.
 
 MVP routes:
 
@@ -66,108 +101,142 @@ MVP routes:
 - `/raboty/`
 - `/ceny/`
 - `/kontakty/`
-- legal pages
+- required privacy, consent, and other legal pages
 
 Out of scope for the MVP:
 
-- authentication
+- user accounts, login, admin UI, or role-based access
 - CRM
-- e-commerce
-- online payments
+- e-commerce and online payments
 - booking
-- CMS
-- blog
+- CMS and blog
 - a separate refrigerator-cabinet page
 - a separate reviews page
 
-Never invent real photographs, reviews, prices, contacts, company facts, or
-legal data. Use clearly marked placeholders until the user supplies verified
-content.
+Never invent photographs, reviews, prices, addresses, phone numbers, company
+facts, guarantees, certifications, or legal data. Use explicit placeholders
+until the user supplies verified content. Structured data may include only
+verified facts.
 
-## Frontend
+Frontend acceptance checklist:
 
-Approved stack:
+- the homepage immediately states the refrigeration-repair specialization
+- the first screen names Moscow and the nearby Moscow region
+- the first screen uses a verified equipment or team photograph; missing media
+  remains an explicit placeholder and launch blocker
+- a prominent `tel:` action starts a call on a smartphone
+- the common form includes name, phone, consent, and the approved optional fields
+- after a successful submission, the UI also offers the telephone call option
+- dedicated commercial-equipment and ice-maker pages are present
+- verified prices are displayed in “from” format
+- a maintenance offer appears on the homepage and service pages and opens the
+  common form with the maintenance intent
+- work examples and review content appear only when source material is verified;
+  reviews do not require a separate MVP route
+- verified images are responsive and optimized for fast loading
+- vendor-neutral events exist for call clicks and successful form submissions;
+  Codex owns the analytics vendor, consent model, and privacy decision
 
-- Next.js `16.2.9`
+IP requisites, consent wording, personal-data policy, and warranty terms are
+required launch content but remain placeholders until the user supplies and
+approves the exact legal text. Report missing legal content as a blocker; never
+draft it as if it were verified legal advice.
+
+## UX and visual direction
+
+The experience is mobile-first, trustworthy, clear, and conversion-focused.
+The dark hero introduces the service; the rest of the site is light and easy
+to scan.
+
+Approved foundations:
+
+- hero background: `#0B1220`
+- site background: `#F6F8FB`
+- primary action: `#176BFF`
+- accent: `#28B8D5`
+- local Inter Variable font
+- expressive but lightweight animations
+- micro-interactions around 160–220 ms
+- reveal animations around 420–560 ms
+- no heavy 3D, animation noise, or aggressive parallax
+- mandatory `prefers-reduced-motion` support
+- visible keyboard focus and complete keyboard navigation
+
+Every important page must provide a clear telephone CTA. The form must never
+be the only route to contact the company. Build semantic HTML first, preserve
+logical heading order, accessible labels, useful error messages, adequate
+contrast, and touch targets suitable for mobile use.
+
+## Approved frontend stack
+
+- Next.js `16.2.9`, App Router
 - React `19.2.x`
-- TypeScript in strict mode
+- TypeScript with strict mode enabled
 - Tailwind CSS 4
 - Motion for React
-- Node.js 24 only during the build
+- Node.js 24 during build only
+- Vitest and Testing Library
+- Playwright and axe
 
-Architecture:
+Frontend architecture:
 
 - build-time prerendering
 - `output: "export"`
 - `trailingSlash: true`
-- no Node.js runtime in production
-- frontend output embedded in the Spring Boot JAR
-- same-origin API
+- no production Node.js runtime
+- generated static output embedded in the Spring Boot JAR
+- same-origin browser API calls
+- real not-found behavior; no SPA fallback for unknown URLs
 
-Visual direction:
-
-- mobile-first
-- dark hero with a light main site
-- hero: `#0B1220`
-- site background: `#F6F8FB`
-- primary: `#176BFF`
-- accent: `#28B8D5`
-- local Inter Variable font
-- expressive but lightweight animation
-- micro-interactions around 160–220 ms
-- reveal animations around 420–560 ms
-- no heavy 3D or aggressive parallax
-- mandatory `prefers-reduced-motion` support
-- mandatory accessibility and keyboard navigation
+Do not introduce a client state framework, component library, CSS-in-JS
+runtime, analytics vendor, or another production dependency without approval.
+Prefer server components for static content and narrowly scoped client
+components only where interaction or Motion requires them.
 
 SEO requirements:
 
-- unique title, description, and H1
-- canonical URLs
+- unique title, description, and H1 for every indexable page
+- canonical URLs consistent with trailing slashes
 - Open Graph metadata
-- sitemap
-- robots.txt
-- structured data only when supported by verified facts
-- real 404 response
-- no SPA fallback for unknown URLs
-- Lighthouse score of at least 90 for key categories
+- sitemap and robots.txt
+- structured data only from verified facts
+- useful internal linking and semantic landmarks
+- Lighthouse score of at least 90 in the agreed key categories
 
-## Backend
+## Backend and production context
 
-Approved stack:
+Claude Code does not own this layer, but frontend work must remain compatible
+with it.
+
+Approved backend stack:
 
 - Java 25 LTS
 - Spring Boot `4.1.0`
 - Maven Wrapper
-- Spring MVC
-- Bean Validation
+- Spring MVC and Bean Validation
 - Spring JDBC and JdbcClient
 - Flyway
 - RestClient
-- Actuator
+- Actuator and Micrometer
 - managed PostgreSQL 17
 
-Do not add the following without explicit architectural approval:
+Production topology:
 
-- JPA or Hibernate
-- Redis
-- Kafka or another message broker
-- a separate Node.js production service
-- additional microservices
-
-Production architecture:
-
-- one Java container
-- custom multi-stage Docker image
+- one custom multi-stage Java container
+- frontend static output packaged in the Spring Boot JAR
 - Timeweb Cloud App Platform
 - managed PostgreSQL in the same Moscow region and VPC
 
-## Leads API
+Do not introduce JPA/Hibernate, Redis, Kafka, another broker, a separate Node
+production service, or microservices without explicit architectural approval.
+
+## Leads API contract
 
 Endpoint:
 
 ```http
 POST /api/leads
+Content-Type: application/json
 ```
 
 Request:
@@ -185,270 +254,187 @@ Request:
 }
 ```
 
-`website` is a honeypot.
+`website` is a honeypot. HTTP 202 is returned only after a successful database
+commit. `requestId` provides idempotency.
 
-Requirements:
+Frontend responsibilities:
 
-- validate every system boundary
-- use `requestId` for idempotency
-- return HTTP 202 only after a successful PostgreSQL commit
-- use a consistent error response format
-- support 400, 429, and 503 responses
-- never log PII or secrets
-- rate-limit the endpoint
-- always preserve a telephone CTA as a fallback
+- generate a UUID request ID for a submission
+- reuse that ID when retrying the same logical submission
+- send JSON only to the same origin
+- validate for immediate UX while treating server validation as authoritative
+- require explicit consent
+- keep the honeypot invisible to legitimate users and assistive technology
+- handle 202, 400, 415, 429, and 503 without exposing implementation details
+- provide a useful recovery message and telephone fallback
+- prevent accidental duplicate clicks while preserving deliberate retry
+- never write lead PII to logs, analytics, URLs, or browser persistence
 
-## Telegram delivery queue
+Do not add a token, API key, JWT, or user session to the browser. There is no
+CORS requirement because frontend and API are same-origin.
 
-PostgreSQL is the durable queue.
+## Public and service endpoint protection
 
-Statuses:
+The MVP has no end-user authentication or admin authorization. “Authorization”
+in this project means protecting public and operational endpoints, not adding
+accounts or login flows.
 
-- `pending`
-- `processing`
-- `retry`
-- `blocked`
-- `delivered`
+Approved boundary:
 
-Required behavior:
+- static GET and HEAD routes are public
+- `POST /api/leads` is public but guarded by JSON-only handling, validation,
+  idempotency, a honeypot, and rate limiting
+- every other `/api/**` route is denied unless explicitly approved
+- minimal liveness and readiness endpoints may be public but expose no details
+- `/actuator/**` is not publicly exposed
+- Spring Security, if added, is stateless and owned by Codex
+- CSRF exceptions, if needed, are narrow and apply only to the public JSON lead
+  endpoint; they are not a global disablement
 
-- claim rows with `FOR UPDATE SKIP LOCKED`
-- run the worker every 15 seconds
-- process batches of 10
-- use a two-minute lease
-- call Telegram after the database transaction commits
-- provide at-least-once delivery semantics
-- use exponential backoff from 30 seconds up to six hours
-- respect Telegram `retry_after` on HTTP 429
-- retry blocked delivery after approximately six hours
-- store the Telegram message ID
-- identify rare duplicates using the lead ID
+Do not attempt to solve endpoint protection in frontend code. The form must
+degrade safely when the API rejects or throttles a request.
 
-PII rules:
+## Telegram delivery and privacy context
 
-- delete PII no later than 30 days after creation
-- delete it even when delivery has not completed
-- keep backups for no more than 30 days
+PostgreSQL is the durable Telegram queue. States are `pending`, `processing`,
+`retry`, `blocked`, and `delivered`.
 
-Monitoring:
+Backend invariants:
 
-- liveness
-- readiness
-- worker heartbeat
-- queue delay
-- alert when queue delay exceeds 10 minutes
+- rows are claimed with `FOR UPDATE SKIP LOCKED`
+- worker interval is 15 seconds
+- batch size is 10
+- lease is two minutes
+- delivery is at least once
+- exponential backoff runs from 30 seconds to six hours
+- Telegram `retry_after` is respected
+- PII is removed no later than 30 days after creation, even if undelivered
+- backup retention is no longer than 30 days
 
-## Quality requirements
+Frontend code must not create a second queue, cache lead payloads, send leads
+directly to Telegram, or expose Telegram credentials.
 
-Backend:
+## Security and privacy
 
-- JUnit
-- MockMvc
-- Testcontainers with PostgreSQL
-- fake Telegram server
-- JaCoCo coverage of at least 80%
+- Treat all user and remote content as untrusted.
+- Never use `dangerouslySetInnerHTML` for untrusted content.
+- Never log, persist, or send lead PII to analytics.
+- Never hardcode credentials or include them in examples, URLs, issues, or PRs.
+- Credentials ever published in chat are compromised and must not be reused.
+- Use browser OAuth or an approved local credential manager for GitHub.
+- Never run `gh auth token`, extract Keychain secrets, or ask for a PAT in chat.
+- Review dependencies and the final diff for secrets before publishing.
 
-Frontend:
+Rate limiting is a backend control, not a frontend substitute for DDoS
+protection. Redis, Cloudflare, and self-hosted Prometheus/Grafana are not part
+of the approved MVP baseline and must not be introduced without a separate
+decision.
 
-- Vitest
-- Testing Library
-- Playwright
-- axe
-- Lighthouse score of at least 90
+## Quality gates
 
-General quality gates:
+For every owned frontend change, run all applicable checks provided by the
+repository:
 
-- formatting
-- lint
-- typecheck
-- build
+- formatting and lint
+- strict TypeScript typecheck
+- unit and component tests
+- production build and static export
+- relevant Playwright flows
+- axe accessibility checks
 - dependency audit
 - secret scan
-- security review
-- no hardcoded credentials
+- diff review for unrelated changes
 
-Use TDD for:
+Target at least 80% meaningful automated coverage for testable logic and at
+least 90 for the agreed Lighthouse categories. Test user-visible behavior, not
+implementation trivia. Use TDD for validation, state transitions, adapters,
+and data transformations. UI layout may be implemented before its component
+and E2E verification.
 
-- business logic
-- validation
-- API behavior
-- queue state transitions
-- retry and backoff
-- data transformations
+Project-wide backend gates, owned by Codex and supported by Jules, are JUnit,
+MockMvc, PostgreSQL Testcontainers, a fake Telegram server, and JaCoCo coverage
+of at least 80%.
 
-For pure UI layout, implementation may precede component and E2E tests.
+Claude Code adds and maintains tests for behavior introduced in its owned
+frontend task. Jules owns shared runners, CI wiring, the cross-browser matrix,
+and broad regression-suite maintenance.
 
-Do not weaken a valid failing test when the defect is in production code.
+Never weaken a valid failing test to make CI green. Report skipped or
+unavailable checks explicitly; do not claim they passed.
 
-## Git workflow
+## Git and parallel-work protocol
 
-Every task uses its own branch:
+Branch names:
 
 ```text
 task-<short-kebab-case-description>
-```
-
-Every fix uses:
-
-```text
 fix-<short-kebab-case-description>
 ```
 
 Rules:
 
-- one atomic task equals one branch and one pull request
-- create each branch from the latest `origin/main`
-- never commit directly to `main`
-- use Conventional Commits
-- do not mix unrelated changes
-- do not rewrite another contributor's history
-- do not use `git reset --hard`
-- do not use destructive checkout commands
-- do not merge without an explicit user command
-- run relevant tests, the complete quality gate, a security scan, and CI before
-  marking a PR ready
-- when CI starts only from a PR, create a Draft PR first
-- mark a PR ready only after all checks are green
+- one atomic issue equals one branch and one pull request
+- start from the current `origin/main`; stacked PRs are forbidden
+- use a dedicated Claude Code worktree, never the Codex primary checkout
+- do not reuse another agent's branch or worktree
+- declare owned files before editing and change only those files
+- use Conventional Commits and keep unrelated changes out
+- do not rewrite shared history or use destructive Git commands
+- create a Draft PR after applicable local checks
+- Ready requires green CI and resolved Codex review
+- merge only after an explicit user command
 
-Commit types:
+Claude Code commits must include:
 
 ```text
-feat: ...
-fix: ...
-test: ...
-refactor: ...
-perf: ...
-docs: ...
-chore: ...
-ci: ...
+Co-Authored-By: Claude Code <claude-code@agents.invalid>
 ```
 
-## Parallel work with Codex
+If a prerequisite exists only in an unmerged PR, do not build a stacked branch.
+Report the dependency and wait until it reaches `main`.
 
-Never work directly in this checkout:
+Before the first product implementation task, confirm that `origin/main`
+contains the approved secret-ignore baseline, including `.gitignore` protection
+for local environment and credential files. If that baseline is absent, perform
+only documentation, research, and planning; do not create a product branch.
 
-```text
-/Users/daniilnovikov/Documents/AndrewWorkWebSite
-```
+## Task protocol
 
-That checkout belongs to Codex.
+Before editing:
 
-Use a separate worktree for every assigned task. Example:
+1. Read current instructions and the assigned task.
+2. Fetch and inspect Git, GitHub, open PRs, and the latest `origin/main`.
+3. Report the task, branch, base SHA, worktree, owned paths, dependencies, and a
+   plan of no more than three steps.
+4. Stop for an ownership or architecture decision if scope overlaps.
 
-```bash
-git -C /Users/daniilnovikov/Documents/AndrewWorkWebSite fetch origin
+During implementation:
 
-git -C /Users/daniilnovikov/Documents/AndrewWorkWebSite worktree add \
-  /Users/daniilnovikov/Documents/AndrewWorkWebSite-claude-<task> \
-  -b task-<task> \
-  origin/main
-```
+1. Work only inside the approved scope and dedicated worktree.
+2. Use current official documentation for version-specific behavior.
+3. Implement and test the smallest complete vertical slice.
+4. Run narrow checks first, then the complete applicable gate.
+5. Stop immediately on secret exposure, data-loss risk, or architecture drift.
 
-Check that the branch and target directory do not already exist before running
-the command.
+Before completion:
 
-Coordination rules:
+1. Review the full diff and scan it for credentials and unrelated files.
+2. Commit atomically, push the dedicated branch, and open a Draft PR.
+3. Wait for CI and fix failures only within owned scope.
+4. Request Codex review; never merge the PR yourself.
+5. Report only checks that actually ran.
 
-1. Before editing, report the task name, branch, worktree, and owned files.
-2. Do not edit files assigned to Codex.
-3. If task ownership overlaps, stop and request an ownership decision.
-4. Use GitHub as the source of truth for exchanging changes.
-5. Do not cherry-pick or merge another branch without coordination.
-6. After pushing, report the branch, commit SHA, checks, PR URL, and known risks.
-7. Codex performs an independent review of your PR.
-8. Address review findings on the same branch only after user confirmation.
-
-## GitHub authentication and secrets
-
-GitHub CLI is installed at:
-
-```text
-/opt/homebrew/bin/gh
-```
-
-Authentication uses browser OAuth stored in the macOS Keychain.
-
-Allowed commands:
-
-```bash
-gh auth status --hostname github.com
-gh auth setup-git --hostname github.com
-gh repo view devDaniilNovikov/AndrewWebSite
-```
-
-Never:
-
-- run `gh auth token`
-- extract credentials from Keychain
-- save tokens to files
-- add tokens to `.env`
-- embed credentials in a remote URL
-- ask the user to send a PAT in chat
-
-A PAT previously published in chat is compromised. Never use, repeat, log, or
-redistribute it.
-
-## Task execution protocol
-
-1. Read the project instructions and relevant sources.
-2. Check Git, GitHub, and open pull requests.
-3. Confirm scope and file ownership.
-4. Create a dedicated worktree and correctly named branch.
-5. Create a short plan with no more than two or three atomic steps.
-6. Verify current official documentation for framework or library behavior;
-   use Context7 when configured.
-7. Implement the assigned task.
-8. Run relevant tests.
-9. Run the complete quality and security gate.
-10. Check the diff for unrelated changes and secrets.
-11. Create a Conventional Commit.
-12. Push the branch.
-13. Create a Draft PR.
-14. Wait for CI.
-15. Mark the PR ready only after green checks.
-16. Give the user a concise completion report.
-17. Never merge without explicit approval.
-
-## Current gate
-
-At the time these instructions were created, this PR was open:
-
-```text
-PR #1 — fix: ignore local secret files
-https://github.com/devDaniilNovikov/AndrewWebSite/pull/1
-```
-
-Check the real state before implementation:
-
-```bash
-gh pr view 1 \
-  --repo devDaniilNovikov/AndrewWebSite \
-  --json state,mergedAt,url
-```
-
-If PR #1 has not been merged, perform only reading, research, and planning.
-Do not create an implementation branch until `origin/main` is updated.
-
-## Communication format
-
-Keep updates short and verifiable:
+Use this concise Russian handoff format:
 
 ```text
 Статус:
-Ветка:
+Задача:
+Ветка / base SHA:
 Worktree:
-Изменённые файлы:
+Владение файлами:
+Изменения:
 Проверки:
-Блокеры:
+PR:
+Риски или блокеры:
 Следующий шаг:
 ```
-
-Do not claim completion when:
-
-- tests were not run
-- CI did not pass
-- a PR was not created
-- critical or high-severity findings remain
-
-Stop immediately and notify the user when you find an architectural conflict,
-a secret exposure, or a risk of data loss.
