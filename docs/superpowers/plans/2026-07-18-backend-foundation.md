@@ -88,7 +88,7 @@ Create `pom.xml` with this complete foundation model:
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -120,13 +120,47 @@ Create `pom.xml` with this complete foundation model:
 </project>
 ```
 
-Run with a locally installed Maven only for wrapper creation:
+The machine has no system Maven. Bootstrap only the official Maven 3.9.16 binary
+inside a disposable directory, download its published SHA-512 from the same
+official Apache distribution location, and compare the digest before extracting
+or executing it:
 
 ```bash
-mvn -N org.apache.maven.plugins:maven-wrapper-plugin:3.3.4:wrapper
+bootstrap_dir="$(mktemp -d)"
+archive="$bootstrap_dir/apache-maven-3.9.16-bin.zip"
+checksum="$archive.sha512"
+curl --fail --location --proto '=https' --tlsv1.2 \
+  --output "$archive" \
+  https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.16/apache-maven-3.9.16-bin.zip
+curl --fail --location --proto '=https' --tlsv1.2 \
+  --output "$checksum" \
+  https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.16/apache-maven-3.9.16-bin.zip.sha512
+expected_sha512="$(awk '{print $1}' "$checksum")"
+actual_sha512="$(shasum -a 512 "$archive" | awk '{print $1}')"
+test -n "$expected_sha512"
+test "$actual_sha512" = "$expected_sha512"
+unzip -q "$archive" -d "$bootstrap_dir"
+"$bootstrap_dir/apache-maven-3.9.16/bin/mvn" -N \
+  org.apache.maven.plugins:maven-wrapper-plugin:3.3.4:wrapper \
+  -Dtype=bin -Dmaven=3.9.16
+distribution_sha256="$(shasum -a 256 "$archive" | awk '{print $1}')"
+wrapper_sha256="$(shasum -a 256 .mvn/wrapper/maven-wrapper.jar | awk '{print $1}')"
+grep -Fq '/apache-maven/3.9.16/apache-maven-3.9.16-bin.zip' \
+  .mvn/wrapper/maven-wrapper.properties
+printf '\ndistributionSha256Sum=%s\nwrapperSha256Sum=%s\n' \
+  "$distribution_sha256" "$wrapper_sha256" \
+  >> .mvn/wrapper/maven-wrapper.properties
+test "$(grep -c '^distributionSha256Sum=' .mvn/wrapper/maven-wrapper.properties)" -eq 1
+test "$(grep -c '^wrapperSha256Sum=' .mvn/wrapper/maven-wrapper.properties)" -eq 1
+rm -rf "$bootstrap_dir"
 ```
 
-Expected: exit 0 and creation of `mvnw`, `mvnw.cmd`, and `.mvn/wrapper/`. Verify `.mvn/wrapper/maven-wrapper.properties` references Maven Wrapper 3.3.4-generated configuration and contains no mirror credential.
+Expected: every command exits 0; Maven is executed only from the disposable
+directory and is not installed globally; `mvnw`, `mvnw.cmd`, and
+`.mvn/wrapper/` exist; `.mvn/wrapper/maven-wrapper.properties` selects Maven
+3.9.16 and records exactly one `distributionSha256Sum` and one
+`wrapperSha256Sum`, with no mirror credential. The wrapper's first download must
+verify both pinned SHA-256 values successfully.
 
 - [ ] **Step 2: RED — write context and health contract tests**
 
@@ -446,7 +480,8 @@ Expected: both commands exit 0; JaCoCo line coverage is at least 0.80; only the 
 
 ```bash
 git add pom.xml .mvn mvnw mvnw.cmd src
-git commit -m "feat(backend-skeleton): add Spring Boot foundation"
+git commit -m "feat(backend-skeleton): add Spring Boot foundation" \
+  -m "Co-Authored-By: Codex GPT-5.6-Sol <codex@users.noreply.github.com>"
 ```
 
 ### Task 2: `task-ci-backend-gates` — owner-dispatched Jules CI PR

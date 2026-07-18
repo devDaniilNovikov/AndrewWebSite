@@ -260,7 +260,17 @@ public record TelegramClientProperties(
 }
 ```
 
-Production binds `bot-token: ${TELEGRAM_BOT_TOKEN}`, `chat-id: ${TELEGRAM_CHAT_ID}`, and fixed `base-url: https://api.telegram.org`; test uses visibly fictional values and a mock URL. No production fallback exists.
+Add a `@Profile("prod")` `TelegramProductionEndpointGuard` implementing
+`InitializingBean`. It receives `TelegramClientProperties` and rejects startup
+unless `baseUrl` has scheme exactly `https`, host exactly `api.telegram.org`, no
+user info, no explicit port, and an empty path, query, and fragment. Production
+binds `bot-token: ${TELEGRAM_BOT_TOKEN}`, `chat-id: ${TELEGRAM_CHAT_ID}`, and
+fixed `base-url: https://api.telegram.org`; there is no production fallback or
+override to another endpoint. Test uses visibly fictional values and a mock URL
+outside the `prod` profile. Add focused context-runner tests showing that the
+production profile accepts the exact fixed URI and rejects a different host,
+HTTP, user info, explicit port, path, query, and fragment before any request can
+carry the bot token or lead PII.
 
 `TelegramMessageFormatter.format(TelegramLeadMessage)` returns deterministic Russian labels in this exact order: request ID, UTC time, intent, source, name, phone, optional comment. It escapes Telegram HTML special characters and the gateway sends `parse_mode=HTML`; it never logs input or output.
 
@@ -508,7 +518,8 @@ class TelegramWorkerHeartbeatTest {
                 "Тест", "79990000000", null, "/service/", "repair", NOW);
         ClaimedDelivery claim = new ClaimedDelivery(
                 7L, 9L, LEASE, 1, NOW.plus(Duration.ofMinutes(2)), message);
-        when(outbox.claimDue(NOW, PRIVACY_CUTOFF, 10, Duration.ofMinutes(2)))
+        when(outbox.recoverExpiredAndClaimDue(
+                NOW, PRIVACY_CUTOFF, 10, Duration.ofMinutes(2)))
                 .thenReturn(List.of(claim));
         when(outbox.reloadDeliverable(7L, LEASE, PRIVACY_CUTOFF))
                 .thenReturn(Optional.of(message));
@@ -517,6 +528,122 @@ class TelegramWorkerHeartbeatTest {
 ```
 
 Integration tests seed deterministic due rows and assert: order by `next_attempt_at,id`; maximum 10; two simultaneous workers receive disjoint IDs; claim commits before a gateway fake observes `TransactionSynchronizationManager.isActualTransactionActive() == false`; attempt increments; two-minute lease; success to delivered; 429/retry-after, 5xx, timeout, and network to retry; non-429 4xx to blocked; expired lease to retry and reclaim; stale lease token cannot mark; application restart recovers; privacy-aged lead is not claimed; an empty successful poll advances heartbeat; retry/blocked decisions advance heartbeat only after their state writes return true; queue metrics have bounded tags and no PII.
+
+Create the concurrency and recovery test with executable setup rather than
+inventing a harness during implementation:
+
+```java
+package ru.andrew.website.telegram;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import ru.andrew.website.testing.PostgresTestConfiguration;
+
+@SpringBootTest
+@ActiveProfiles("test")
+@Import(PostgresTestConfiguration.class)
+class TwoWorkerClaimIntegrationTest {
+    private static final Instant NOW = Instant.parse("2026-01-30T00:00:00Z");
+    @Autowired OutboxRepository outbox;
+    @Autowired JdbcClient jdbc;
+
+    @BeforeEach
+    void clean() {
+        jdbc.sql("delete from telegram_outbox").update();
+        jdbc.sql("delete from leads").update();
+    }
+
+    @Test
+    void twoWorkersClaimDisjointBatchesAndCommitBeforeReturning() throws Exception {
+        for (int index = 0; index < 20; index++) seedDueLead(index, NOW.minusSeconds(60));
+        var barrier = new CyclicBarrier(2);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> claimAfter(barrier));
+            var second = executor.submit(() -> claimAfter(barrier));
+            List<ClaimedDelivery> left = first.get();
+            List<ClaimedDelivery> right = second.get();
+            assertThat(left).hasSize(10);
+            assertThat(right).hasSize(10);
+            var ids = new HashSet<Long>();
+            left.forEach(value -> assertThat(ids.add(value.outboxId())).isTrue());
+            right.forEach(value -> assertThat(ids.add(value.outboxId())).isTrue());
+            assertThat(ids).hasSize(20);
+            assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+        }
+    }
+
+    @Test
+    void expiredLeaseIsRecoveredAndReclaimedAfterRestartBoundary() {
+        long outboxId = seedDueLead(1, NOW.minusSeconds(60));
+        ClaimedDelivery first = outbox.recoverExpiredAndClaimDue(
+                NOW, NOW.minus(Duration.ofDays(29)), 10, Duration.ofMinutes(2)).getFirst();
+        List<ClaimedDelivery> reclaimed = outbox.recoverExpiredAndClaimDue(
+                NOW.plus(Duration.ofMinutes(3)), NOW.minus(Duration.ofDays(29)),
+                10, Duration.ofMinutes(2));
+        assertThat(reclaimed).extracting(ClaimedDelivery::outboxId).containsExactly(outboxId);
+        assertThat(reclaimed.getFirst().leaseToken()).isNotEqualTo(first.leaseToken());
+        assertThat(reclaimed.getFirst().attemptCount()).isEqualTo(2);
+        assertThat(outbox.markDelivered(outboxId, first.leaseToken(), NOW.plusSeconds(181)))
+                .isFalse();
+    }
+
+    private List<ClaimedDelivery> claimAfter(CyclicBarrier barrier) throws Exception {
+        barrier.await();
+        return outbox.recoverExpiredAndClaimDue(
+                NOW, NOW.minus(Duration.ofDays(29)), 10, Duration.ofMinutes(2));
+    }
+
+    private long seedDueLead(int index, Instant nextAttemptAt) {
+        long leadId = jdbc.sql("""
+                insert into leads(request_id,payload_fingerprint,name,phone,source_path,
+                                  intent,consented_at,created_at)
+                values (:requestId,decode(repeat('00',32),'hex'),'Тест','79990000000',
+                        '/service/','repair',:createdAt,:createdAt)
+                returning id
+                """)
+                .param("requestId", new UUID(0L, index + 1L))
+                .param("createdAt", NOW.minus(Duration.ofDays(1)))
+                .query(Long.class).single();
+        return jdbc.sql("""
+                insert into telegram_outbox(lead_id,state,next_attempt_at,created_at,updated_at)
+                values (:leadId,'pending',:nextAttemptAt,:createdAt,:createdAt)
+                returning id
+                """)
+                .param("leadId", leadId)
+                .param("nextAttemptAt", nextAttemptAt)
+                .param("createdAt", NOW.minus(Duration.ofDays(1)))
+                .query(Long.class).single();
+    }
+}
+```
+
+`TelegramWorkerIntegrationTest` uses the same `PostgresTestConfiguration` and
+seed helper. Its exact test methods are
+`claimIsOrderedLimitedAndCommittedBeforeGateway`,
+`successAndEveryGatewayFailurePersistExpectedState`,
+`privacyAgedLeadIsNeverSent`, `emptyPollAdvancesHeartbeat`, and
+`metricsUseOnlyDocumentedBoundedTagsAndCapturedLogsContainNoLeadFields`.
+Each method invokes `poll()` without sleeps, queries the resulting outbox row
+through `JdbcClient`, and asserts the state, attempt count, lease columns,
+bounded error code, next-attempt instant, heartbeat, captured log text, and
+meter tags enumerated above. Use parameterized arguments for delivered, 429,
+5xx, timeout, network, and permanent 4xx results; no branch may be represented
+only by a comment or an unasserted mock call.
 
 Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest test`
 
@@ -558,8 +685,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OutboxRepository {
-    int recoverExpiredLeases(Instant now);
-    List<ClaimedDelivery> claimDue(Instant now, Instant privacyCutoff, int limit, Duration lease);
+    List<ClaimedDelivery> recoverExpiredAndClaimDue(
+            Instant now, Instant privacyCutoff, int limit, Duration lease);
     Optional<TelegramLeadMessage> reloadDeliverable(long outboxId, UUID leaseToken, Instant privacyCutoff);
     boolean markDelivered(long outboxId, UUID leaseToken, Instant now);
     boolean markRetry(long outboxId, UUID leaseToken, String code, Instant nextAttemptAt, Instant now);
@@ -567,7 +694,15 @@ public interface OutboxRepository {
 }
 ```
 
-`JdbcOutboxRepository.claimDue` is `@Transactional`. It selects `pending` and due `retry` rows joined to non-anonymized leads with `created_at > :privacyCutoff`, orders `o.next_attempt_at, o.id`, limits 10, and uses `FOR UPDATE OF o SKIP LOCKED`. In the same transaction it assigns a different random UUID token per row, increments `attempt_count`, sets `processing`, lease expiry, and `updated_at`, then returns the lead projection. `recoverExpiredLeases` changes expired processing rows to due retry with `lease_expired`. Mark methods update only `where id=:id and state='processing' and lease_token=:leaseToken`.
+`JdbcOutboxRepository.recoverExpiredAndClaimDue` is `@Transactional`. In that
+single transaction it first changes expired processing rows to due retry with
+`lease_expired`, then selects `pending` and due `retry` rows joined to
+non-anonymized leads with `created_at > :privacyCutoff`, orders
+`o.next_attempt_at, o.id`, limits 10, and uses `FOR UPDATE OF o SKIP LOCKED`.
+It assigns a different random UUID token per claimed row, increments
+`attempt_count`, sets `processing`, lease expiry, and `updated_at`, then returns
+the lead projections. Mark methods update only
+`where id=:id and state='processing' and lease_token=:leaseToken`.
 
 `WorkerHeartbeat` exposes `void success(Instant instant)`, `Optional<Instant> lastSuccess()`, and `Instant startedAt()` using atomic immutable `Instant` values. `TelegramSchedulingConfiguration` is `@Configuration`, `@EnableScheduling`, and `@Profile("!test")`; focused tests invoke `poll()` directly with a supplied clock.
 
@@ -621,8 +756,8 @@ public final class TelegramWorker {
     @Scheduled(fixedDelayString = "${app.telegram.worker.poll-interval:15s}")
     public void poll() {
         Instant now = clock.instant();
-        outbox.recoverExpiredLeases(now);
-        var claims = outbox.claimDue(now, now.minus(PRIVACY_THRESHOLD), 10, Duration.ofMinutes(2));
+        var claims = outbox.recoverExpiredAndClaimDue(
+                now, now.minus(PRIVACY_THRESHOLD), 10, Duration.ofMinutes(2));
         for (ClaimedDelivery claim : claims) {
             deliver(claim);
         }

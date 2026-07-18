@@ -170,6 +170,23 @@ class ClientRateLimiterTest {
         clock.advance(Duration.ofSeconds(1));
         assertThat(limiter.tryAcquire("198.51.100.2").allowed()).isTrue();
     }
+
+    @Test
+    void clientRejectedTrafficDoesNotConsumeGlobalAdmissions() {
+        MutableClock clock = new MutableClock(
+                Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
+        ClientRateLimiter limiter = ClientRateLimiter.defaults(clock);
+        for (int index = 0; index < 5; index++) {
+            assertThat(limiter.tryAcquire("192.0.2.10").allowed()).isTrue();
+        }
+        for (int index = 0; index < 100; index++) {
+            assertThat(limiter.tryAcquire("192.0.2.10").allowed()).isFalse();
+        }
+        for (int index = 0; index < 55; index++) {
+            assertThat(limiter.tryAcquire("198.51.100." + index).allowed()).isTrue();
+        }
+        assertThat(limiter.tryAcquire("203.0.113.1").allowed()).isFalse();
+    }
 }
 ```
 
@@ -345,14 +362,14 @@ public final class ClientRateLimiter {
     public synchronized RateDecision tryAcquire(String connectionAddress) {
         long now = clock.millis();
         clients.entrySet().removeIf(entry -> now - entry.getValue().lastSeenMillis() > IDLE_TTL.toMillis());
-        if (!global.tryAcquire()) {
-            return RateDecision.rejected(global.retryAfter());
-        }
         ClientBucket client = clients.computeIfAbsent(connectionAddress,
                 ignored -> new ClientBucket(new TokenBucket(5, Duration.ofMinutes(1), clock), now));
         clients.put(connectionAddress, new ClientBucket(client.bucket(), now));
         if (!client.bucket().tryAcquire()) {
             return RateDecision.rejected(client.bucket().retryAfter());
+        }
+        if (!global.tryAcquire()) {
+            return RateDecision.rejected(global.retryAfter());
         }
         while (clients.size() > MAX_CLIENTS) {
             clients.remove(clients.keySet().iterator().next());
@@ -365,7 +382,7 @@ public final class ClientRateLimiter {
 }
 ```
 
-`TokenBucket` is used only for connection-address buckets. It has exact constructor `TokenBucket(int capacity, Duration refillPeriod, Clock clock)`, synchronized `boolean tryAcquire()`, and synchronized `Duration retryAfter()`. It stores no address, refills monotonically from `Clock.millis()`, caps tokens at capacity 5, refills one token per minute, and returns at least one second for rejection. The global rolling-window decision runs first; a request rejected by the later client gate may conservatively consume a global admission slot, but no request passing both gates can become a 61st global admission inside any rolling minute.
+`TokenBucket` is used only for connection-address buckets. It has exact constructor `TokenBucket(int capacity, Duration refillPeriod, Clock clock)`, synchronized `boolean tryAcquire()`, and synchronized `Duration retryAfter()`. It stores no address, refills monotonically from `Clock.millis()`, caps tokens at capacity 5, refills one token per minute, and returns at least one second for rejection. The per-client decision runs first, so traffic already rejected for one connection cannot consume global admissions or throttle unrelated clients. Only a request that passes the client gate attempts the global rolling-window admission; no request passing both gates can become a 61st global admission inside any rolling minute. A request rejected by a full global window may consume one client token, which is an intentional fail-closed tradeoff during actual global saturation.
 
 Create the security chain:
 
