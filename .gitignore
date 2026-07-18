@@ -15,6 +15,9 @@
 *.jks
 *.private-key.pem
 
+# Build output
+target/
+
 # Agent-local workflow state and operating-system metadata
 .superpowers/
 .DS_Store
