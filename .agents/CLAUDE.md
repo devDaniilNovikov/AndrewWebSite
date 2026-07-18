@@ -69,6 +69,8 @@ Read before implementation:
 - the closest applicable nested `CLAUDE.md`, when one exists
 - `AGENTS.md`, `README.md`, and task-specific documentation
 - `.agents/workflows/GIT_FLOW.md`
+- `.agents/memory/README.md`, `.agents/memory/HANDOFFS.md`, the current
+  indexed handoff, and relevant memory records
 - `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and
   `.planning/config.json`, when present
 - `/Users/daniilnovikov/Desktop/VibeCoding/Андрей/Техническое_задание_на_разработку_сайта.md`,
@@ -78,6 +80,14 @@ The absolute specification path may not exist in a remote environment. If it
 is unavailable, use the repository instructions and task prompt; never invent
 missing requirements. Approved user decisions override older planning text.
 Always inspect the live Git and GitHub state instead of trusting a saved status.
+Reconcile `TASKS.md` as the living task queue after the live check; shared
+memory is context and evidence, not a replacement for either source or for an
+assigned plan.
+
+When Claude owns a pause, transfer, or completion handoff, it must create a
+verified, uniquely named committed handoff and update the shared index within
+its assigned scope. Do not write secrets, PII, raw issue text, transcripts, or
+tool output. Request Codex final review for the resulting PR; do not merge it.
 
 ## Product specification
 
