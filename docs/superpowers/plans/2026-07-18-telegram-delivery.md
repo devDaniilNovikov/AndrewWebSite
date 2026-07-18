@@ -512,6 +512,53 @@ class TelegramWorkerHeartbeatTest {
         order.verify(heartbeat).success(NOW);
     }
 
+    @Test
+    void emptySuccessfulPollAdvancesHeartbeat() {
+        when(outbox.recoverExpiredAndClaimDue(
+                NOW, PRIVACY_CUTOFF, 10, Duration.ofMinutes(2)))
+                .thenReturn(List.of());
+        worker.poll();
+        verify(heartbeat).success(NOW);
+        verify(gateway, never()).send(any());
+    }
+
+    @Test
+    void retryableResultIsPersistedBeforeHeartbeat() {
+        arrangeOneClaim();
+        when(gateway.send(any())).thenReturn(
+                new TelegramDeliveryResult.Retryable("telegram_429", Duration.ofMinutes(2)));
+        when(outbox.markRetry(7L, LEASE, "telegram_429", NOW.plus(Duration.ofMinutes(2)), NOW))
+                .thenReturn(true);
+        worker.poll();
+        var order = org.mockito.Mockito.inOrder(outbox, heartbeat);
+        order.verify(outbox).markRetry(
+                7L, LEASE, "telegram_429", NOW.plus(Duration.ofMinutes(2)), NOW);
+        order.verify(heartbeat).success(NOW);
+    }
+
+    @Test
+    void permanentResultIsBlockedBeforeHeartbeat() {
+        arrangeOneClaim();
+        when(gateway.send(any())).thenReturn(
+                new TelegramDeliveryResult.PermanentFailure("telegram_permanent_403"));
+        when(outbox.markBlocked(7L, LEASE, "telegram_permanent_403", NOW))
+                .thenReturn(true);
+        worker.poll();
+        var order = org.mockito.Mockito.inOrder(outbox, heartbeat);
+        order.verify(outbox).markBlocked(7L, LEASE, "telegram_permanent_403", NOW);
+        order.verify(heartbeat).success(NOW);
+    }
+
+    @Test
+    void privacyBlockedProjectionIsNeverSent() {
+        arrangeOneClaim();
+        when(outbox.reloadDeliverable(7L, LEASE, PRIVACY_CUTOFF))
+                .thenReturn(Optional.empty());
+        worker.poll();
+        verify(gateway, never()).send(any());
+        verify(heartbeat).success(NOW);
+    }
+
     private void arrangeOneClaim() {
         TelegramLeadMessage message = new TelegramLeadMessage(9L,
                 UUID.fromString("22222222-2222-4222-8222-222222222222"),
@@ -632,18 +679,69 @@ class TwoWorkerClaimIntegrationTest {
 }
 ```
 
-`TelegramWorkerIntegrationTest` uses the same `PostgresTestConfiguration` and
-seed helper. Its exact test methods are
-`claimIsOrderedLimitedAndCommittedBeforeGateway`,
-`successAndEveryGatewayFailurePersistExpectedState`,
-`privacyAgedLeadIsNeverSent`, `emptyPollAdvancesHeartbeat`, and
-`metricsUseOnlyDocumentedBoundedTagsAndCapturedLogsContainNoLeadFields`.
-Each method invokes `poll()` without sleeps, queries the resulting outbox row
-through `JdbcClient`, and asserts the state, attempt count, lease columns,
-bounded error code, next-attempt instant, heartbeat, captured log text, and
-meter tags enumerated above. Use parameterized arguments for delivered, 429,
-5xx, timeout, network, and permanent 4xx results; no branch may be represented
-only by a comment or an unasserted mock call.
+Add exact telemetry contract code:
+
+```java
+package ru.andrew.website.telegram;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+
+class TelegramMetricsTest {
+    @Test
+    void deliveryTagsAreBoundedAndContainNoLeadDimensions() {
+        var registry = new SimpleMeterRegistry();
+        var metrics = new TelegramMetrics(registry);
+        metrics.delivery("retry", "telegram_429");
+        metrics.delivery("blocked", "privacy_expired");
+        metrics.delivery("delivered", "success");
+        var meters = registry.find("andrew.telegram.delivery").meters();
+        assertThat(meters).hasSize(3);
+        assertThat(meters).allSatisfy(meter -> {
+            Set<String> keys = meter.getId().getTags().stream()
+                    .map(tag -> tag.getKey()).collect(java.util.stream.Collectors.toSet());
+            assertThat(keys).containsExactlyInAnyOrder("outcome", "reason");
+            assertThat(keys).doesNotContain(
+                    "requestId", "leadId", "name", "phone", "comment", "path");
+        });
+    }
+
+    @Test
+    void unsupportedTagsFailBeforeMeterCreation() {
+        var registry = new SimpleMeterRegistry();
+        var metrics = new TelegramMetrics(registry);
+        org.assertj.core.api.Assertions.assertThatIllegalArgumentException()
+                .isThrownBy(() -> metrics.delivery("retry", "raw_remote_text"));
+        assertThat(registry.find("andrew.telegram.delivery").meters()).isEmpty();
+    }
+}
+```
+
+`TelegramMetrics` has exact method `void delivery(String outcome, String reason)`
+and immutable allowlists `delivered|retry|blocked` and
+`success|network|telegram_429|telegram_4xx|telegram_5xx|lease_expired|privacy_expired`;
+it throws `IllegalArgumentException("Unsupported Telegram metric tag")` before
+calling the registry for any other value.
+
+Add a `TelegramWorkerIntegrationTest` using the same PostgreSQL configuration,
+`seedDueLead`, and `OutputCaptureExtension`. Its `privacyAgedLeadIsNeverSent`
+inserts a lead with `created_at = NOW.minus(Duration.ofDays(29))`, calls `poll()`,
+and asserts `verify(gateway, never()).send(any())`, state `pending` before the
+retention task, and captured output does not contain `Тест` or `79990000000`.
+Its parameterized `successAndEveryGatewayFailurePersistExpectedState` uses
+`@MethodSource("deliveryOutcomes")`; the stream contains exact expected tuples:
+`Delivered -> delivered/null`, `Retryable("telegram_429", 120s) -> retry/telegram_429`,
+`Retryable("telegram_5xx", null) -> retry/telegram_5xx`,
+`Retryable("network", null) -> retry/network`, and
+`PermanentFailure("telegram_permanent_403") -> blocked/telegram_permanent_403`.
+For every tuple, query by outbox ID and assert exact state/error, cleared lease,
+attempt count `1`, and `next_attempt_at` from `RetryPolicy`; assert the captured
+output contains neither lead field. These assertions are mandatory companions
+to the executable unit/concurrency/metrics code above and may not be replaced by
+unasserted mock calls.
 
 Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest test`
 
