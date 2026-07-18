@@ -1,0 +1,399 @@
+openapi: 3.1.1
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: AndrewWebSite Public Backend API
+  version: 1.0.0
+  description: >-
+    Executable public contract for durable lead intake and minimal health probes.
+    Static pages are packaged with the application but are not API operations.
+    No login, administration, environment, configuration, shutdown, heap, or raw
+    metrics endpoint is public.
+servers:
+  - url: /
+    description: Same-origin deployment; the production domain is intentionally not fixed here.
+security: []
+tags:
+  - name: Leads
+    description: Anonymous, rate-limited durable lead intake.
+  - name: Health
+    description: Anonymous minimal liveness and readiness probes.
+paths:
+  /api/leads:
+    post:
+      tags: [Leads]
+      operationId: submitLead
+      summary: Accept a lead for durable asynchronous delivery
+      description: >-
+        Accepts JSON bodies up to 16 KiB. A bounded rolling global window admits
+        at most 60 requests in every half-open interval (t - 60 seconds, t], and a
+        separate bounded per-connection-address bucket has burst 5 and refills 1
+        token per minute. Forwarded client headers
+        are ignored until Timeweb proxy CIDRs are verified. The empty 202 response
+        deliberately does not reveal whether the request was newly committed,
+        idempotently accepted, safely accepted after fingerprint retention, or
+        synthetically accepted. A honeypot request needs only a non-empty `website`;
+        legitimate fields may be absent. Telegram delivery is asynchronous and at
+        least once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadRequest'
+            examples:
+              repair:
+                summary: Fictional repair request
+                value:
+                  requestId: 11111111-1111-4111-8111-111111111111
+                  name: Иван
+                  phone: +7 999 123-45-67
+                  comment: Не охлаждает витрина
+                  sourcePath: /remont-torgovogo-holodilnogo-oborudovaniya/
+                  intent: repair
+                  consent: true
+                  website: ''
+              maintenance:
+                summary: Fictional maintenance request without a comment
+                value:
+                  requestId: 22222222-2222-4222-8222-222222222222
+                  name: Анна
+                  phone: +7 (999) 000-00-00
+                  sourcePath: /services/
+                  intent: maintenance
+                  consent: true
+                  website: ''
+              honeypot:
+                summary: Synthetic acceptance without legitimate lead fields
+                value:
+                  website: filled-by-bot
+      responses:
+        '202':
+          description: >-
+            Accepted. The response has no body and no acceptance-kind metadata.
+            For a legitimate first submission, it is emitted only after the lead
+            and outbox transaction commits. It is also used indistinguishably for
+            equal duplicates, retained request IDs whose fingerprints were removed,
+            and synthetic acceptance.
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '409':
+          $ref: '#/components/responses/IdempotencyConflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /actuator/health/liveness:
+    get:
+      tags: [Health]
+      operationId: getLiveness
+      summary: Dependency-free process liveness
+      description: >-
+        Uses only application liveness state. It never probes PostgreSQL,
+        Telegram, OTLP, the outbox worker, or the retention worker.
+      responses:
+        '200':
+          description: The process is live.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveHealth'
+              example:
+                status: UP
+        '503':
+          description: The process has entered a broken liveness state.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownHealth'
+              example:
+                status: DOWN
+  /actuator/health/readiness:
+    get:
+      tags: [Health]
+      operationId: getReadiness
+      summary: Minimal dependency and worker readiness
+      description: >-
+        Returns UP only when PostgreSQL is available and the outbox worker has
+        completed a successful poll in the last 45 seconds, after a 45-second
+        startup grace. A successful poll finishes its full batch and durably
+        records every delivery decision; exceptions and failed state writes do
+        not advance the heartbeat. It never discloses which dependency is degraded.
+      responses:
+        '200':
+          description: The application is ready to accept lead traffic.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyHealth'
+              example:
+                status: UP
+        '503':
+          description: The application is not ready to accept lead traffic.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownHealth'
+              example:
+                status: DOWN
+components:
+  headers:
+    NoStore:
+      description: Health responses must not be cached.
+      schema:
+        type: string
+        const: no-store
+    RetryAfter:
+      description: Whole seconds until another lead submission may be attempted.
+      required: true
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 3600
+  schemas:
+    LeadRequest:
+      description: >-
+        Exactly one request shape is accepted: a fully validated legitimate lead
+        whose website is absent, null, or empty, or a synthetic honeypot request
+        with a non-empty website. Known properties retain their JSON types in both
+        shapes and unknown properties are rejected.
+      oneOf:
+        - $ref: '#/components/schemas/LegitimateLeadRequest'
+        - $ref: '#/components/schemas/HoneypotLeadRequest'
+    LegitimateLeadRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - name
+        - phone
+        - sourcePath
+        - intent
+        - consent
+      properties:
+        requestId:
+          type: string
+          format: uuid
+          description: Client-generated idempotency key.
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Trimmed and normalized to Unicode NFC before validation.
+          examples:
+            - Иван
+        phone:
+          type: string
+          minLength: 7
+          maxLength: 32
+          pattern: '^[+0-9(). -]+$'
+          description: >-
+            Formatting characters are accepted; server normalization must yield
+            between 7 and 15 decimal digits.
+          examples:
+            - +7 999 123-45-67
+        comment:
+          type: [string, 'null']
+          maxLength: 1000
+          description: Optional; trimmed, Unicode NFC; blank becomes null.
+          examples:
+            - Не охлаждает витрина
+            - null
+        sourcePath:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          pattern: '^/(?!/)(?!.*(?:^|/)\.\.(?:/|$))[^?#\\\u0000-\u001F]*$'
+          description: >-
+            Local absolute path only. Scheme, authority, query, fragment,
+            backslash, control characters, and parent traversal are forbidden.
+          examples:
+            - /remont-torgovogo-holodilnogo-oborudovaniya/
+        intent:
+          type: string
+          enum: [repair, maintenance]
+        consent:
+          type: boolean
+          const: true
+          description: Explicit consent is required.
+        website:
+          type: [string, 'null']
+          maxLength: 0
+          description: Optional compatibility field; omit it, use null, or submit the empty string.
+          examples:
+            - ''
+            - null
+    HoneypotLeadRequest:
+      type: object
+      additionalProperties: false
+      required: [website]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+          description: Optional known field; if present it must cross the UUID JSON boundary.
+        name:
+          type: string
+        phone:
+          type: string
+        comment:
+          type: [string, 'null']
+        sourcePath:
+          type: string
+        intent:
+          type: string
+          enum: [repair, maintenance]
+        consent:
+          type: boolean
+        website:
+          type: string
+          minLength: 1
+          description: >-
+            Required non-empty honeypot. When present, legitimate fields are optional
+            and Bean Validation/normalization/persistence are skipped after JSON
+            deserialization and unknown-property rejection.
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Stable problem type identifier.
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: integer
+          format: int32
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 300
+          description: Generic PII-free explanation; rejected values are never echoed.
+        instance:
+          type: string
+          format: uri-reference
+          description: Request path only, with no query string or submitted value.
+    LiveHealth:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: UP
+    ReadyHealth:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: UP
+    DownHealth:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: DOWN
+  responses:
+    InvalidRequest:
+      description: Malformed JSON, unknown property, or failed field validation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: urn:andrew:problem:invalid-request
+            title: Invalid request
+            status: 400
+            detail: One or more request fields are invalid.
+            instance: /api/leads
+    IdempotencyConflict:
+      description: The retained request ID is already associated with another payload.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: urn:andrew:problem:idempotency-conflict
+            title: Idempotency conflict
+            status: 409
+            detail: The request identifier cannot be reused for this payload.
+            instance: /api/leads
+    PayloadTooLarge:
+      description: The request body exceeds 16 KiB.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: urn:andrew:problem:payload-too-large
+            title: Payload too large
+            status: 413
+            detail: The request body exceeds the allowed size.
+            instance: /api/leads
+    UnsupportedMediaType:
+      description: The request Content-Type is absent or is not application/json.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: urn:andrew:problem:unsupported-media-type
+            title: Unsupported media type
+            status: 415
+            detail: This endpoint accepts application/json only.
+            instance: /api/leads
+    RateLimitExceeded:
+      description: The rolling global window is full or the connection-address token bucket has no token available.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: urn:andrew:problem:rate-limit-exceeded
+            title: Too many requests
+            status: 429
+            detail: Wait before submitting another request.
+            instance: /api/leads
+    ServiceUnavailable:
+      description: Durable acceptance cannot be completed because PostgreSQL is unavailable.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: urn:andrew:problem:service-unavailable
+            title: Service unavailable
+            status: 503
+            detail: The request cannot be accepted durably at this time.
+            instance: /api/leads
