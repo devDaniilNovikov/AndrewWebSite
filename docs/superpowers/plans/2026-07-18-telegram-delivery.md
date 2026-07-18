@@ -748,7 +748,7 @@ output contains neither lead field. These assertions are mandatory companions
 to the executable unit/concurrency/metrics code above and may not be replaced by
 unasserted mock calls.
 
-Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest test`
+Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest,TelegramMetricsTest test`
 
 Expected: FAIL because worker types do not exist.
 
@@ -897,7 +897,7 @@ public final class TelegramWorker {
 
 Record counters through a `TelegramMetrics` wrapper with meter `andrew.telegram.delivery`, tag `outcome=delivered|retry|blocked`, and bounded `reason=success|network|telegram_429|telegram_4xx|telegram_5xx|lease_expired|privacy_expired`. Queue depth uses only the five state values. Do not tag path, request ID, raw status text, exception, or message.
 
-Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest test`
+Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest,TelegramMetricsTest test`
 
 Expected: PASS for all state, ordering, concurrency, transaction-boundary, retry, recovery, privacy, and telemetry assertions.
 
