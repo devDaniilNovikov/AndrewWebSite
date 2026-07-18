@@ -24,7 +24,7 @@
 - Retention runs hourly; its successful full-pass heartbeat is stale after two hours and alerts but does not change readiness.
 - OTLP is introduced only in `task-backend-observability`; no self-hosted Prometheus/Grafana and no public `/actuator/metrics` or `/actuator/prometheus`.
 - Logs/problems/metrics never include name, phone, comment, request/canonical body, source path tag, request ID tag, fingerprint, Telegram content/credentials, database URL/credentials, OTLP authorization, environment dump, SQL parameters, or unbounded exception text.
-- No stacked PRs; strict RED → GREEN → REFACTOR; each product task starts after the predecessor merges and ends in one reviewable PR that is never auto-merged.
+- Follow the [canonical Git Flow](../../../.agents/workflows/GIT_FLOW.md): each approved product task waits for its prerequisite on `main`, then uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch from the latest `origin/main`, followed by one Draft PR; direct pushes to `main`, stacked PRs, reused worktrees, non-squash merges, and auto-merge are forbidden. Mark Ready only after required CI is green and Codex review is complete; squash-merge only after explicit user authorization; then confirm `main`, close the issue, allow automatic remote-branch deletion, remove only a worktree with no tracked or untracked work to preserve, and run `git fetch --prune`. Preserve strict RED → GREEN → REFACTOR.
 - Every AI-authored commit adds the executing agent's own `Co-Authored-By` attribution footer and never attributes a human identity.
 
 ---

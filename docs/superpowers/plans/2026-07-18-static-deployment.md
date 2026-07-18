@@ -24,7 +24,7 @@
 - Final smoke coverage includes home, an exported nested page, a hashed asset, real 404, `POST /api/leads`, liveness, and readiness.
 - Production image is non-root, health-checks liveness, embeds no secrets, and does not mutate Timeweb or any production resource.
 - PostgreSQL backup retention and Telegram auto-delete are each verified at no more than 30 days before release; proxy trust and OTLP gates remain in force.
-- No stacked PRs; this product task starts only after all backend predecessors and the frontend prerequisite merge, follows strict RED → GREEN → REFACTOR, produces one reviewable PR, and is never auto-merged.
+- Follow the [canonical Git Flow](../../../.agents/workflows/GIT_FLOW.md): after all backend and frontend prerequisites reach `main`, this approved product task uses one dedicated external worktree and one lowercase `task-*` branch from the latest `origin/main`, followed by one Draft PR; direct pushes to `main`, stacked PRs, reused worktrees, non-squash merges, and auto-merge are forbidden. Mark Ready only after required CI is green and Codex review is complete; squash-merge only after explicit user authorization; then confirm `main`, close the issue, allow automatic remote-branch deletion, remove only a worktree with no tracked or untracked work to preserve, and run `git fetch --prune`. Preserve strict RED → GREEN → REFACTOR.
 - Every AI-authored commit adds the executing agent's own `Co-Authored-By` attribution footer and never attributes a human identity.
 
 ---
@@ -47,7 +47,7 @@
 
 - [ ] **Step 1: Gate execution on the merged prerequisite without changing frontend ownership**
 
-From a fresh branch based on `origin/main`, verify all backend task PRs are merged and inspect the merged frontend manifest. Require `next` exactly `16.2.9`, React `19.2.x`, strict TypeScript, Tailwind CSS 4, Motion, `output: 'export'`, output `out/`, a package-manager declaration with exactly one matching lockfile, a static-safe build script, and passing frontend tests. Stop and return to the frontend owner if any fact is absent or contradictory; do not choose a package manager or output convention on their behalf.
+From the dedicated `task-static-jar-integration` worktree and branch created from the latest `origin/main`, verify all backend task PRs and the frontend prerequisite are merged, then inspect the merged frontend manifest. Require `next` exactly `16.2.9`, React `19.2.x`, strict TypeScript, Tailwind CSS 4, Motion, `output: 'export'`, output `out/`, a package-manager declaration with exactly one matching lockfile, a static-safe build script, and passing frontend tests. Stop and return to the frontend owner if any fact is absent or contradictory; do not choose a package manager or output convention on their behalf.
 
 - [ ] **Step 2: RED — write the JAR-content integration test before build integration**
 

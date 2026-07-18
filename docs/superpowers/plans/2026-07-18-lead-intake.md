@@ -23,7 +23,7 @@
 - Liveness remains dependency-free; final readiness is PostgreSQL plus worker heartbeat with no detail; Micrometer tags are bounded/PII-free and OTLP begins only in `task-backend-observability`.
 - No login, sessions, form login, HTTP Basic, credentialed cross-origin state, public raw metrics, environment, configuration, shutdown, heap, or arbitrary actuator endpoints.
 - PII never appears in logs, metric tags, errors, fixtures beyond clearly fictional examples, HMAC diagnostics, or outbox payload copies.
-- No stacked PRs; run strict RED → GREEN → REFACTOR; one product task and one reviewable PR at a time; never merge automatically.
+- Follow the [canonical Git Flow](../../../.agents/workflows/GIT_FLOW.md): each approved product task uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch from the latest `origin/main`, then one Draft PR; direct pushes to `main`, stacked PRs, reused worktrees, non-squash merges, and auto-merge are forbidden. Mark Ready only after required CI is green and Codex review is complete; squash-merge only after explicit user authorization; then confirm `main`, close the issue, allow automatic remote-branch deletion, remove only a worktree with no tracked or untracked work to preserve, and run `git fetch --prune`. Preserve strict RED → GREEN → REFACTOR.
 - Every AI-authored commit adds the executing agent's own `Co-Authored-By` attribution footer and never attributes a human identity.
 
 ---

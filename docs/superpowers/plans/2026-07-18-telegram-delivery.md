@@ -24,7 +24,7 @@
 - PII hard limit is 30 days; fingerprint/name/phone/comment clear at 29 days; technical rows delete after 12 months; PostgreSQL backup and Telegram auto-delete are each at most 30 days.
 - Liveness is dependency-free; readiness is PostgreSQL plus a full-batch worker success within 45 seconds with no detail; reload/send/state-write exceptions and false lease-token updates never advance the heartbeat; OTLP is deferred to `task-backend-observability`.
 - Micrometer tags are bounded enums/status classes only; never name, phone, comment, source path, request ID, Telegram body, exception message, token, or chat ID.
-- No stacked PRs; each task starts after the prior PR merges, follows strict RED → GREEN → REFACTOR, produces one reviewable PR, and is never auto-merged.
+- Follow the [canonical Git Flow](../../../.agents/workflows/GIT_FLOW.md): each approved product task waits for its prerequisite on `main`, then uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch from the latest `origin/main`, followed by one Draft PR; direct pushes to `main`, stacked PRs, reused worktrees, non-squash merges, and auto-merge are forbidden. Mark Ready only after required CI is green and Codex review is complete; squash-merge only after explicit user authorization; then confirm `main`, close the issue, allow automatic remote-branch deletion, remove only a worktree with no tracked or untracked work to preserve, and run `git fetch --prune`. Preserve strict RED → GREEN → REFACTOR.
 - Every AI-authored commit adds the executing agent's own `Co-Authored-By` attribution footer and never attributes a human identity.
 
 ---

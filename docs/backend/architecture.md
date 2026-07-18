@@ -197,11 +197,11 @@ No PII, raw URL, exception message, dynamic status text, or request ID is a metr
 
 Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. The final container contains Java 25 runtime plus that JAR, runs as a non-root numeric user, exposes no Node runtime, and health-checks liveness.
 
-Production gates are: PostgreSQL 17 in the same Moscow region/VPC; secret-store bindings and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and explicit user-authorized PR merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
+Production gates are: PostgreSQL 17 in the same Moscow region/VPC; secret-store bindings and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and an explicitly user-authorized squash merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
 
 ## Ordered product-task dependency chain
 
-There are no stacked PRs. Each task begins from fresh `origin/main` only after its predecessor has merged:
+The [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md) governs every product task: `main` is the only long-lived branch; one approved task uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch created from the latest `origin/main`; direct pushes to `main`, stacked PRs, reused worktrees, and auto-merge are forbidden. The PR opens as Draft, becomes Ready only after required CI is green and Codex review is complete, and squash-merges only after explicit user authorization. After merge, confirm `main` and the linked issue, allow automatic remote-branch deletion, remove the local worktree only after checking that it has no tracked or untracked work to preserve, and run `git fetch --prune`. The next task waits for its predecessor to reach `main`:
 
 ```text
 task-backend-contract-plans
@@ -238,7 +238,7 @@ The skeleton merge triggers only the normal `push` CI path. It does not assign J
 | dependency-free liveness, database/worker readiness, redacted logs, safe metrics, OTLP only here, no raw metrics | `task-backend-observability` | privacy observability Task 2 |
 | merged frontend prerequisite, Node 24 static export, JAR embedding, `/api/**` preservation, true 404, cache rules, one Java image, final smoke matrix | `task-static-jar-integration` | `2026-07-18-static-deployment.md` Tasks 1–2 |
 | PostgreSQL backup and Telegram auto-delete production gates; safe configuration, recovery, deploy and rollback | all operational tasks | `operations.md` and verification steps in all five plans |
-| no stacked PRs and explicit user-authorized merges | every product task | Global Constraints in all five plans |
+| canonical task/fix worktree, Draft-to-Ready review, green CI/Codex gates, user-authorized squash merge, and safe cleanup | every product task | [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md) and Global Constraints in all five plans |
 
 ## Primary implementation references
 

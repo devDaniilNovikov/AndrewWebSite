@@ -21,7 +21,7 @@
 - Actuator/Micrometer are present from foundation; OTLP is not configured until `task-backend-observability`.
 - JaCoCo line coverage must be at least 80%; all third-party GitHub Actions are pinned to full commit SHAs and use least privilege.
 - No secrets, lead PII, credentials, private keys, request bodies, or realistic token-shaped fixtures in source, logs, tests, images, Issues, or workflow output.
-- No stacked PRs. Each product task starts from fresh `origin/main` after its predecessor is merged, creates one reviewable PR, and is never automatically merged.
+- Follow the [canonical Git Flow](../../../.agents/workflows/GIT_FLOW.md): each approved product task uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch from the latest `origin/main`, then one Draft PR; direct pushes to `main`, stacked PRs, reused worktrees, non-squash merges, and auto-merge are forbidden. Mark Ready only after required CI is green and Codex review is complete; squash-merge only after explicit user authorization; then confirm `main`, close the issue, allow automatic remote-branch deletion, remove only a worktree with no tracked or untracked work to preserve, and run `git fetch --prune`.
 - Every AI-authored commit adds the executing agent's own `Co-Authored-By` attribution footer and never attributes a human identity.
 
 ---
@@ -387,7 +387,7 @@ git commit -m "feat(backend-skeleton): add Spring Boot foundation"
 
 - [ ] **Step 1: Start Jules only through the approved Issue boundary**
 
-Confirm `task-backend-skeleton` is merged. `JULES_ALLOWED_ACTOR` creates a new sanitized Issue containing only this task's verified requirements, then the same account applies exactly one label: `jules-action`. Do not apply `jules`. Do not label an Issue authored by another account. A successful skeleton merge does not create this task; `jules-ci-failure.yml` is only for eligible failed trusted pushes, and `pr-event-relay.yml` does not dispatch Jules.
+Confirm `task-backend-skeleton` is merged. `JULES_ALLOWED_ACTOR` creates a new sanitized Issue containing only this task's verified requirements, then the same account applies exactly one label: `jules-action`. Do not apply `jules`. Do not label an Issue authored by another account. A successful skeleton merge does not create this task; `jules-ci-failure.yml` is only for eligible failed trusted pushes, and `pr-event-relay.yml` does not dispatch Jules. Jules performs the accepted task only in a dedicated external worktree on `task-ci-backend-gates` created from the latest `origin/main`.
 
 - [ ] **Step 2: RED — add a CI contract assertion before the workflow**
 
@@ -407,8 +407,9 @@ Before writing YAML, resolve the current immutable commits with `gh api repos/ac
 name: CI
 on:
   push:
-    branches: [main, 'task-*', 'fix-*', 'codex/**']
+    branches: [main, 'task-*', 'fix-*']
   pull_request:
+    branches: [main]
 permissions:
   contents: read
 jobs:
@@ -472,16 +473,16 @@ git grep -nE 'uses: [^ ]+@v[0-9]'
 ./mvnw -B verify
 ```
 
-Expected: `actionlint` and Maven exit 0; the mutable-action grep has no matches and exits 1. Push only the task branch, wait for all three applicable jobs, and confirm no workflow can merge a PR or write repository contents.
+Expected: `actionlint` and Maven exit 0; the mutable-action grep has no matches and exits 1. Confirm the workflow accepts only `main`, `task-*`, and `fix-*`, cannot merge a PR, and cannot write repository contents.
 
-- [ ] **Step 5: Commit and stop at a reviewable PR**
+- [ ] **Step 5: Commit and complete the canonical Draft-review boundary**
 
 ```bash
 git add .github/workflows/ci.yml pom.xml
 git commit -m "ci(backend-gates): enforce Java verification and security"
 ```
 
-Jules creates a reviewable PR. It must not merge it.
+Jules pushes only `task-ci-backend-gates` and opens a Draft PR whose Conventional Commit title, body, issue link, checks actually run, risks, and ownership match the canonical Git Flow. Mark it Ready only after required CI is green and Codex review is complete. Jules must never merge it and auto-merge remains disabled. After the user explicitly authorizes the squash merge, confirm the result on `main`, close the linked Issue, allow the remote branch to auto-delete, verify the dedicated worktree has no tracked or untracked work to preserve before removing it, and run `git fetch --prune`.
 
 ### Task 3: `task-backend-deploy-stub` — non-root Java image
 

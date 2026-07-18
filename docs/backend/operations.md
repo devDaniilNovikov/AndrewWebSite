@@ -163,7 +163,7 @@ Forbidden diagnostics include raw request/response bodies, rejected values, name
 
 ## Deployment and rollback boundary
 
-Every product task produces one reviewable PR from fresh `origin/main`; no stacked PRs and no automatic merges. CI, review, and explicit user merge approval precede the next task. Production mutation is never part of a documentation or deploy-stub task.
+Every product task follows the [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md): fetch the latest `origin/main`, create one dedicated external worktree on one lowercase `task-*` or `fix-*` branch, and open one Draft PR. `main` is the only long-lived branch; direct pushes to it, stacked PRs, branch/worktree reuse, non-squash merges, and auto-merge are forbidden. Mark the PR Ready only after required CI is green and Codex review is complete. Merge only with explicit user authorization and only by squash using the Conventional Commit PR title. After merge, confirm `main`, close the linked issue, allow automatic remote-branch deletion, verify the local worktree has no tracked or untracked work to preserve before removing it, and run `git fetch --prune`. Production mutation is never part of a documentation or deploy-stub task.
 
 A deploy is immutable: build from a reviewed commit, verify the JAR/container, apply compatible Flyway migrations, start a non-root Java 25 container, wait for readiness, and run smoke tests. The final image contains no Node runtime or build secret.
 
