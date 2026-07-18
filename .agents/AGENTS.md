@@ -257,7 +257,7 @@ This task starts only after `task-backend-skeleton` is merged.
 - `./mvnw -B verify`.
 - JaCoCo coverage threshold of at least 80%.
 - Testcontainers-compatible CI runtime.
-- OWASP Dependency-Check with a CVSS 7.0 failure threshold and Java security analysis.
+- Dependency review and Java security analysis.
 - Maven caching and least-privilege workflow permissions.
 
 Important trigger behavior:

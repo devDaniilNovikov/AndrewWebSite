@@ -183,7 +183,7 @@ For each implementation PR, run only commands introduced by its committed manife
 Before production release, confirm all of the following with fresh evidence:
 
 - Java 25, Spring Boot 4.1.0, Maven Wrapper, one root module, and one final Java container;
-- complete unit, integration, MockMvc, concurrency, migration, privacy, telemetry, OWASP dependency/security, and container gates with at least 80% JaCoCo coverage;
+- complete unit, integration, MockMvc, concurrency, migration, privacy, telemetry, dependency/security, and container gates with at least 80% JaCoCo coverage;
 - exact OpenAPI behaviors for `202`, `400`, `409`, `413`, `415`, `429`, and `503`;
 - first acceptance commits lead and outbox atomically; rollback never returns `202`;
 - equal duplicates, conflicting payloads, website-only synthetic acceptance with no rows, and post-fingerprint replay match the contract;

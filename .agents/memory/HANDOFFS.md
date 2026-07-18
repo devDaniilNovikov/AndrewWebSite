@@ -7,7 +7,7 @@ status.
 
 ## Current
 
-[`2026-07-18-110204-ci-backend-gates-ready-handoff.md`](../../docs/handoffs/2026-07-18-110204-ci-backend-gates-ready-handoff.md)
+[`2026-07-18-062911-ci-backend-gates-dispatch-handoff.md`](../../docs/handoffs/2026-07-18-062911-ci-backend-gates-dispatch-handoff.md)
 is the current handoff.
 
 ## Chronology
@@ -21,8 +21,7 @@ is the current handoff.
 | 5 | [`2026-07-18-104909-task-agents-memory-handoff.md`](../../docs/handoffs/2026-07-18-104909-task-agents-memory-handoff.md) | Historical | [`2026-07-18-101804-branch-retention-handoff.md`](../../docs/handoffs/2026-07-18-101804-branch-retention-handoff.md) |
 | 6 | [`2026-07-18-131142-backend-skeleton-review-draft-handoff.md`](../../docs/handoffs/2026-07-18-131142-backend-skeleton-review-draft-handoff.md) | Historical | [`2026-07-18-104909-task-agents-memory-handoff.md`](../../docs/handoffs/2026-07-18-104909-task-agents-memory-handoff.md) |
 | 7 | [`2026-07-18-131926-backend-skeleton-review-ready-handoff.md`](../../docs/handoffs/2026-07-18-131926-backend-skeleton-review-ready-handoff.md) | Historical | [`2026-07-18-131142-backend-skeleton-review-draft-handoff.md`](../../docs/handoffs/2026-07-18-131142-backend-skeleton-review-draft-handoff.md) |
-| 8 | [`2026-07-18-062911-ci-backend-gates-dispatch-handoff.md`](../../docs/handoffs/2026-07-18-062911-ci-backend-gates-dispatch-handoff.md) | Historical | [`2026-07-18-131926-backend-skeleton-review-ready-handoff.md`](../../docs/handoffs/2026-07-18-131926-backend-skeleton-review-ready-handoff.md) |
-| 9 | [`2026-07-18-110204-ci-backend-gates-ready-handoff.md`](../../docs/handoffs/2026-07-18-110204-ci-backend-gates-ready-handoff.md) | Current | [`2026-07-18-062911-ci-backend-gates-dispatch-handoff.md`](../../docs/handoffs/2026-07-18-062911-ci-backend-gates-dispatch-handoff.md) |
+| 8 | [`2026-07-18-062911-ci-backend-gates-dispatch-handoff.md`](../../docs/handoffs/2026-07-18-062911-ci-backend-gates-dispatch-handoff.md) | Current | [`2026-07-18-131926-backend-skeleton-review-ready-handoff.md`](../../docs/handoffs/2026-07-18-131926-backend-skeleton-review-ready-handoff.md) |
 
 Historical handoffs are immutable. The current handoff may receive focused
 corrections only until a successor links to it; the successor makes it
