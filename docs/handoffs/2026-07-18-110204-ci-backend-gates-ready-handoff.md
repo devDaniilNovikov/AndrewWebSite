@@ -18,6 +18,8 @@
 - Local dependency tree resolved `tomcat-embed-core:11.0.24` and `log4j-api:2.25.5`.
 - Local actionlint, effective-POM validation, diff check, immutable-action scan, credential-pattern scan, permissions review, specification review, and full quality/security review passed with no actionable finding.
 - PR head `c4d6240e2755839c731e23ce062cbdcf85447e54` was mergeable and green for Repository policy, verify, OWASP `dependency-security`, Java CodeQL, Semgrep, and Snyk. Expected event-condition skips were not failures.
+- Jules later pushed `05f65d2`, which restored the unsupported non-blocking Dependency Review job and removed the agreed OWASP configuration. Codex restored the reviewed tree in `6bde363`; fresh Repository policy, verify, OWASP `dependency-security`, Java CodeQL, Semgrep, and Snyk checks all passed on that head.
+- Branch protection was reconciled in the same task: the obsolete required context `Application checks (pending scaffold)` was replaced by `verify`, and OWASP `dependency-security` was added as a required gate alongside `Repository policy`. Strict up-to-date checks remain enabled.
 
 ## Boundary
 
