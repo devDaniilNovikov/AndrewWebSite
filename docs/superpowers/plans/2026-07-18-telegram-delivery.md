@@ -13,7 +13,7 @@
 - One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 17. Frontend remains `frontend/` with Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only at build time.
 - Public surface remains static content, JSON-only 16 KiB `POST /api/leads`, dependency-free liveness, and minimal readiness; no login/session/form login/HTTP Basic or sensitive/raw actuator endpoint.
 - Lead validation remains name 2–100, phone input 32 and normalized digits 7–15, optional comment 1000, local source path, intents exactly `repair|maintenance`, consent true, empty indistinguishable `202`, RFC 9457 errors, and HMAC key only from `LEAD_FINGERPRINT_HMAC_KEY`.
-- Bounded limits remain global 60/minute and per-connection burst 5/refill 1 per minute; forwarded headers remain untrusted until Timeweb CIDRs are verified.
+- Bounded limits remain a rolling global maximum of 60 admissions in every `(t - 60 seconds, t]` interval and a separate per-connection burst 5/refill 1 token per minute; forwarded headers remain untrusted until Timeweb CIDRs are verified.
 - Telegram bot token and chat ID bind only from `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`; production fails fast when either is absent; production values never appear in source, URLs in logs, health, metrics, fixtures, or errors, and test values are visibly fictional.
 - The message contains name, normalized phone, optional comment, source path, exact `repair|maintenance` intent, UTC creation time, and `requestId`; the outbox stores none of that duplicate PII and references `leads` only.
 - Exact states are `pending`, `processing`, `retry`, `blocked`, `delivered`; poll 15 seconds; claim maximum 10; lease two minutes; deterministic order `next_attempt_at, id`; `FOR UPDATE SKIP LOCKED` is queue coordination, not exactly-once delivery.
@@ -63,16 +63,25 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 import org.springframework.test.web.client.MockRestServiceServer;
 
+@ExtendWith(OutputCaptureExtension.class)
 class TelegramRestClientGatewayTest {
     private RestClient.Builder builder;
     private MockRestServiceServer server;
@@ -115,7 +124,76 @@ class TelegramRestClientGatewayTest {
 }
 ```
 
-Add separate cases for 200, 400, 401, 403, another 4xx, 500, 503, timeout/IO, 429 without parameters, negative/zero/over-six-hour `retry_after`, malformed JSON, and captured-log absence of token/chat/message fields.
+Add these executable methods to the same class. Together with `networkFailureIsRetryableWithoutLeakingExceptionText`, they cover 200, 400, 401, 403, another 4xx, 500, 503, timeout/IO, every required 429 edge, malformed JSON, and captured-log redaction:
+
+```java
+@ParameterizedTest
+@MethodSource("statusClassifications")
+void classifiesEveryHttpStatus(HttpStatus status, TelegramDeliveryResult expected) {
+    server.expect(once(), requestTo("https://api.telegram.org/bottest-only-bot-token/sendMessage"))
+            .andRespond(withStatus(status).contentType(MediaType.APPLICATION_JSON).body("{}"));
+    assertThat(gateway.send(message())).isEqualTo(expected);
+    server.verify();
+}
+
+static Stream<Arguments> statusClassifications() {
+    return Stream.of(
+            Arguments.of(HttpStatus.OK, new TelegramDeliveryResult.Delivered()),
+            Arguments.of(HttpStatus.BAD_REQUEST,
+                    new TelegramDeliveryResult.PermanentFailure("telegram_400")),
+            Arguments.of(HttpStatus.UNAUTHORIZED,
+                    new TelegramDeliveryResult.PermanentFailure("telegram_401")),
+            Arguments.of(HttpStatus.FORBIDDEN,
+                    new TelegramDeliveryResult.PermanentFailure("telegram_403")),
+            Arguments.of(HttpStatus.NOT_FOUND,
+                    new TelegramDeliveryResult.PermanentFailure("telegram_404")),
+            Arguments.of(HttpStatus.INTERNAL_SERVER_ERROR,
+                    new TelegramDeliveryResult.Retryable("telegram_5xx", null)),
+            Arguments.of(HttpStatus.SERVICE_UNAVAILABLE,
+                    new TelegramDeliveryResult.Retryable("telegram_5xx", null)));
+}
+
+@ParameterizedTest
+@MethodSource("retryAfterBodies")
+void rejectsInvalidRetryAfterAndCapsLargeValues(String body, Duration expected) {
+    server.expect(once(), requestTo("https://api.telegram.org/bottest-only-bot-token/sendMessage"))
+            .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
+                    .contentType(MediaType.APPLICATION_JSON).body(body));
+    assertThat(gateway.send(message())).isEqualTo(
+            new TelegramDeliveryResult.Retryable("telegram_429", expected));
+    server.verify();
+}
+
+static Stream<Arguments> retryAfterBodies() {
+    return Stream.of(
+            Arguments.of("{\"ok\":false}", null),
+            Arguments.of("{\"parameters\":{\"retry_after\":-1}}", null),
+            Arguments.of("{\"parameters\":{\"retry_after\":0}}", null),
+            Arguments.of("{\"parameters\":{\"retry_after\":21601}}", Duration.ofHours(6)),
+            Arguments.of("not-json", null));
+}
+
+@Test
+void timeoutIsRetryable() {
+    server.expect(once(), requestTo("https://api.telegram.org/bottest-only-bot-token/sendMessage"))
+            .andRespond(withException(new SocketTimeoutException("fictional-timeout")));
+    assertThat(gateway.send(message()))
+            .isEqualTo(new TelegramDeliveryResult.Retryable("network", null));
+}
+
+@Test
+void capturedLogsContainNoSecretOrMessageValues(CapturedOutput output) {
+    server.expect(once(), requestTo("https://api.telegram.org/bottest-only-bot-token/sendMessage"))
+            .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+    gateway.send(message());
+    assertThat(output.getAll()).doesNotContain(
+            "test-only-bot-token", "test-only-chat", "Иван", "79991234567",
+            "Не охлаждает витрина", "/service/", "repair",
+            "11111111-1111-4111-8111-111111111111", "2026-01-01T00:00:00Z",
+            "botToken", "chatId", "text");
+    server.verify();
+}
+```
 
 Run: `./mvnw -B -Dtest=TelegramRestClientGatewayTest,TelegramMessageFormatterTest test`
 

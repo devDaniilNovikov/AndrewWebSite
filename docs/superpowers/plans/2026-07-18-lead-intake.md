@@ -17,7 +17,7 @@
 - Exact fields: `requestId`, `name`, `phone`, optional `comment`, `sourcePath`, `intent`, `consent`, optional `website`; intents are exactly `repair` and `maintenance`.
 - Name trims/NFC to 2–100 characters; phone input is at most 32 characters and normalizes to 7–15 digits; comment is at most 1000; source path is local-only and at most 2048; consent is exactly true.
 - Production HMAC comes only from `LEAD_FINGERPRINT_HMAC_KEY`, has at least 32 UTF-8 bytes, and has no default; only `test` may use fixed `test-only-key-material-not-for-production-0001`.
-- Global rate capacity is 60/refill 1 per second; per-connection capacity is 5/refill 1 per minute; client bucket map is bounded at 10,000 entries with one-hour idle eviction. Ignore forwarded headers until trusted Timeweb CIDRs are verified.
+- The global limiter admits at most 60 requests in every rolling half-open `(t - 60 seconds, t]` interval; the separate per-connection token bucket has capacity 5/refill 1 token per minute; the client bucket map is bounded at 10,000 entries with one-hour idle eviction. Ignore forwarded headers until trusted Timeweb CIDRs are verified.
 - Outbox states remain exactly `pending|processing|retry|blocked|delivered`; the later worker polls 15 seconds, claims 10 with a two-minute lease and deterministic `FOR UPDATE SKIP LOCKED`, sends HTTP after claim commit, and retries 30 seconds through six hours while honoring Telegram `retry_after` seconds.
 - PII hard limit remains 30 days; anonymize at 29 days, remove fingerprint, block undelivered work as `privacy_expired`, delete technical rows after 12 months, and require database backup/Telegram auto-delete of at most 30 days.
 - Liveness remains dependency-free; final readiness is PostgreSQL plus worker heartbeat with no detail; Micrometer tags are bounded/PII-free and OTLP begins only in `task-backend-observability`.
@@ -39,6 +39,7 @@
 - Create: `src/main/java/ru/andrew/website/web/RequestBodyLimitFilter.java`
 - Create: `src/main/java/ru/andrew/website/web/RateLimitFilter.java`
 - Create: `src/main/java/ru/andrew/website/web/ClientRateLimiter.java`
+- Create: `src/main/java/ru/andrew/website/web/SlidingWindowRateLimiter.java`
 - Create: `src/main/java/ru/andrew/website/web/TokenBucket.java`
 - Create: `src/main/java/ru/andrew/website/web/RateDecision.java`
 - Create: `src/main/java/ru/andrew/website/web/WebProperties.java`
@@ -149,6 +150,25 @@ class ClientRateLimiterTest {
         RateDecision rejected = limiter.tryAcquire("192.0.2.10");
         assertThat(rejected.allowed()).isFalse();
         assertThat(rejected.retryAfter()).isEqualTo(Duration.ofMinutes(1));
+        clock.advance(Duration.ofMinutes(1));
+        assertThat(limiter.tryAcquire("192.0.2.10").allowed()).isTrue();
+    }
+
+    @Test
+    void globalWindowNeverAdmitsSixtyFirstRequestWithinRollingMinute() {
+        MutableClock clock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
+        ClientRateLimiter limiter = ClientRateLimiter.defaults(clock);
+        for (int index = 0; index < 60; index++) {
+            assertThat(limiter.tryAcquire("192.0.2." + index).allowed()).isTrue();
+        }
+
+        clock.advance(Duration.ofSeconds(59));
+        RateDecision rejected = limiter.tryAcquire("198.51.100.1");
+        assertThat(rejected.allowed()).isFalse();
+        assertThat(rejected.retryAfter()).isEqualTo(Duration.ofSeconds(1));
+
+        clock.advance(Duration.ofSeconds(1));
+        assertThat(limiter.tryAcquire("198.51.100.2").allowed()).isTrue();
     }
 }
 ```
@@ -184,7 +204,7 @@ Run: `./mvnw -B -Dtest=SecurityContractTest,ClientRateLimiterTest test`
 
 Expected: FAIL because security/filter/limiter types and behavior do not exist.
 
-- [ ] **Step 2: GREEN — implement the stateless allowlist and bounded token buckets**
+- [ ] **Step 2: GREEN — implement the stateless allowlist and two distinct bounded limiters**
 
 Implement immutable public interfaces:
 
@@ -211,15 +231,15 @@ public record WebProperties(
             boolean enabled,
             @Min(10_000) @Max(10_000) int maxClients,
             @NotNull Duration clientIdleTtl,
-            @Min(60) @Max(60) int globalCapacity,
-            @NotNull Duration globalRefill,
+            @Min(60) @Max(60) int globalLimit,
+            @NotNull Duration globalWindow,
             @Min(5) @Max(5) int clientCapacity,
             @NotNull Duration clientRefill) {
     }
 }
 ```
 
-Bind exact common values `max-request-bytes: 16384`, `max-clients: 10000`, `client-idle-ttl: 1h`, `global-capacity: 60`, `global-refill: 1s`, `client-capacity: 5`, and `client-refill: 1m`. Production has no `local-cors-origins`; only the local profile may bind explicit loopback origins.
+Bind exact common values `max-request-bytes: 16384`, `max-clients: 10000`, `client-idle-ttl: 1h`, `global-limit: 60`, `global-window: 1m`, `client-capacity: 5`, and `client-refill: 1m`. Production has no `local-cors-origins`; only the local profile may bind explicit loopback origins. `global-window` is a rolling window and must never be interpreted as a token-refill period.
 
 ```java
 package ru.andrew.website.web;
@@ -242,6 +262,66 @@ package ru.andrew.website.web;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayDeque;
+
+public final class SlidingWindowRateLimiter {
+    private final int limit;
+    private final long windowMillis;
+    private final Clock clock;
+    private final ArrayDeque<Long> admittedAt = new ArrayDeque<>();
+    private long lastObservedMillis;
+
+    SlidingWindowRateLimiter(int limit, Duration window, Clock clock) {
+        if (limit < 1 || window.isZero() || window.isNegative() || window.toMillis() < 1) {
+            throw new IllegalArgumentException("limit and window must be positive");
+        }
+        this.limit = limit;
+        this.windowMillis = window.toMillis();
+        this.clock = clock;
+        this.lastObservedMillis = clock.millis();
+    }
+
+    synchronized boolean tryAcquire() {
+        long now = monotonicNow();
+        evictExpired(now);
+        if (admittedAt.size() >= limit) {
+            return false;
+        }
+        admittedAt.addLast(now);
+        return true;
+    }
+
+    synchronized Duration retryAfter() {
+        long now = monotonicNow();
+        evictExpired(now);
+        if (admittedAt.size() < limit) {
+            return Duration.ZERO;
+        }
+        return Duration.ofMillis(Math.max(1_000L,
+                admittedAt.getFirst() + windowMillis - now));
+    }
+
+    private long monotonicNow() {
+        lastObservedMillis = Math.max(lastObservedMillis, clock.millis());
+        return lastObservedMillis;
+    }
+
+    private void evictExpired(long now) {
+        long cutoffInclusive = now - windowMillis;
+        while (!admittedAt.isEmpty() && admittedAt.getFirst() <= cutoffInclusive) {
+            admittedAt.removeFirst();
+        }
+    }
+}
+```
+
+The deque represents the precise half-open rolling interval `(t - globalWindow, t]`. It can never contain more than `globalLimit` timestamps, entries at exactly `t - globalWindow` expire before the decision, and a wall clock moving backward cannot reopen capacity. This differs intentionally from the per-connection token bucket below.
+
+```java
+package ru.andrew.website.web;
+
+import java.time.Clock;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -249,16 +329,17 @@ public final class ClientRateLimiter {
     private static final int MAX_CLIENTS = 10_000;
     private static final Duration IDLE_TTL = Duration.ofHours(1);
     private final Clock clock;
-    private final TokenBucket global;
+    private final SlidingWindowRateLimiter global;
     private final Map<String, ClientBucket> clients = new LinkedHashMap<>(128, 0.75f, true);
 
-    ClientRateLimiter(Clock clock, TokenBucket global) {
+    ClientRateLimiter(Clock clock, SlidingWindowRateLimiter global) {
         this.clock = clock;
         this.global = global;
     }
 
     public static ClientRateLimiter defaults(Clock clock) {
-        return new ClientRateLimiter(clock, new TokenBucket(60, Duration.ofSeconds(1), clock));
+        return new ClientRateLimiter(clock,
+                new SlidingWindowRateLimiter(60, Duration.ofMinutes(1), clock));
     }
 
     public synchronized RateDecision tryAcquire(String connectionAddress) {
@@ -284,7 +365,7 @@ public final class ClientRateLimiter {
 }
 ```
 
-`TokenBucket` has exact constructor `TokenBucket(int capacity, Duration refillPeriod, Clock clock)`, synchronized `boolean tryAcquire()`, and synchronized `Duration retryAfter()`. It stores no address, refills monotonically from `Clock.millis()`, caps tokens at capacity, and returns at least one second for rejection.
+`TokenBucket` is used only for connection-address buckets. It has exact constructor `TokenBucket(int capacity, Duration refillPeriod, Clock clock)`, synchronized `boolean tryAcquire()`, and synchronized `Duration retryAfter()`. It stores no address, refills monotonically from `Clock.millis()`, caps tokens at capacity 5, refills one token per minute, and returns at least one second for rejection. The global rolling-window decision runs first; a request rejected by the later client gate may conservatively consume a global admission slot, but no request passing both gates can become a 61st global admission inside any rolling minute.
 
 Create the security chain:
 
@@ -331,7 +412,7 @@ Expected: PASS.
 
 - [ ] **Step 3: REFACTOR and run boundary verification**
 
-Add parameterized tests for `400/413/415/429`, no session cookie, local-only explicit CORS, map eviction at 10,000 entries, global exhaustion, refill, and forged `X-Forwarded-For`. Run:
+Add parameterized tests for `400/413/415/429`, no session cookie, local-only explicit CORS, map eviction at 10,000 entries, rolling-global exhaustion at staggered timestamps, exact expiry at 60 seconds, per-client one-token-per-minute refill, and forged `X-Forwarded-For`. Never use a 60-capacity token bucket in a global-limit test. Run:
 
 ```bash
 ./mvnw -B verify
@@ -507,6 +588,7 @@ git commit -m "feat(db-flyway-baseline): add lead and outbox schema"
 - Create: `src/main/java/ru/andrew/website/leads/IdempotencyConflictException.java`
 - Create: `src/test/java/ru/andrew/website/leads/LeadControllerContractTest.java`
 - Create: `src/test/java/ru/andrew/website/leads/LeadAcceptanceIntegrationTest.java`
+- Create: `src/test/java/ru/andrew/website/leads/LeadUnavailableContractTest.java`
 - Delete: `src/test/java/ru/andrew/website/web/LeadBoundaryStubController.java` after the real controller replaces it
 
 **Interfaces:**
@@ -532,7 +614,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.web.rate-limit.enabled=false")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class LeadControllerContractTest {
@@ -551,9 +633,207 @@ class LeadControllerContractTest {
 }
 ```
 
-Integration tests must assert: first request creates exactly one lead/outbox; same normalized payload returns 202 and counts remain one; changed payload with retained fingerprint returns 409; non-empty honeypot returns the same empty 202 and creates no row; null fingerprint replay with changed payload returns 202 and creates no row; injected failure after lead insert rolls back both rows and returns 503; two concurrent identical requests create one pair; two concurrent conflicting requests yield one 202 and one 409; database unavailable yields generic 503.
+Create the PostgreSQL integration body below. It exercises first/duplicate/conflict/honeypot/retained paths, database-triggered rollback after the lead insert, and both required races without wall-clock sleeps:
 
-Run: `./mvnw -B -Dtest=LeadControllerContractTest,LeadAcceptanceIntegrationTest test`
+```java
+package ru.andrew.website.leads;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import ru.andrew.website.testing.PostgresTestConfiguration;
+
+@SpringBootTest(properties = "app.web.rate-limit.enabled=false")
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Import(PostgresTestConfiguration.class)
+class LeadAcceptanceIntegrationTest {
+    @Autowired MockMvc mvc;
+    @Autowired JdbcClient jdbc;
+
+    @BeforeEach
+    void cleanTables() {
+        dropFailureTrigger();
+        jdbc.sql("delete from telegram_outbox").update();
+        jdbc.sql("delete from leads").update();
+    }
+
+    @AfterEach
+    void removeFailureTrigger() {
+        dropFailureTrigger();
+    }
+
+    @Test
+    void firstAndEquivalentReplayCreateExactlyOnePair() throws Exception {
+        UUID id = UUID.fromString("11111111-1111-4111-8111-111111111111");
+        assertThat(submit(id, "Не охлаждает витрина", "")).isEqualTo(202);
+        assertThat(submit(id, "  Не охлаждает витрина  ", "")).isEqualTo(202);
+        assertCounts(1, 1);
+    }
+
+    @Test
+    void changedReplayConflictsWhileRetainedReplayIsAcceptedWithoutInsert() throws Exception {
+        UUID id = UUID.fromString("22222222-2222-4222-8222-222222222222");
+        assertThat(submit(id, "Первое описание", "")).isEqualTo(202);
+        assertThat(submit(id, "Другое описание", "")).isEqualTo(409);
+        jdbc.sql("update leads set payload_fingerprint=null, name=null, phone=null, comment=null, anonymized_at=now() where request_id=:id")
+                .param("id", id).update();
+        assertThat(submit(id, "Изменено после хранения", "")).isEqualTo(202);
+        assertCounts(1, 1);
+    }
+
+    @Test
+    void honeypotReturnsSameEmptyAcceptanceWithoutRows() throws Exception {
+        UUID id = UUID.fromString("33333333-3333-4333-8333-333333333333");
+        var response = mvc.perform(post("/api/leads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(id, "ignored", "filled-by-bot")))
+                .andReturn().getResponse();
+        assertThat(response.getStatus()).isEqualTo(202);
+        assertThat(response.getContentAsByteArray()).isEmpty();
+        assertCounts(0, 0);
+    }
+
+    @Test
+    void outboxFailureRollsBackLeadAndReturnsGenericUnavailable() throws Exception {
+        jdbc.sql("""
+                create function test_fail_outbox() returns trigger language plpgsql as $$
+                begin raise exception 'test-only forced outbox failure'; end
+                $$
+                """).update();
+        jdbc.sql("create trigger test_fail_outbox before insert on telegram_outbox for each row execute function test_fail_outbox()")
+                .update();
+        UUID id = UUID.fromString("44444444-4444-4444-8444-444444444444");
+        assertThat(submit(id, "Откат транзакции", "")).isEqualTo(503);
+        assertCounts(0, 0);
+    }
+
+    @Test
+    void simultaneousEquivalentRequestsCreateOnePair() throws Exception {
+        UUID id = UUID.fromString("55555555-5555-4555-8555-555555555555");
+        assertThat(concurrently(
+                () -> submit(id, "Одинаково", ""),
+                () -> submit(id, "Одинаково", "")))
+                .containsExactlyInAnyOrder(202, 202);
+        assertCounts(1, 1);
+    }
+
+    @Test
+    void simultaneousDifferentRequestsYieldAcceptedAndConflict() throws Exception {
+        UUID id = UUID.fromString("66666666-6666-4666-8666-666666666666");
+        assertThat(concurrently(
+                () -> submit(id, "Вариант один", ""),
+                () -> submit(id, "Вариант два", "")))
+                .containsExactlyInAnyOrder(202, 409);
+        assertCounts(1, 1);
+    }
+
+    private List<Integer> concurrently(ThrowingRequest first, ThrowingRequest second) throws Exception {
+        CountDownLatch start = new CountDownLatch(1);
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            var firstResult = executor.submit(() -> { start.await(); return first.run(); });
+            var secondResult = executor.submit(() -> { start.await(); return second.run(); });
+            start.countDown();
+            return List.of(firstResult.get(), secondResult.get());
+        }
+    }
+
+    private int submit(UUID id, String comment, String website) throws Exception {
+        return mvc.perform(post("/api/leads").contentType(MediaType.APPLICATION_JSON)
+                        .content(body(id, comment, website)))
+                .andReturn().getResponse().getStatus();
+    }
+
+    private String body(UUID id, String comment, String website) {
+        return """
+                {"requestId":"%s","name":"Иван","phone":"+7 999 123-45-67",
+                 "comment":"%s","sourcePath":"/service/","intent":"repair",
+                 "consent":true,"website":"%s"}
+                """.formatted(id, comment, website);
+    }
+
+    private void assertCounts(int leads, int outbox) {
+        assertThat(jdbc.sql("select count(*) from leads").query(Integer.class).single()).isEqualTo(leads);
+        assertThat(jdbc.sql("select count(*) from telegram_outbox").query(Integer.class).single()).isEqualTo(outbox);
+    }
+
+    private void dropFailureTrigger() {
+        jdbc.sql("drop trigger if exists test_fail_outbox on telegram_outbox").update();
+        jdbc.sql("drop function if exists test_fail_outbox()").update();
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRequest {
+        int run() throws Exception;
+    }
+}
+```
+
+Use a separate context override to make database unavailability deterministic without stopping the shared Testcontainer. The mocked exception text must not appear in the RFC 9457 body:
+
+```java
+package ru.andrew.website.leads;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import ru.andrew.website.testing.PostgresTestConfiguration;
+
+@SpringBootTest(properties = "app.web.rate-limit.enabled=false")
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Import(PostgresTestConfiguration.class)
+class LeadUnavailableContractTest {
+    @Autowired MockMvc mvc;
+    @MockitoBean JdbcClient jdbc;
+
+    @Test
+    void databaseFailureReturnsGenericProblemWithoutCauseText() throws Exception {
+        when(jdbc.sql(anyString())).thenThrow(
+                new DataAccessResourceFailureException("fictional-database-detail"));
+        var response = mvc.perform(post("/api/leads")
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"requestId":"77777777-7777-4777-8777-777777777777","name":"Иван",
+                         "phone":"+7 999 123-45-67","sourcePath":"/service/",
+                         "intent":"repair","consent":true,"website":""}
+                        """))
+                .andReturn().getResponse();
+        assertThat(response.getStatus()).isEqualTo(503);
+        assertThat(response.getContentType()).startsWith("application/problem+json");
+        assertThat(response.getContentAsString()).doesNotContain("fictional-database-detail");
+    }
+}
+```
+
+Run: `./mvnw -B -Dtest=LeadControllerContractTest,LeadAcceptanceIntegrationTest,LeadUnavailableContractTest test`
 
 Expected: FAIL because the lead API types and controller do not exist.
 
@@ -742,7 +1022,7 @@ public class LeadAcceptanceService {
 
 `LeadController.submit(@RequestBody LeadRequest)` deliberately performs no declarative `@Valid` call: the service checks a non-empty honeypot first, then invokes the injected validator for legitimate requests. It returns `ResponseEntity.accepted().build()` for every acceptance outcome. Set `spring.jackson.deserialization.fail-on-unknown-properties: true`. `ProblemResponseAdvice` maps `IdempotencyConflictException` to the exact 409 OpenAPI problem and `DataAccessException` to the exact generic 503; it maps constraint/normalization failures to 400 without field values.
 
-Run: `./mvnw -B -Dtest=LeadControllerContractTest,LeadAcceptanceIntegrationTest test`
+Run: `./mvnw -B -Dtest=LeadControllerContractTest,LeadAcceptanceIntegrationTest,LeadUnavailableContractTest test`
 
 Expected: PASS for all acceptance, rollback, race, and unavailable cases.
 

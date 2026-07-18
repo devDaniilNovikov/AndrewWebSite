@@ -14,7 +14,7 @@
 - PostgreSQL target is managed PostgreSQL 17; do not introduce H2, Redis, a broker, authentication, sessions, form login, HTTP Basic, public raw metrics, environment, configuration, shutdown, or heap endpoints.
 - Frontend ownership remains under `frontend/`; Next.js 16.2.9, React 19.2.x, TypeScript strict, Tailwind CSS 4, Motion, and Node 24 only at build time.
 - Lead contract remains empty indistinguishable `202`; RFC 9457 `400/409/413/415/429/503`; name 2–100, phone input 32 and normalized digits 7–15, optional comment 1000, local source path, intents exactly `repair|maintenance`, consent exactly true, HMAC key only from `LEAD_FINGERPRINT_HMAC_KEY`.
-- Bounded in-memory limits remain global 60/minute and per-connection burst 5/refill 1 per minute; forwarded headers remain untrusted until Timeweb CIDRs are verified.
+- Bounded in-memory limits remain a rolling global maximum of 60 admissions in every `(t - 60 seconds, t]` interval and a separate per-connection burst 5/refill 1 token per minute; forwarded headers remain untrusted until Timeweb CIDRs are verified.
 - Outbox states remain exactly `pending|processing|retry|blocked|delivered`; poll 15 seconds, batch 10, two-minute lease, deterministic `FOR UPDATE SKIP LOCKED`, HTTP after claim commit, retry 30 seconds through six hours, Telegram `retry_after` seconds, and accepted at-least-once duplicates.
 - PII hard limit is 30 days, operational anonymization is 29 days, fingerprint is removed, undelivered work blocks as `privacy_expired`, technical rows delete after 12 months, and backup/Telegram auto-delete are each at most 30 days.
 - Liveness is dependency-free. Readiness ultimately combines PostgreSQL availability and a worker heartbeat while returning no sensitive detail.
@@ -36,16 +36,18 @@
 - Create: `mvnw.cmd`
 - Create: `src/main/java/ru/andrew/website/AndrewWebsiteApplication.java`
 - Create: `src/main/java/ru/andrew/website/common/TimeConfiguration.java`
+- Create: `src/main/java/ru/andrew/website/common/RuntimeProfileGuard.java`
 - Create: `src/main/resources/application.yml`
 - Create: `src/main/resources/application-local.yml`
 - Create: `src/main/resources/application-prod.yml`
 - Create: `src/test/resources/application-test.yml`
 - Create: `src/test/java/ru/andrew/website/AndrewWebsiteApplicationTest.java`
+- Create: `src/test/java/ru/andrew/website/common/RuntimeProfileGuardTest.java`
 - Create: `src/test/java/ru/andrew/website/observability/LivenessContractTest.java`
 
 **Interfaces:**
 - Consumes: the public health paths and version rules from `docs/backend/architecture.md` and `docs/backend/openapi.yaml`.
-- Produces: `ru.andrew.website.AndrewWebsiteApplication`; executable `./mvnw`; `GET /actuator/health/liveness`; temporary foundation readiness at `GET /actuator/health/readiness`; Maven `verify` with JaCoCo line ratio `0.80`.
+- Produces: `ru.andrew.website.AndrewWebsiteApplication`; fail-safe `RuntimeProfileGuard` requiring exactly one explicit `test|local|prod` profile; executable `./mvnw`; `GET /actuator/health/liveness`; temporary foundation readiness at `GET /actuator/health/readiness`; Maven `verify` with JaCoCo line ratio `0.80`.
 
 - [ ] **Step 1: Create the manifest, then generate the Maven Wrapper before using it**
 
@@ -178,6 +180,51 @@ class LivenessContractTest {
 }
 ```
 
+Create a focused context-runner test proving that both missing and contradictory profile activation fail startup. The existing `@ActiveProfiles("test")` context test is the positive case:
+
+```java
+package ru.andrew.website.common;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import ru.andrew.website.AndrewWebsiteApplication;
+
+class RuntimeProfileGuardTest {
+    private static final String MESSAGE =
+            "Exactly one active profile is required: test, local, or prod";
+
+    private final ApplicationContextRunner runner = new ApplicationContextRunner()
+            .withUserConfiguration(AndrewWebsiteApplication.class)
+            .withPropertyValues("spring.main.web-application-type=none");
+
+    @Test
+    void missingActiveProfileFailsStartup() {
+        runner.run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).hasRootCauseMessage(MESSAGE);
+        });
+    }
+
+    @Test
+    void multipleActiveProfilesFailStartup() {
+        runner.withPropertyValues("spring.profiles.active=local,test").run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).hasRootCauseMessage(MESSAGE);
+        });
+    }
+
+    @Test
+    void unknownActiveProfileFailsStartup() {
+        runner.withPropertyValues("spring.profiles.active=staging").run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).hasRootCauseMessage(MESSAGE);
+        });
+    }
+}
+```
+
 Run: `./mvnw -B -DskipTests=false test`
 
 Expected: FAIL during test compilation or context discovery because `AndrewWebsiteApplication` does not exist.
@@ -226,8 +273,6 @@ Create `application.yml`:
 spring:
   application:
     name: andrew-website
-  profiles:
-    default: local
 management:
   endpoints:
     web:
@@ -250,7 +295,41 @@ server:
     include-stacktrace: never
 ```
 
-Create `application-local.yml`, `application-prod.yml`, and `application-test.yml` with only profile activation:
+Do not set `spring.profiles.default`. Add the startup guard; it treats the complete active-profile set as a closed allowlist and rejects zero, multiple, or unknown profiles before traffic can be accepted:
+
+```java
+package ru.andrew.website.common;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ApplicationContextException;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
+
+@Component
+public final class RuntimeProfileGuard implements InitializingBean {
+    private static final Set<String> ALLOWED = Set.of("test", "local", "prod");
+    private final Environment environment;
+
+    public RuntimeProfileGuard(Environment environment) {
+        this.environment = environment;
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        Set<String> active = Arrays.stream(environment.getActiveProfiles())
+                .collect(Collectors.toUnmodifiableSet());
+        if (active.size() != 1 || !ALLOWED.containsAll(active)) {
+            throw new ApplicationContextException(
+                    "Exactly one active profile is required: test, local, or prod");
+        }
+    }
+}
+```
+
+Create `application-local.yml`, `application-prod.yml`, and `application-test.yml` with only profile activation. Configuration-file activation never selects a profile by itself: every Spring context test uses `@ActiveProfiles("test")` (or an explicit `spring.profiles.active=test` property), every local launch sets `SPRING_PROFILES_ACTIVE=local`, and production sets only `SPRING_PROFILES_ACTIVE=prod`.
 
 ```yaml
 spring:
@@ -275,7 +354,7 @@ spring:
 
 Run: `./mvnw -B test`
 
-Expected: PASS with both tests green.
+Expected: PASS with the positive `test`-profile context green and the missing/multiple/unknown-profile context runners failing for the exact guard message.
 
 - [ ] **Step 4: REFACTOR and verify the complete foundation gate**
 
@@ -491,7 +570,8 @@ Expected: PASS.
 ```bash
 ./mvnw -B verify
 docker build --tag andrew-website:local .
-docker run --detach --name andrew-website-smoke --publish 18080:8080 andrew-website:local
+docker run --detach --name andrew-website-smoke --publish 18080:8080 \
+  --env SPRING_PROFILES_ACTIVE=local andrew-website:local
 curl --fail --silent http://127.0.0.1:18080/actuator/health/liveness
 docker inspect --format '{{.State.Health.Status}} {{.Config.User}}' andrew-website-smoke
 docker stop andrew-website-smoke

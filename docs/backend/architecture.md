@@ -30,6 +30,8 @@ Single non-root Spring Boot container
 
 The public browser and all request headers are untrusted. Until Timeweb publishes or confirms the actual forwarding behavior and trusted proxy CIDRs, the application ignores `Forwarded` and `X-Forwarded-For` for rate-limit identity and uses only `HttpServletRequest.getRemoteAddr()` plus the global limiter. Enabling forwarded-header processing is a production change gate, not a default.
 
+The global limiter is a rolling window, not a token bucket: for every instant `t`, the half-open interval `(t - 60 seconds, t]` contains at most 60 globally admitted requests. It stores only the at-most-60 admission timestamps needed for that window; timestamps at or before `t - 60 seconds` expire before the next decision. A separate bounded per-connection-address token bucket has capacity 5 and refills exactly one token per minute. The global decision is evaluated first, so any request that passes both gates is necessarily within the rolling global cap; a rejection returns the ceiling in whole seconds until the applicable oldest timestamp or client token becomes available.
+
 PostgreSQL, Telegram, and OTLP are outbound dependencies. Credentials cross into the container only through the platform secret store and environment bindings described in `operations.md`; no secret is embedded in a file, image layer, log, metric, health response, or exception response.
 
 ## Container and component boundaries

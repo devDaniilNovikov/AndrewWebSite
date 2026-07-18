@@ -6,7 +6,7 @@ This runbook defines the safe configuration, startup, migration, recovery, telem
 
 ## Runtime profiles
 
-The application has a safe common configuration plus exactly three explicit profiles.
+The application has a safe common configuration plus exactly three allowed profiles. Every process must activate exactly one of them explicitly.
 
 | Profile | Dependencies | Network behavior | Secret policy |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ The application has a safe common configuration plus exactly three explicit prof
 | `local` | developer-supplied PostgreSQL 17 and fake Telegram endpoint by default | only explicitly configured loopback development CORS origins; forwarded client headers ignored | local untracked environment or approved developer secret store; never a tracked `.env` |
 | `prod` | Timeweb managed PostgreSQL 17, Telegram Bot API, and approved Grafana Cloud OTLP endpoint | same-origin public HTTP; Telegram and OTLP outbound HTTPS; forwarded client headers ignored until CIDR verification gate | orchestration-injected secret-store values only; fail fast when required bindings are absent or invalid |
 
-No implicit fallback activates `local` or `test` behavior in production. Production deployment sets the `prod` profile explicitly. H2 and another database dialect are not used because migration, locking, idempotency, and queue tests require PostgreSQL semantics.
+There is no `spring.profiles.default` and no implicit fallback. A startup guard rejects zero active profiles, multiple active profiles, or any profile outside `test|local|prod`; therefore every test or launch command activates exactly one profile explicitly. Production deployment sets `SPRING_PROFILES_ACTIVE=prod`, and no additional profile may accompany it. H2 and another database dialect are not used because migration, locking, idempotency, and queue tests require PostgreSQL semantics.
 
 ## Configuration bindings
 
@@ -22,7 +22,7 @@ Environment variables are names, not storage. The platform secret store injects 
 
 | Environment binding | Spring property | Sensitivity | Validation |
 | --- | --- | --- | --- |
-| `SPRING_PROFILES_ACTIVE` | `spring.profiles.active` | operational | production must resolve to `prod` only |
+| `SPRING_PROFILES_ACTIVE` | `spring.profiles.active` | operational | required for every process; exactly one of `test|local|prod`; production resolves to `prod` only |
 | `SPRING_DATASOURCE_URL` | `spring.datasource.url` | secret-adjacent | required in `local` and `prod`; PostgreSQL JDBC scheme only |
 | `SPRING_DATASOURCE_USERNAME` | `spring.datasource.username` | sensitive | required in `local` and `prod` |
 | `SPRING_DATASOURCE_PASSWORD` | `spring.datasource.password` | secret | required in `local` and `prod` |
@@ -33,7 +33,7 @@ Environment variables are names, not storage. The platform secret store injects 
 | `OTLP_AUTHORIZATION` | `management.otlp.metrics.export.headers.Authorization` | secret | required only when the collector requires it; no default |
 | `LOCAL_CORS_ORIGINS` | `app.web.local-cors-origins` | operational | `local` only; explicit loopback HTTP origins; absent in `prod` |
 
-Non-secret application defaults are fixed in versioned configuration: lead request body 16 KiB; source path 2048 characters; global limit 60/minute; per-connection burst 5/refill 1 per minute; bounded client bucket capacity; worker poll 15 seconds; claim batch 10; lease two minutes; retry 30 seconds through six hours; worker heartbeat stale after 45 seconds; retention run hourly; anonymization at 29 days; hard PII limit 30 days; retention heartbeat stale after two hours; and anonymized-row deletion after 12 months.
+Non-secret application defaults are fixed in versioned configuration: lead request body 16 KiB; source path 2048 characters; global rolling limit of at most 60 admissions in every half-open `(t - 60 seconds, t]` interval; separate per-connection burst 5/refill 1 token per minute; bounded client bucket capacity; worker poll 15 seconds; claim batch 10; lease two minutes; retry 30 seconds through six hours; worker heartbeat stale after 45 seconds; retention run hourly; anonymization at 29 days; hard PII limit 30 days; retention heartbeat stale after two hours; and anonymized-row deletion after 12 months.
 
 `app.leads.fingerprint-key`, `app.telegram.bot-token`, `app.telegram.chat-id`, and OTLP authorization are declared as secret configuration. Configuration `toString`, failure analysis, actuator, and debug logging must redact their values. No secret property is exposed through a public endpoint.
 
@@ -41,7 +41,7 @@ Non-secret application defaults are fixed in versioned configuration: lead reque
 
 The application process must fail startup before accepting traffic when any applicable condition is true:
 
-- the active profile is missing, contradictory, or permits `test` configuration in production;
+- the active-profile set is not exactly one of `{test}`, `{local}`, or `{prod}`; in particular it is missing, contains multiple profiles, uses an unknown profile, or permits `test` configuration in production;
 - required PostgreSQL URL, user, or password is missing, malformed, or not PostgreSQL;
 - Flyway validation or migration fails;
 - production HMAC material is missing, cannot be decoded, or is shorter than 32 bytes;

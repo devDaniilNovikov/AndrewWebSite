@@ -16,7 +16,7 @@
 - Node 24 is build-time only. The final artifact and container contain one Spring Boot executable JAR on Java 25 and no Node executable, package-manager cache, frontend source, or build credential.
 - Preserve backend ownership of `/api/**` and `/actuator/**`; no static fallback on those prefixes. Missing static routes are real 404 responses, never home-page fallbacks.
 - Lead API remains JSON-only at 16 KiB with empty indistinguishable `202`, RFC 9457 `400/409/413/415/429/503`, exact validation bounds/intents/consent, production HMAC only from `LEAD_FINGERPRINT_HMAC_KEY`, and no PII in logs/metrics/problems.
-- Bounded limits remain global 60/minute and per-connection burst 5/refill 1 per minute; forwarded headers remain untrusted until verified Timeweb CIDRs.
+- Bounded limits remain a rolling global maximum of 60 admissions in every `(t - 60 seconds, t]` interval and a separate per-connection burst 5/refill 1 token per minute; forwarded headers remain untrusted until verified Timeweb CIDRs.
 - Outbox remains separate and PII-free with exact `pending|processing|retry|blocked|delivered`, 15-second poll, batch 10, two-minute lease, deterministic `FOR UPDATE SKIP LOCKED`, HTTP after claim commit, retry 30 seconds through six hours, Telegram `retry_after` seconds, and accepted at-least-once duplicates.
 - PII hard limit is 30 days; anonymize/fingerprint removal at 29 days, `privacy_expired` blocking, technical deletion after 12 months, and backup/Telegram auto-delete each at most 30 days.
 - Liveness remains dependency-free; readiness is PostgreSQL plus worker heartbeat with no detail; telemetry is bounded/PII-free and OTLP is private.

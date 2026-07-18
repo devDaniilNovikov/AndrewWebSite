@@ -24,9 +24,10 @@ paths:
       operationId: submitLead
       summary: Accept a lead for durable asynchronous delivery
       description: >-
-        Accepts JSON bodies up to 16 KiB. The service applies a bounded global
-        token bucket of 60 requests per minute and a bounded per-connection-address
-        bucket with burst 5 and refill 1 token per minute. Forwarded client headers
+        Accepts JSON bodies up to 16 KiB. A bounded rolling global window admits
+        at most 60 requests in every half-open interval (t - 60 seconds, t], and a
+        separate bounded per-connection-address bucket has burst 5 and refills 1
+        token per minute. Forwarded client headers
         are ignored until Timeweb proxy CIDRs are verified. The empty 202 response
         deliberately does not reveal whether the request was newly committed,
         idempotently accepted, safely accepted after fingerprint retention, or
@@ -323,7 +324,7 @@ components:
             detail: This endpoint accepts application/json only.
             instance: /api/leads
     RateLimitExceeded:
-      description: The global or connection-address token bucket has no token available.
+      description: The rolling global window is full or the connection-address token bucket has no token available.
       headers:
         Retry-After:
           $ref: '#/components/headers/RetryAfter'
