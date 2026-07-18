@@ -12,7 +12,7 @@
 
 - One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 17.
 - Frontend remains under `frontend/` with Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only at build time.
-- `POST /api/leads` accepts only `application/json` up to 16 KiB and returns an empty indistinguishable `202` for first commit, equal duplicate, non-empty honeypot, and post-fingerprint retained replay.
+- `POST /api/leads` accepts only `application/json` up to 16 KiB. Its mutually exclusive OpenAPI `oneOf` permits either a fully validated legitimate lead with empty/absent `website` or a synthetic request requiring only a non-empty `website`; both reject unknown properties and retain typed JSON deserialization. Every accepted branch returns the same empty `202`.
 - Problem responses are RFC 9457 `application/problem+json`: exactly `400`, `409`, `413`, `415`, `429`, and `503` where applicable; rejected values and internals are never echoed.
 - Exact fields: `requestId`, `name`, `phone`, optional `comment`, `sourcePath`, `intent`, `consent`, optional `website`; intents are exactly `repair` and `maintenance`.
 - Name trims/NFC to 2–100 characters; phone input is at most 32 characters and normalizes to 7–15 digits; comment is at most 1000; source path is local-only and at most 2048; consent is exactly true.
@@ -630,6 +630,22 @@ class LeadControllerContractTest {
                 .andExpect(status().isAccepted())
                 .andExpect(content().string(""));
     }
+
+    @Test
+    void unknownPropertyIsRejectedEvenWhenHoneypotIsFilled() throws Exception {
+        mvc.perform(post("/api/leads").contentType(MediaType.APPLICATION_JSON).content("""
+                {"website":"filled-by-bot","unexpected":"rejected"}
+                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void malformedKnownTypedFieldIsRejectedAtDeserializationBoundary() throws Exception {
+        mvc.perform(post("/api/leads").contentType(MediaType.APPLICATION_JSON).content("""
+                {"website":"filled-by-bot","requestId":"not-a-uuid"}
+                """))
+                .andExpect(status().isBadRequest());
+    }
 }
 ```
 
@@ -698,11 +714,10 @@ class LeadAcceptanceIntegrationTest {
     }
 
     @Test
-    void honeypotReturnsSameEmptyAcceptanceWithoutRows() throws Exception {
-        UUID id = UUID.fromString("33333333-3333-4333-8333-333333333333");
+    void websiteOnlyHoneypotReturnsSameEmptyAcceptanceWithoutRows() throws Exception {
         var response = mvc.perform(post("/api/leads")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(id, "ignored", "filled-by-bot")))
+                        .content("{\"website\":\"filled-by-bot\"}"))
                 .andReturn().getResponse();
         assertThat(response.getStatus()).isEqualTo(202);
         assertThat(response.getContentAsByteArray()).isEmpty();
@@ -870,6 +885,14 @@ public record LeadRequest(
 }
 ```
 
+The record deliberately uses nullable wrapper/reference components and the controller
+does not apply `@Valid`, so `{"website":"filled-by-bot"}` deserializes before the
+service classifies it. Jackson still converts any supplied `requestId`, `intent`, and
+`consent` to `UUID`, `LeadIntent`, and `Boolean`, and
+`spring.jackson.deserialization.fail-on-unknown-properties: true` applies to both
+request shapes. Thus honeypots skip Bean Validation and normalization, not the common
+JSON object/type/unknown-property boundary.
+
 ```java
 package ru.andrew.website.leads;
 
@@ -973,7 +996,7 @@ public class LeadAcceptanceService {
 
     @Transactional
     public AcceptanceOutcome accept(LeadRequest request) {
-        if (request.website() != null && !request.website().trim().isEmpty()) {
+        if (request.website() != null && !request.website().isEmpty()) {
             return AcceptanceOutcome.HONEYPOT;
         }
         var violations = validator.validate(request);
@@ -1020,11 +1043,11 @@ public class LeadAcceptanceService {
 }
 ```
 
-`LeadController.submit(@RequestBody LeadRequest)` deliberately performs no declarative `@Valid` call: the service checks a non-empty honeypot first, then invokes the injected validator for legitimate requests. It returns `ResponseEntity.accepted().build()` for every acceptance outcome. Set `spring.jackson.deserialization.fail-on-unknown-properties: true`. `ProblemResponseAdvice` maps `IdempotencyConflictException` to the exact 409 OpenAPI problem and `DataAccessException` to the exact generic 503; it maps constraint/normalization failures to 400 without field values.
+`LeadController.submit(@RequestBody LeadRequest)` deliberately performs no declarative `@Valid` call: the service checks a non-empty honeypot first, then invokes the injected validator for legitimate requests. It returns `ResponseEntity.accepted().build()` for every acceptance outcome. Set `spring.jackson.deserialization.fail-on-unknown-properties: true`. `ProblemResponseAdvice` maps JSON binding failures, unknown properties, constraint failures, and normalization failures to the exact PII-free 400; it maps `IdempotencyConflictException` to the exact 409 OpenAPI problem and `DataAccessException` to the exact generic 503.
 
 Run: `./mvnw -B -Dtest=LeadControllerContractTest,LeadAcceptanceIntegrationTest,LeadUnavailableContractTest test`
 
-Expected: PASS for all acceptance, rollback, race, and unavailable cases.
+Expected: PASS for the website-only/no-row honeypot, typed/unknown JSON boundaries, all legitimate acceptance branches, rollback, races, and unavailable database.
 
 - [ ] **Step 4: REFACTOR and verify contract parity**
 
@@ -1034,7 +1057,7 @@ Extract SQL parameter construction, keep all methods below 50 lines, create log-
 ./mvnw -B verify
 ```
 
-Expected: PASS with at least 80% coverage. Compare request properties, bounds, examples, status/media types, and empty 202 behavior field-by-field with `docs/backend/openapi.yaml`.
+Expected: PASS with at least 80% coverage. Compare the mutually exclusive legitimate/honeypot schemas, required fields, JSON types, unknown-property rejection, bounds, examples, status/media types, empty 202 behavior, and no-row website-only assertion field-by-field with `docs/backend/openapi.yaml`.
 
 - [ ] **Step 5: Commit**
 

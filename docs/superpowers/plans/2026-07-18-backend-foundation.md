@@ -17,7 +17,7 @@
 - Bounded in-memory limits remain a rolling global maximum of 60 admissions in every `(t - 60 seconds, t]` interval and a separate per-connection burst 5/refill 1 token per minute; forwarded headers remain untrusted until Timeweb CIDRs are verified.
 - Outbox states remain exactly `pending|processing|retry|blocked|delivered`; poll 15 seconds, batch 10, two-minute lease, deterministic `FOR UPDATE SKIP LOCKED`, HTTP after claim commit, retry 30 seconds through six hours, Telegram `retry_after` seconds, and accepted at-least-once duplicates.
 - PII hard limit is 30 days, operational anonymization is 29 days, fingerprint is removed, undelivered work blocks as `privacy_expired`, technical rows delete after 12 months, and backup/Telegram auto-delete are each at most 30 days.
-- Liveness is dependency-free. Readiness ultimately combines PostgreSQL availability and a worker heartbeat while returning no sensitive detail.
+- Liveness is dependency-free. Readiness ultimately combines PostgreSQL availability and a worker heartbeat while returning no sensitive detail. Every liveness/readiness response has exact `Cache-Control: no-store`.
 - Actuator/Micrometer are present from foundation; OTLP is not configured until `task-backend-observability`.
 - JaCoCo line coverage must be at least 80%; all third-party GitHub Actions are pinned to full commit SHAs and use least privilege.
 - No secrets, lead PII, credentials, private keys, request bodies, or realistic token-shaped fixtures in source, logs, tests, images, Issues, or workflow output.
@@ -37,6 +37,7 @@
 - Create: `src/main/java/ru/andrew/website/AndrewWebsiteApplication.java`
 - Create: `src/main/java/ru/andrew/website/common/TimeConfiguration.java`
 - Create: `src/main/java/ru/andrew/website/common/RuntimeProfileGuard.java`
+- Create: `src/main/java/ru/andrew/website/observability/HealthCacheControlFilter.java`
 - Create: `src/main/resources/application.yml`
 - Create: `src/main/resources/application-local.yml`
 - Create: `src/main/resources/application-prod.yml`
@@ -47,7 +48,7 @@
 
 **Interfaces:**
 - Consumes: the public health paths and version rules from `docs/backend/architecture.md` and `docs/backend/openapi.yaml`.
-- Produces: `ru.andrew.website.AndrewWebsiteApplication`; fail-safe `RuntimeProfileGuard` requiring exactly one explicit `test|local|prod` profile; executable `./mvnw`; `GET /actuator/health/liveness`; temporary foundation readiness at `GET /actuator/health/readiness`; Maven `verify` with JaCoCo line ratio `0.80`.
+- Produces: `ru.andrew.website.AndrewWebsiteApplication`; fail-safe `RuntimeProfileGuard` requiring exactly one explicit `test|local|prod` profile; executable `./mvnw`; `GET /actuator/health/liveness`; temporary foundation readiness at `GET /actuator/health/readiness`; exact `Cache-Control: no-store` on both health paths; Maven `verify` with JaCoCo line ratio `0.80`.
 
 - [ ] **Step 1: Create the manifest, then generate the Maven Wrapper before using it**
 
@@ -152,6 +153,7 @@ package ru.andrew.website.observability;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -159,6 +161,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -174,8 +177,17 @@ class LivenessContractTest {
         mvc.perform(get("/actuator/health/liveness"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
                 .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.components").doesNotExist());
+    }
+
+    @Test
+    void readinessAlsoDisablesCachingExactly() throws Exception {
+        mvc.perform(get("/actuator/health/readiness"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.status").value("UP"));
     }
 }
 ```
@@ -267,6 +279,69 @@ public class TimeConfiguration {
 }
 ```
 
+Create a path-scoped response filter that pins the OpenAPI health cache contract even
+if another filter attempts to add broader cache directives:
+
+```java
+package ru.andrew.website.observability;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
+import java.io.IOException;
+import java.util.Set;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public final class HealthCacheControlFilter extends OncePerRequestFilter {
+    private static final String NO_STORE = "no-store";
+    private static final Set<String> PATHS = Set.of(
+            "/actuator/health/liveness", "/actuator/health/readiness");
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        return !PATHS.contains(path);
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain chain) throws ServletException, IOException {
+        HttpServletResponse exact = new HttpServletResponseWrapper(response) {
+            @Override
+            public void setHeader(String name, String value) {
+                super.setHeader(name, normalized(name, value));
+            }
+
+            @Override
+            public void addHeader(String name, String value) {
+                if (HttpHeaders.CACHE_CONTROL.equalsIgnoreCase(name)) {
+                    super.setHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
+                } else {
+                    super.addHeader(name, value);
+                }
+            }
+
+            private String normalized(String name, String value) {
+                return HttpHeaders.CACHE_CONTROL.equalsIgnoreCase(name) ? NO_STORE : value;
+            }
+        };
+        exact.setHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
+        chain.doFilter(request, exact);
+    }
+}
+```
+
+The wrapper converts both `setHeader` and `addHeader` attempts for `Cache-Control` to
+one exact `no-store` value while leaving every other header and non-health path alone.
+
 Create `application.yml`:
 
 ```yaml
@@ -354,7 +429,7 @@ spring:
 
 Run: `./mvnw -B test`
 
-Expected: PASS with the positive `test`-profile context green and the missing/multiple/unknown-profile context runners failing for the exact guard message.
+Expected: PASS with exact no-store headers on liveness/readiness, the positive `test`-profile context green, and the missing/multiple/unknown-profile context runners failing for the exact guard message.
 
 - [ ] **Step 4: REFACTOR and verify the complete foundation gate**
 
@@ -365,7 +440,7 @@ Keep the bootstrap free of feature logic, confirm `dependency:tree` contains `sp
 ./mvnw -B dependency:tree
 ```
 
-Expected: both commands exit 0; JaCoCo line coverage is at least 0.80; only the `health` actuator endpoint is exposed.
+Expected: both commands exit 0; JaCoCo line coverage is at least 0.80; only the `health` actuator endpoint is exposed; both health paths retain exact `Cache-Control: no-store`.
 
 - [ ] **Step 5: Commit the product task**
 
@@ -523,6 +598,25 @@ class ContainerContractTest {
         assertThat(dockerfileCopy).isGreaterThanOrEqualTo(0);
         assertThat(mavenVerify).isGreaterThan(dockerfileCopy);
     }
+
+    @Test
+    void dockerContextExcludesEnvironmentCredentialsAndLocalKeys() throws Exception {
+        var patterns = Files.readAllLines(Path.of(".dockerignore")).stream()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                .toList();
+        assertThat(patterns).contains(
+                ".env*", "**/.env*",
+                ".secrets", "**/.secrets", "secrets", "**/secrets",
+                ".credentials", "**/.credentials", "credentials", "**/credentials",
+                ".aws", "**/.aws", ".azure", "**/.azure", ".docker", "**/.docker",
+                ".ssh", "**/.ssh", ".gnupg", "**/.gnupg",
+                ".kube", "**/.kube", ".config/gcloud", "**/.config/gcloud",
+                "*.pem", "**/*.pem", "*.key", "**/*.key",
+                "*.p12", "**/*.p12", "*.pfx", "**/*.pfx",
+                "*.jks", "**/*.jks", "*.keystore", "**/*.keystore",
+                "id_rsa", "**/id_rsa", "id_ed25519", "**/id_ed25519");
+    }
 }
 ```
 
@@ -568,12 +662,52 @@ Create `.dockerignore`:
 docs
 frontend
 target
+.env*
+**/.env*
+.secrets
+**/.secrets
+secrets
+**/secrets
+.credentials
+**/.credentials
+credentials
+**/credentials
+.aws
+**/.aws
+.azure
+**/.azure
+.docker
+**/.docker
+.ssh
+**/.ssh
+.gnupg
+**/.gnupg
+.kube
+**/.kube
+.config/gcloud
+**/.config/gcloud
+*.pem
+**/*.pem
+*.key
+**/*.key
+*.p12
+**/*.p12
+*.pfx
+**/*.pfx
+*.jks
+**/*.jks
+*.keystore
+**/*.keystore
+id_rsa
+**/id_rsa
+id_ed25519
+**/id_ed25519
 *.md
 ```
 
 Run: `./mvnw -B -Dtest=ContainerContractTest test`
 
-Expected: PASS. The Maven invocation inside `backend-build` can read the copied root `Dockerfile`, and the same stage name remains valid when the static plan later adds a disposable frontend stage.
+Expected: PASS. The Maven invocation inside `backend-build` can read the copied root `Dockerfile`; the same stage name remains valid when the static plan later adds a disposable frontend stage; root and nested environment files, credential/secret directories, and local key/keystore material are already excluded and protected by the unchanged contract test.
 
 - [ ] **Step 3: REFACTOR — build and smoke the exact image without secrets**
 

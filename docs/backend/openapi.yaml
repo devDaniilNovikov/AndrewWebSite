@@ -31,7 +31,9 @@ paths:
         are ignored until Timeweb proxy CIDRs are verified. The empty 202 response
         deliberately does not reveal whether the request was newly committed,
         idempotently accepted, safely accepted after fingerprint retention, or
-        synthetically accepted. Telegram delivery is asynchronous and at least once.
+        synthetically accepted. A honeypot request needs only a non-empty `website`;
+        legitimate fields may be absent. Telegram delivery is asynchronous and at
+        least once.
       requestBody:
         required: true
         content:
@@ -60,6 +62,10 @@ paths:
                   intent: maintenance
                   consent: true
                   website: ''
+              honeypot:
+                summary: Synthetic acceptance without legitimate lead fields
+                value:
+                  website: filled-by-bot
       responses:
         '202':
           description: >-
@@ -162,6 +168,15 @@ components:
         maximum: 3600
   schemas:
     LeadRequest:
+      description: >-
+        Exactly one request shape is accepted: a fully validated legitimate lead
+        whose website is absent, null, or empty, or a synthetic honeypot request
+        with a non-empty website. Known properties retain their JSON types in both
+        shapes and unknown properties are rejected.
+      oneOf:
+        - $ref: '#/components/schemas/LegitimateLeadRequest'
+        - $ref: '#/components/schemas/HoneypotLeadRequest'
+    LegitimateLeadRequest:
       type: object
       additionalProperties: false
       required:
@@ -221,10 +236,40 @@ components:
           description: Explicit consent is required.
         website:
           type: [string, 'null']
-          description: Optional compatibility field; omit it or submit an empty value.
+          maxLength: 0
+          description: Optional compatibility field; omit it, use null, or submit the empty string.
           examples:
             - ''
             - null
+    HoneypotLeadRequest:
+      type: object
+      additionalProperties: false
+      required: [website]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+          description: Optional known field; if present it must cross the UUID JSON boundary.
+        name:
+          type: string
+        phone:
+          type: string
+        comment:
+          type: [string, 'null']
+        sourcePath:
+          type: string
+        intent:
+          type: string
+          enum: [repair, maintenance]
+        consent:
+          type: boolean
+        website:
+          type: string
+          minLength: 1
+          description: >-
+            Required non-empty honeypot. When present, legitimate fields are optional
+            and Bean Validation/normalization/persistence are skipped after JSON
+            deserialization and unknown-property rejection.
     Problem:
       type: object
       additionalProperties: false

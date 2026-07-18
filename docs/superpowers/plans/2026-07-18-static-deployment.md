@@ -13,7 +13,7 @@
 - One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 17.
 - Do not start until refreshed Claude instructions and the Claude-owned frontend scaffold, package-manager declaration, lockfile, static-export command, output path, and frontend tests are merged into fresh `origin/main`.
 - Frontend remains under `frontend/`; use its one committed package manager and lockfile without conversion or mixing; Next.js is exactly 16.2.9 with `output: 'export'`; the build artifact is `frontend/out/`.
-- Node 24 is build-time only. The final artifact and container contain one Spring Boot executable JAR on Java 25 and no Node executable, package-manager cache, frontend source, or build credential.
+- Node 24 is build-time only. Use a writable `COREPACK_HOME` and direct `corepack <manager>` execution for the exact manifest declaration; never run `corepack enable` or install global shims. The final artifact and container contain one Spring Boot executable JAR on Java 25 and no Node executable, package-manager cache, frontend source, or build credential.
 - Preserve backend ownership of `/api/**` and `/actuator/**`; no static fallback on those prefixes. Missing static routes are real 404 responses, never home-page fallbacks.
 - Lead API remains JSON-only at 16 KiB with empty indistinguishable `202`, RFC 9457 `400/409/413/415/429/503`, exact validation bounds/intents/consent, production HMAC only from `LEAD_FINGERPRINT_HMAC_KEY`, and no PII in logs/metrics/problems.
 - Bounded limits remain a rolling global maximum of 60 admissions in every `(t - 60 seconds, t]` interval and a separate per-connection burst 5/refill 1 token per minute; forwarded headers remain untrusted until verified Timeweb CIDRs.
@@ -97,8 +97,18 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../frontend" && pwd)"
 cd "$project_dir"
 
+: "${COREPACK_HOME:=${TMPDIR:-/tmp}/andrew-corepack-${UID}}"
+export COREPACK_HOME
+mkdir -p "$COREPACK_HOME"
+[[ -w "$COREPACK_HOME" ]] || { echo "COREPACK_HOME must be writable" >&2; exit 2; }
+
 declared="$(node -p "require('./package.json').packageManager || ''")"
 manager="${declared%%@*}"
+version="${declared#*@}"
+if [[ "$declared" == "$manager" || -z "$version" ]]; then
+  echo "packageManager must include a version" >&2
+  exit 2
+fi
 lock_count=0
 for lock in package-lock.json pnpm-lock.yaml yarn.lock; do
   if [[ -f "$lock" ]]; then
@@ -114,20 +124,18 @@ fi
 case "$manager" in
   npm)
     [[ -f package-lock.json ]] || { echo "npm requires package-lock.json" >&2; exit 2; }
-    npm ci
-    npm test
-    npm run build
+    corepack npm ci
+    corepack npm test
+    corepack npm run build
     ;;
   pnpm)
     [[ -f pnpm-lock.yaml ]] || { echo "pnpm requires pnpm-lock.yaml" >&2; exit 2; }
-    corepack enable
     corepack pnpm install --frozen-lockfile
     corepack pnpm test
     corepack pnpm run build
     ;;
   yarn)
     [[ -f yarn.lock ]] || { echo "yarn requires yarn.lock" >&2; exit 2; }
-    corepack enable
     corepack yarn install --immutable
     corepack yarn test
     corepack yarn build
@@ -141,6 +149,14 @@ esac
 test -f out/index.html
 test -d out/_next/static
 ```
+
+Corepack's official CLI contract permits `corepack <binary> [...args]` without
+installing shims, and `COREPACK_HOME` selects its cache directory. `corepack enable`
+is forbidden here because it writes shims beside the Corepack binary and the
+arbitrary host UID cannot write the system Node installation. The npm branch is
+intentional and explicit: npm is excluded from Corepack's default shim installation,
+but direct `corepack npm ...` honors the committed `packageManager` version without a
+global shim.
 
 Configure resource copying early enough for focused MVC tests and configure Failsafe after packaging:
 
@@ -179,6 +195,7 @@ In `.github/workflows/ci.yml`, insert this step in both `verify` and `java-secur
       - name: Test and export frontend with Node 24.18.0
         run: |
           docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp \
+            --env COREPACK_HOME=/tmp/corepack \
             --volume "$PWD:/workspace" --workdir /workspace node:24.18.0 \
             bash scripts/build-frontend.sh
 ```
@@ -187,6 +204,7 @@ Run:
 
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp \
+  --env COREPACK_HOME=/tmp/corepack \
   --volume "$PWD:/workspace" --workdir /workspace node:24.18.0 \
   bash scripts/build-frontend.sh
 ./mvnw -B verify
@@ -209,7 +227,7 @@ git commit -m "feat(static-jar-integration): embed frontend export in the JAR"
 - Create: `src/main/java/ru/andrew/website/web/StaticAssetPolicy.java`
 - Create: `src/main/java/ru/andrew/website/web/StaticPageController.java`
 - Create: `src/test/java/ru/andrew/website/web/StaticPageControllerTest.java`
-- Test: `src/test/java/ru/andrew/website/deployment/ContainerContractTest.java` unchanged against the final Dockerfile
+- Test: `src/test/java/ru/andrew/website/deployment/ContainerContractTest.java` unchanged against the final Dockerfile and `.dockerignore` security patterns
 - Modify: `Dockerfile`
 - Modify: `.dockerignore`
 - Create: `scripts/smoke-final-container.sh`
@@ -361,6 +379,7 @@ Replace the deploy-stub Dockerfile with the complete three-stage build:
 ```dockerfile
 FROM node:24.18.0 AS frontend-build
 WORKDIR /workspace
+ENV COREPACK_HOME=/tmp/corepack
 COPY frontend frontend
 COPY scripts/build-frontend.sh scripts/build-frontend.sh
 RUN bash scripts/build-frontend.sh
@@ -401,8 +420,53 @@ target
 frontend/node_modules
 frontend/.next
 frontend/out
+.env*
+**/.env*
+.secrets
+**/.secrets
+secrets
+**/secrets
+.credentials
+**/.credentials
+credentials
+**/credentials
+.aws
+**/.aws
+.azure
+**/.azure
+.docker
+**/.docker
+.ssh
+**/.ssh
+.gnupg
+**/.gnupg
+.kube
+**/.kube
+.config/gcloud
+**/.config/gcloud
+*.pem
+**/*.pem
+*.key
+**/*.key
+*.p12
+**/*.p12
+*.pfx
+**/*.pfx
+*.jks
+**/*.jks
+*.keystore
+**/*.keystore
+id_rsa
+**/id_rsa
+id_ed25519
+**/id_ed25519
 *.md
 ```
+
+The unchanged `ContainerContractTest` reads `.dockerignore` and asserts every pattern
+above, so root `.env`, nested/frontend `.env.local`, common local secret/credential
+directories, PEM/private-key files, PKCS#12 files, Java keystores, and local SSH keys
+cannot silently re-enter the context before `COPY frontend frontend`.
 
 Create `scripts/smoke-final-container.sh` with this bounded setup and cleanup. It uses only conspicuously non-production values:
 
@@ -477,7 +541,7 @@ curl --fail --silent http://127.0.0.1:18080/actuator/health/readiness
 test "$(docker inspect --format '{{.Config.User}}' "$application")" = "10001:10001"
 ```
 
-The script runs at most 15 one-second `pg_isready` probes, with a one-second pause after each non-final failure, before it starts the application. On terminal failure it emits only the database container state plus the last 50 fixture log lines; it never inspects environment variables or expands credentials. It then obtains the actual hashed asset path from built `index.html`, asserts the lead response status is 202 with an empty body, and cleans up only its exact named resources in a trap. Maven verification inside the final `backend-build` stage reruns the unchanged `ContainerContractTest` after `Dockerfile` has been copied, so its stage-name and copy-order assertions remain executable.
+The script runs at most 15 one-second `pg_isready` probes, with a one-second pause after each non-final failure, before it starts the application. On terminal failure it emits only the database container state plus the last 50 fixture log lines; it never inspects environment variables or expands credentials. It then obtains the actual hashed asset path from built `index.html`, asserts the lead response status is 202 with an empty body, and cleans up only its exact named resources in a trap. Maven verification inside the final `backend-build` stage reruns the unchanged `ContainerContractTest` after `Dockerfile` has been copied, so its stage-name, copy-order, and Docker-context secret-exclusion assertions remain executable.
 
 - [ ] **Step 4: REFACTOR, verify one-runtime topology, and commit**
 

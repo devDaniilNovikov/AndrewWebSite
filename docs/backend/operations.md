@@ -61,6 +61,13 @@ The deployment/release gate must fail even if the process could technically star
 
 Release-gate facts are operator attestations or platform checks; they are not guessed by application code.
 
+At the public JSON boundary, `LeadRequest` remains a mutually exclusive OpenAPI
+`oneOf`: a legitimate shape requires the approved lead fields and an empty/absent
+honeypot, while a synthetic shape requires only a non-empty `website`. Unknown
+properties and malformed known JSON types are rejected before classification. A
+website-only synthetic request receives the same empty `202` and performs no
+validation, HMAC, database, outbox, or Telegram work.
+
 ## Database migration and connection operations
 
 Flyway owns schema history. `V1__lead_outbox_baseline.sql` creates `leads`, `telegram_outbox`, constraints, and indexes before lead traffic is enabled. Migrations are forward-only, reviewed, transactional where PostgreSQL permits, and tested against PostgreSQL 17 with Testcontainers. Hibernate/JPA schema generation is not used.
@@ -136,7 +143,7 @@ Privacy incident response:
 
 ## Health, telemetry, and alert intent
 
-Liveness is dependency-free. Readiness is `UP` only when PostgreSQL is available and a successful outbox poll occurred within 45 seconds after a 45-second startup grace. Both public responses contain only `status`; health details are never public. Telegram and OTLP outages do not fail liveness or readiness because accepted leads remain durable.
+Liveness is dependency-free. Readiness is `UP` only when PostgreSQL is available and a successful outbox poll occurred within 45 seconds after a 45-second startup grace. Both public responses contain only `status`; health details are never public. Every liveness/readiness response, whether `200` or `503`, has exactly `Cache-Control: no-store`; the foundation path-scoped filter and MockMvc tests for both paths are release contracts. Telegram and OTLP outages do not fail liveness or readiness because accepted leads remain durable.
 
 Actuator and Micrometer exist from foundation, but production OTLP export is introduced only in `task-backend-observability`. Public exposure includes only health routing needed for liveness/readiness. There is no public `/actuator/metrics` or Prometheus endpoint and no self-hosted Prometheus/Grafana deployment.
 
@@ -165,7 +172,7 @@ Forbidden diagnostics include raw request/response bodies, rejected values, name
 
 Every product task follows the [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md): fetch the latest `origin/main`, create one dedicated external worktree on one lowercase `task-*` or `fix-*` branch, and open one Draft PR. `main` is the only long-lived branch; direct pushes to it, stacked PRs, branch/worktree reuse, non-squash merges, and auto-merge are forbidden. Mark the PR Ready only after required CI is green and Codex review is complete. Merge only with explicit user authorization and only by squash using the Conventional Commit PR title. After merge, confirm `main`, close the linked issue, allow automatic remote-branch deletion, verify the local worktree has no tracked or untracked work to preserve before removing it, and run `git fetch --prune`. Production mutation is never part of a documentation or deploy-stub task.
 
-A deploy is immutable: build from a reviewed commit, verify the JAR/container, apply compatible Flyway migrations, start a non-root Java 25 container, wait for readiness, and run smoke tests. The final image contains no Node runtime or build secret.
+A deploy is immutable: build from a reviewed commit, verify the JAR/container, apply compatible Flyway migrations, start a non-root Java 25 container, wait for readiness, and run smoke tests. Frontend dependency installation invokes the declared manager directly through Corepack with a writable `COREPACK_HOME` and never installs global shims. Before `COPY frontend/`, the Docker context excludes root/nested `.env*`, local secret and credential directories, and key/keystore material; the unchanged container contract test guards those patterns. The final image contains no Node runtime or build secret.
 
 Application rollback selects a previously verified image only when its code is compatible with the current schema. Flyway history is not rolled back. If privacy correctness is in doubt, keep intake and delivery stopped while retention and aggregate checks run. A failed static integration may roll back the JAR without reverting durable lead/outbox rows. A failed credential rotation restores only through the secret store; never through an image or tracked configuration.
 
@@ -179,14 +186,14 @@ Before production release, confirm all of the following with fresh evidence:
 - complete unit, integration, MockMvc, concurrency, migration, privacy, telemetry, dependency/security, and container gates with at least 80% JaCoCo coverage;
 - exact OpenAPI behaviors for `202`, `400`, `409`, `413`, `415`, `429`, and `503`;
 - first acceptance commits lead and outbox atomically; rollback never returns `202`;
-- equal duplicates, conflicting payloads, synthetic acceptance, and post-fingerprint replay match the contract;
+- equal duplicates, conflicting payloads, website-only synthetic acceptance with no rows, and post-fingerprint replay match the contract;
 - two workers cannot claim one row concurrently; expired leases and restarts recover; HTTP occurs outside claim transactions; Telegram 429 uses seconds;
 - no PII survives the 30-day hard limit and no privacy-expired claim can send;
-- logs, metrics, problems, health, images, and test fixtures contain no secret or accidental PII;
+- logs, metrics, problems, health, images, and test fixtures contain no secret or accidental PII; both health paths emit exact `Cache-Control: no-store`;
 - PostgreSQL backup retention and Telegram auto-delete are each no more than 30 days;
 - forwarded headers remain untrusted until Timeweb CIDRs are verified;
 - OTLP is private and functioning; raw metrics and sensitive actuator endpoints are not public;
-- static frontend prerequisites are merged and final cache/routing/smoke behavior passes;
+- static frontend prerequisites are merged; direct non-root Corepack execution and Docker-context secret exclusions are contract-tested; final cache/routing/smoke behavior passes;
 - the user explicitly authorizes merge and production release.
 
 ## Jules CI-task boundary

@@ -80,6 +80,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 import org.springframework.test.web.client.MockRestServiceServer;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(OutputCaptureExtension.class)
 class TelegramRestClientGatewayTest {
@@ -93,7 +94,8 @@ class TelegramRestClientGatewayTest {
         server = MockRestServiceServer.bindTo(builder).build();
         TelegramClientProperties properties = new TelegramClientProperties(
                 "test-only-bot-token", "test-only-chat", java.net.URI.create("https://api.telegram.org"));
-        gateway = new TelegramRestClientGateway(builder, properties, new TelegramMessageFormatter());
+        gateway = new TelegramRestClientGateway(builder, properties, new TelegramMessageFormatter(),
+                new TelegramRetryAfterParser(JsonMapper.builder().build()));
     }
 
     @Test
@@ -169,6 +171,8 @@ static Stream<Arguments> retryAfterBodies() {
             Arguments.of("{\"ok\":false}", null),
             Arguments.of("{\"parameters\":{\"retry_after\":-1}}", null),
             Arguments.of("{\"parameters\":{\"retry_after\":0}}", null),
+            Arguments.of("{\"parameters\":{\"retry_after\":\"120\"}}", null),
+            Arguments.of("{\"parameters\":{\"retry_after\":9223372036854775808}}", null),
             Arguments.of("{\"parameters\":{\"retry_after\":21601}}", Duration.ofHours(6)),
             Arguments.of("not-json", null));
 }
@@ -267,6 +271,7 @@ package ru.andrew.website.telegram;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.OptionalLong;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -277,11 +282,13 @@ public final class TelegramRestClientGateway implements TelegramGateway {
     private final RestClient client;
     private final TelegramClientProperties properties;
     private final TelegramMessageFormatter formatter;
+    private final TelegramRetryAfterParser retryAfterParser;
 
     public TelegramRestClientGateway(RestClient.Builder builder, TelegramClientProperties properties,
-            TelegramMessageFormatter formatter) {
+            TelegramMessageFormatter formatter, TelegramRetryAfterParser retryAfterParser) {
         this.properties = properties;
         this.formatter = formatter;
+        this.retryAfterParser = retryAfterParser;
         this.client = builder.baseUrl(properties.baseUrl().toString()).build();
     }
 
@@ -307,15 +314,55 @@ public final class TelegramRestClientGateway implements TelegramGateway {
     }
 
     private Duration parseRetryAfter(String body) {
-        return TelegramRetryAfterParser.parseSeconds(body)
-                .filter(seconds -> seconds > 0)
-                .map(seconds -> Duration.ofSeconds(Math.min(seconds, 21_600L)))
-                .orElse(null);
+        OptionalLong parsed = retryAfterParser.parseSeconds(body);
+        if (parsed.isEmpty() || parsed.getAsLong() <= 0) return null;
+        return Duration.ofSeconds(Math.min(parsed.getAsLong(), 21_600L));
     }
 }
 ```
 
-`TelegramRetryAfterParser.parseSeconds(String)` uses a private Jackson record matching `parameters.retry_after`, caps input before conversion, returns `OptionalLong`, and turns malformed/unexpected bodies into empty without logging the body.
+Create the bounded parser. Spring Boot 4.1 injects its Jackson 3 `JsonMapper`; the
+tree check rejects string coercion and integers outside the Java `long` range:
+
+```java
+package ru.andrew.website.telegram;
+
+import java.util.OptionalLong;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+@Component
+public final class TelegramRetryAfterParser {
+    private static final int MAX_BODY_CHARS = 4_096;
+    private final JsonMapper json;
+
+    public TelegramRetryAfterParser(JsonMapper json) {
+        this.json = json;
+    }
+
+    OptionalLong parseSeconds(String body) {
+        if (body == null || body.length() > MAX_BODY_CHARS) return OptionalLong.empty();
+        try {
+            JsonNode root = json.readTree(body);
+            if (root == null) return OptionalLong.empty();
+            JsonNode value = root.path("parameters").path("retry_after");
+            if (!value.isIntegralNumber() || !value.canConvertToLong()) {
+                return OptionalLong.empty();
+            }
+            return OptionalLong.of(value.longValue());
+        } catch (Exception invalidJson) {
+            return OptionalLong.empty();
+        }
+    }
+}
+```
+
+The primitive optional is never treated like boxed `Optional`: the client uses only
+`isEmpty()`/`getAsLong()`, caps valid positive seconds to six hours, and never logs the
+body or parse exception. The existing parameterized gateway tests exercise missing,
+negative, zero, string, out-of-range, capped, and malformed values against the same
+constructor and parser signature.
 
 Run: `./mvnw -B -Dtest=TelegramRestClientGatewayTest,TelegramMessageFormatterTest test`
 

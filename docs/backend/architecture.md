@@ -64,26 +64,38 @@ Production is same-origin and has no CORS allowlist. The `local` profile may all
 
 ## Lead request model
 
-`LeadRequest` has exactly these JSON properties:
+`LeadRequest` is the mutually exclusive `oneOf` of a legitimate lead object and a
+honeypot object. Both shapes reject unknown JSON properties and retain the declared
+JSON types for every known property. The legitimate shape has exactly these JSON
+properties:
 
 | Property | Java type | Contract |
 | --- | --- | --- |
-| `requestId` | `UUID` | required RFC 4122 UUID |
+| `requestId` | `UUID` | required RFC 4122 UUID for legitimate requests |
 | `name` | `String` | required; trim; Unicode NFC; 2–100 characters after normalization |
 | `phone` | `String` | required; at most 32 input characters; normalize to digits only; 7–15 digits |
 | `comment` | `String` | optional; trim; Unicode NFC; blank becomes `null`; at most 1000 characters |
 | `sourcePath` | `String` | required; trim; 1–2048 characters; starts with `/`; no scheme, authority, query, fragment, backslash, control character, or `..` path segment |
 | `intent` | `LeadIntent` | required; exactly `repair` or `maintenance` |
-| `consent` | `boolean` | required and exactly `true` |
-| `website` | `String` | optional honeypot; missing or null is treated as empty; the 16 KiB request limit is its only size bound because every non-empty value is synthetically accepted |
+| `consent` | `Boolean` | required and exactly `true` |
+| `website` | `String` | optional; missing, null, or empty selects the legitimate shape |
 
-Unknown JSON properties are rejected with `400`. After the common request-size, media-type, and rate-limit boundary, a non-empty trimmed `website` is a synthetic acceptance: return the exact empty `202` response without validation of the lead fields and without persistence, HMAC, or Telegram side effects. This keeps the accepted response indistinguishable while avoiding attacker-controlled data storage.
+The alternate honeypot shape requires only a non-empty `website` string; every
+legitimate field may be absent. A honeypot may include
+known fields, but they must still cross the normal JSON type boundary (`UUID`, string,
+enum, or boolean) because deserialization and unknown-property rejection happen before
+classification. After the common request-size, media-type, JSON-deserialization, and
+rate-limit boundary, the service checks `website != null && !website.isEmpty()` before Bean Validation or
+normalization and returns the exact empty `202` without persistence, HMAC, or Telegram
+side effects. Thus `{"website":"filled-by-bot"}` is accepted synthetically, while an
+unknown property or an invalid typed known property is `400`. The website value has no
+field-size bound beyond the 16 KiB body limit because it is never stored.
 
 For legitimate requests, `LeadNormalizer.normalize(LeadRequest)` produces immutable `NormalizedLead` fields `requestId`, `name`, `phoneDigits`, `comment`, `sourcePath`, `intent`, and `consentedAt`. The payload fingerprint excludes `requestId`, `website`, and `consentedAt`; it is HMAC-SHA-256 over UTF-8 canonical JSON with keys in this fixed order: `name`, `phone`, `comment`, `sourcePath`, `intent`, `consent`. `comment` is JSON `null` when absent and `consent` is always JSON `true`. Production obtains the HMAC key only from `LEAD_FINGERPRINT_HMAC_KEY`; startup fails if its UTF-8 representation has fewer than 32 bytes. Only the `test` profile may bind the visibly non-production value `test-only-key-material-not-for-production-0001`.
 
 ## End-to-end lead and idempotency flow
 
-1. The web boundary rejects bodies over 16 KiB as `413`, non-JSON media types as `415`, malformed/unknown/invalid fields as `400`, and exhausted bounded token buckets as `429`.
+1. The web boundary rejects bodies over 16 KiB as `413`, non-JSON media types as `415`, malformed JSON, unknown fields, and typed deserialization failures as `400`, and exhausted bounded token buckets as `429`.
 2. A non-empty honeypot returns an empty `202` and stops.
 3. The service normalizes the request and computes its keyed fingerprint without logging any request field.
 4. In one PostgreSQL transaction, lock or insert by `request_id`:
@@ -191,11 +203,11 @@ No PII, raw URL, exception message, dynamic status text, or request ID is a metr
 
 `/actuator/health/liveness` is dependency-free and includes only Spring application liveness. It never checks PostgreSQL, Telegram, worker delivery, retention, or OTLP.
 
-`/actuator/health/readiness` returns only `{"status":"UP"}` or `{"status":"DOWN"}`. It is `UP` only when PostgreSQL accepts the bounded validation query and the outbox worker has completed a successful poll within 45 seconds. A successful poll means lease recovery and claiming completed and the entire claimed batch finished: every Telegram delivered/retry/blocked decision was durably recorded, while a privacy-invalidated reload was safely skipped. An empty completed poll is successful. Any exception from reload, send, or state persistence, or any lease-token state update returning false, aborts the poll and does not advance the heartbeat. The worker has a 45-second startup grace. Telegram availability itself is not readiness because expected Telegram failures become durable queue outcomes. Retention success is not readiness; its last-success heartbeat becomes stale after two hours and raises an operational alert. Health bodies never include dependency names, errors, hostnames, durations, counts, or configuration.
+`/actuator/health/readiness` returns only `{"status":"UP"}` or `{"status":"DOWN"}`. It is `UP` only when PostgreSQL accepts the bounded validation query and the outbox worker has completed a successful poll within 45 seconds. A successful poll means lease recovery and claiming completed and the entire claimed batch finished: every Telegram delivered/retry/blocked decision was durably recorded, while a privacy-invalidated reload was safely skipped. An empty completed poll is successful. Any exception from reload, send, or state persistence, or any lease-token state update returning false, aborts the poll and does not advance the heartbeat. The worker has a 45-second startup grace. Telegram availability itself is not readiness because expected Telegram failures become durable queue outcomes. Retention success is not readiness; its last-success heartbeat becomes stale after two hours and raises an operational alert. Health bodies never include dependency names, errors, hostnames, durations, counts, or configuration. Every liveness and readiness response, including `200` and `503`, has exactly `Cache-Control: no-store`; a path-scoped response filter pins that value and MockMvc tests protect both paths.
 
 ## Build and runtime topology
 
-Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. The final container contains Java 25 runtime plus that JAR, runs as a non-root numeric user, exposes no Node runtime, and health-checks liveness.
+Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, invokes the manifest-declared manager directly through Corepack with a writable `COREPACK_HOME` and no shim installation, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. Before any `COPY frontend/`, `.dockerignore` excludes root and nested `.env*`, local secret/credential directories, and private-key/keystore material; an executable container contract test pins those exclusions. The final container contains Java 25 runtime plus that JAR, runs as a non-root numeric user, exposes no Node runtime, and health-checks liveness.
 
 Production gates are: PostgreSQL 17 in the same Moscow region/VPC; secret-store bindings and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and an explicitly user-authorized squash merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
 
@@ -226,17 +238,17 @@ The skeleton merge triggers only the normal `push` CI path. It does not assign J
 | Approved requirement | Product task | Executable plan |
 | --- | --- | --- |
 | executable architecture, OpenAPI 3.1 contract, operations runbook, five exact implementation plans, and full requirement traceability | `task-backend-contract-plans` | this document, `openapi.yaml`, `operations.md`, and all five plan files |
-| one Maven module, wrapper, Java 25, Boot 4.1.0, feature packages, profiles, smoke tests, JaCoCo | `task-backend-skeleton` | `2026-07-18-backend-foundation.md` Task 1 |
+| one Maven module, wrapper, Java 25, Boot 4.1.0, feature packages, profiles, exact no-store health filter/tests, smoke tests, JaCoCo | `task-backend-skeleton` | `2026-07-18-backend-foundation.md` Task 1 |
 | Temurin 25 CI, verify, 80% coverage, Testcontainers runtime, dependency/security gates, sanitized owner Issue trigger | `task-ci-backend-gates` | backend foundation Task 2 |
-| multi-stage Java 25 image, non-root runtime, liveness healthcheck, smoke test, no secrets/deploy mutation | `task-backend-deploy-stub` | backend foundation Task 3 |
+| multi-stage Java 25 image, non-root runtime, liveness healthcheck, Docker-context environment/credential/key exclusions, smoke test, no secrets/deploy mutation | `task-backend-deploy-stub` | backend foundation Task 3 |
 | stateless security, allowlist, no auth endpoints, RFC 9457, 16 KiB JSON boundary, same-origin, bounded rate limits, proxy fallback, closed actuator | `task-backend-http-security` | `2026-07-18-lead-intake.md` Task 1 |
 | PostgreSQL 17, separate constrained lead/outbox tables, unique request ID, indexes, leases, privacy timestamps, Flyway/Testcontainers | `task-db-flyway-baseline` | lead intake Task 2 |
-| exact lead fields/bounds/intents, honeypot, HMAC, atomic commit, duplicate/conflict/post-retention behavior, rollback/race/unavailable tests | `task-leads-api` | lead intake Task 3 |
-| RestClient gateway, secret binding, actionable minimal message, Telegram success/permanent/429/5xx/timeout/network outcomes | `task-telegram-client` | `2026-07-18-telegram-delivery.md` Task 1 |
+| mutually exclusive legitimate/website-only honeypot shapes, typed/unknown JSON boundary, HMAC, atomic commit, duplicate/conflict/post-retention behavior, no-row/rollback/race/unavailable tests | `task-leads-api` | lead intake Task 3 |
+| RestClient gateway, secret binding, actionable minimal message, compiling OptionalLong retry parser, Telegram success/permanent/429/5xx/timeout/network outcomes | `task-telegram-client` | `2026-07-18-telegram-delivery.md` Task 1 |
 | 15-second poll, batch 10, two-minute lease, SKIP LOCKED, HTTP outside transaction, retries, recovery, transitions, two-worker tests, bounded metrics | `task-telegram-worker` | telegram delivery Task 2 |
 | 29-day anonymization, 30-day hard limit, privacy-expired block, fingerprint removal, post-retention replay, 12-month deletion, heartbeat | `task-lead-retention` | `2026-07-18-privacy-observability.md` Task 1 |
-| dependency-free liveness, database/worker readiness, redacted logs, safe metrics, OTLP only here, no raw metrics | `task-backend-observability` | privacy observability Task 2 |
-| merged frontend prerequisite, Node 24 static export, JAR embedding, `/api/**` preservation, true 404, cache rules, one Java image, final smoke matrix | `task-static-jar-integration` | `2026-07-18-static-deployment.md` Tasks 1–2 |
+| dependency-free liveness, database/worker readiness, exact no-store 200/503 headers, redacted logs, safe metrics, OTLP only here, no raw metrics | `task-backend-observability` | privacy observability Task 2 |
+| merged frontend prerequisite, direct non-root Corepack under writable home, Node 24 static export, JAR embedding, secret-safe Docker context, `/api/**` preservation, true 404, cache rules, one Java image, final smoke matrix | `task-static-jar-integration` | `2026-07-18-static-deployment.md` Tasks 1–2 |
 | PostgreSQL backup and Telegram auto-delete production gates; safe configuration, recovery, deploy and rollback | all operational tasks | `operations.md` and verification steps in all five plans |
 | canonical task/fix worktree, Draft-to-Ready review, green CI/Codex gates, user-authorized squash merge, and safe cleanup | every product task | [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md) and Global Constraints in all five plans |
 

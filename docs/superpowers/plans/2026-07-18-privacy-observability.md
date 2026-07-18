@@ -20,7 +20,7 @@
 - The outbox claim and immediate pre-send reload exclude leads at or beyond 29 days. A stale worker's lease-token update cannot reverse privacy blocking.
 - A retained request ID with null fingerprint always produces the same empty safe `202`, creates no new lead/outbox, and never returns 409 for changed payload.
 - PostgreSQL backup retention and Telegram auto-delete must each be no more than 30 days before production release.
-- Liveness is dependency-free. Readiness uses only PostgreSQL availability and an outbox-worker full-batch success within 45 seconds after a 45-second startup grace; reload/send/state-write exceptions and false lease-token updates do not advance that heartbeat; public bodies contain only `status`.
+- Liveness is dependency-free. Readiness uses only PostgreSQL availability and an outbox-worker full-batch success within 45 seconds after a 45-second startup grace; reload/send/state-write exceptions and false lease-token updates do not advance that heartbeat; public bodies contain only `status`, and both paths retain exact `Cache-Control: no-store`.
 - Retention runs hourly; its successful full-pass heartbeat is stale after two hours and alerts but does not change readiness.
 - OTLP is introduced only in `task-backend-observability`; no self-hosted Prometheus/Grafana and no public `/actuator/metrics` or `/actuator/prometheus`.
 - Logs/problems/metrics never include name, phone, comment, request/canonical body, source path tag, request ID tag, fingerprint, Telegram content/credentials, database URL/credentials, OTLP authorization, environment dump, SQL parameters, or unbounded exception text.
@@ -267,6 +267,7 @@ package ru.andrew.website.observability;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -277,6 +278,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -302,9 +304,12 @@ class HealthContractIntegrationTest {
     void staleWorkerMakesOnlyReadinessDown() throws Exception {
         workerHeartbeat.success(clock.instant().minusSeconds(46));
         mvc.perform(get("/actuator/health/liveness"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("UP"));
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.status").value("UP"));
         mvc.perform(get("/actuator/health/readiness"))
                 .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
                 .andExpect(content().json("{\"status\":\"DOWN\"}", true));
     }
 
@@ -313,6 +318,7 @@ class HealthContractIntegrationTest {
         workerHeartbeat.success(clock.instant());
         mvc.perform(get("/actuator/health/readiness"))
                 .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
                 .andExpect(content().json("{\"status\":\"UP\"}", true))
                 .andExpect(jsonPath("$.components").doesNotExist());
     }
@@ -357,7 +363,7 @@ public final class DatabaseReadinessHealthIndicator implements HealthIndicator {
 }
 ```
 
-`WorkerReadinessHealthIndicator` is named `telegramWorkerReadiness`, uses `Clock`, applies the 45-second startup grace and 45-second success age, and returns only up/down without detail. Configure:
+`WorkerReadinessHealthIndicator` is named `telegramWorkerReadiness`, uses `Clock`, applies the 45-second startup grace and 45-second success age, and returns only up/down without detail. Retain the foundation `HealthCacheControlFilter` unchanged so it wraps both health paths at highest precedence and forces the exact `no-store` value for both healthy and degraded responses. Configure:
 
 ```yaml
 management:
@@ -385,7 +391,7 @@ spring:
       validation-timeout: 1000
 ```
 
-Run the health test and expect PASS with exact status-only JSON.
+Run the health test and expect PASS with exact status-only JSON and exact `Cache-Control: no-store` on liveness `200` plus readiness `200` and `503`.
 
 - [ ] **Step 3: GREEN — enable production-only private OTLP and structured output**
 
@@ -421,7 +427,7 @@ Run:
 ./mvnw -B verify
 ```
 
-Expected: PASS with at least 80% coverage, PostgreSQL degradation tests green, status-only public health, and no sensitive actuator/raw metrics exposure. In a production-like non-secret test environment, point OTLP at a local capture receiver and assert only allowlisted metric names/tags; do not store authorization or payload artifacts.
+Expected: PASS with at least 80% coverage, PostgreSQL degradation tests green, status-only public health with exact no-store headers, and no sensitive actuator/raw metrics exposure. In a production-like non-secret test environment, point OTLP at a local capture receiver and assert only allowlisted metric names/tags; do not store authorization or payload artifacts.
 
 - [ ] **Step 5: Commit**
 
