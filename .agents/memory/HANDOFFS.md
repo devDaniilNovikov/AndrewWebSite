@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-context-refactor` | `2026-07-19-180745-task-context-refactor-handoff` → `2026-07-19-182536-task-context-refactor-handoff` | ready; merge requires explicit user authorization | memory, process, tracker |
+| `fix-tracker-canonical-links` | `2026-07-19-192146-fix-tracker-canonical-links-handoff` → `2026-07-19-193125-fix-tracker-canonical-links-ready-handoff` | ready; merge requires explicit user authorization | process, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -28,6 +28,7 @@ design.
 | `task-agents-memory` | 1 | `2026-07-18-104909-task-agents-memory-handoff.md` | merged; shared memory established (DEC-20260718-001..004) | memory |
 | `fix-backend-skeleton-review` | 2 | `2026-07-18-131926-backend-skeleton-review-ready-handoff.md` | merged | backend, process |
 | `task-ci-backend-gates` | 2 | `2026-07-18-110204-ci-backend-gates-ready-handoff.md` | merged as `c703ae7`; retained source branch | ci, security, incident |
+| `task-context-refactor` | 2 | `2026-07-19-182536-task-context-refactor-handoff.md` | merged as `66e2afa`; retained source branch | memory, process, tracker |
 
 ## Rules
 
