@@ -10,12 +10,12 @@ over older planning text.
 ## Product
 
 B2B website for a commercial refrigeration repair company (Moscow). Primary
-conversion: a phone call; secondary: the lead form. The canonical product
-brief will live at `docs/product/technical-brief.ru.md` once the user
-supplies the sanitized version (Q-20260718-003); until then product facts
-beyond this paragraph are **explicit placeholders** — content, prices,
-requisites, guarantees, and legal texts are never invented and are launch
-blockers until verified.
+conversion: a phone call; secondary: the lead form. Canonical product scope,
+content status, acceptance criteria, and open product questions live in the
+[Russian technical brief](product/technical-brief.ru.md). Recommendations,
+assumptions, and open questions in that brief are not approved requirements;
+prices, requisites, guarantees, legal texts, and other missing facts are never
+invented and remain launch blockers until verified.
 
 ## Architecture
 
