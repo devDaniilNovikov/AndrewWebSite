@@ -18,8 +18,8 @@ Signature: HND task-context-refactor [ready] topics: memory, process, tracker â†
   unpublished local task. T4 and T6 remain separate; T5 waits for this PR to
   merge. No absorbed local branch was merged or opened as a PR.
 - Self-review, specification review, and quality/security review found no
-  remaining Critical or Important issue. No new incident-derived lesson was
-  required by this task.
+  remaining Critical or Important issue. LES-20260719-009 records the observed
+  gap between a successful CodeQL workflow and pending server-side processing.
 
 ## Snapshot at 2026-07-19T18:25Z â€” re-verify live before use
 

@@ -13,6 +13,7 @@ LES-20260718-005 [active] ci: diff agents' later pushes against the last reviewe
 LES-20260718-006 [active] process: verify platform settings, not only policy documents → merge 288fdd5
 LES-20260718-007 [active] ci: provision and prove external-scan credentials before a gate becomes required → run #100
 LES-20260718-008 [active] memory: handoff filename timestamps are UTC; mixed zones broke ordering → HANDOFFS rows 7-9
+LES-20260719-009 [active] ci: workflow success can precede CodeQL processing completion → run 29698729563
 ```
 
 ## Records
@@ -72,3 +73,19 @@ LES-20260718-008 [active] memory: handoff filename timestamps are UTC; mixed zon
 - **Evidence:** [`HANDOFFS.md`](HANDOFFS.md) chronology rows 7–9.
 - **Applicability:** every new handoff.
 - **Review-by:** any change to the handoff lifecycle.
+
+## LES-20260719-009 — CodeQL workflow and processing are separate states
+
+`LES-20260719-009 [active] ci: workflow success can precede CodeQL processing completion → run 29698729563`
+
+- **Date:** 2026-07-19
+- **Lesson:** a successful CodeQL workflow job proves that SARIF was uploaded,
+  but not that GitHub Advanced Security finished processing it. Ready review
+  checks the downstream CodeQL check-run separately.
+- **Evidence:** push CI run `29698729563` job `88223961420` uploaded SARIF,
+  timed out waiting for processing, and completed successfully while check-run
+  `88224070561` remained queued.
+- **Applicability:** CodeQL and other scanners with asynchronous server-side
+  result processing.
+- **Review-by:** any change to the CodeQL action, processing wait, or Ready
+  security-review protocol.
