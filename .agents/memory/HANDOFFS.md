@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-tracker-canonical-links` | `2026-07-19-192146-fix-tracker-canonical-links-handoff` | in progress; merge unauthorized | process, tracker |
+| `fix-tracker-canonical-links` | `2026-07-19-192146-fix-tracker-canonical-links-handoff` → `2026-07-19-193125-fix-tracker-canonical-links-ready-handoff` | ready; merge requires explicit user authorization | process, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
