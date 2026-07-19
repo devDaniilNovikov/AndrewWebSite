@@ -10,7 +10,6 @@ only. Signature format: [`README.md`](README.md).
 
 ```text
 Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on Timeweb proxy verification → user
-Q-20260718-002 [active] ci: T4 owner — Jules dispatch or direct Codex fix for ci.yml timeouts → user
 Q-20260718-003 [active] product: sanitized technical brief needed to commit docs/product/technical-brief.ru.md → user
 Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 17 deps → user
 ```
@@ -30,7 +29,7 @@ Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before
 
 ## Q-20260718-002 — Ownership of the small CI hardening fix
 
-`Q-20260718-002 [active] ci: T4 owner — Jules dispatch or direct Codex fix for ci.yml timeouts → user`
+`Q-20260718-002 [resolved] ci: T4 owner is Codex for the narrow ci.yml hardening fix → T4 handoff`
 
 - **Question:** run the timeout/annotation fix through the Jules dispatch
   protocol (canonical CI owner) or as a direct Codex `fix-*` (precedent:
@@ -38,6 +37,8 @@ Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before
 - **Why now:** blocks dispatching the fix; two-line change vs dispatch
   overhead.
 - **Owner:** user.
+- **Resolution:** the user selected a direct Codex fix with narrow scope;
+  see [`2026-07-19-194032-fix-ci-timeouts-annotations-handoff.md`](../../docs/handoffs/2026-07-19-194032-fix-ci-timeouts-annotations-handoff.md).
 
 ## Q-20260718-003 — Committing the sanitized technical brief
 
