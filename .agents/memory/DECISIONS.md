@@ -12,6 +12,7 @@ DEC-20260718-003 [active] process: live Git/GitHub, then reconciled TASKS.md, ou
 DEC-20260718-004 [active] memory: file-first implementation; codex-mem deferred, inactive, advisory → user brief
 DEC-20260718-005 [active] process: merged branches stay retained read-only; worktree removal never deletes → 288fdd5b
 DEC-20260719-006 [active] memory: product is an allowed topic tag for product-source records → user decision
+DEC-20260719-007 [active] tracker: frontend delivery uses six tasks F1-F6 assigned by the user → user
 ```
 
 ## Records
@@ -117,6 +118,26 @@ DEC-20260719-006 [active] memory: product is an allowed topic tag for product-so
 - **Canonical source:** [README](README.md)
 - **Supersedes:** the prior closed vocabulary without `product`.
 - **Review-by:** any further change to the closed topic vocabulary.
+
+## DEC-20260719-007 — Six-task frontend delivery track
+
+`DEC-20260719-007 [active] tracker: frontend delivery uses six tasks F1-F6 assigned by the user → user`
+
+- **Date:** 2026-07-19
+- **Scope:** frontend delivery planning after the canonical product brief.
+- **Decision:** use six atomic tasks for a user-assigned frontend agent:
+  foundation, shared shell, product pages, trust content, lead form, and
+  final quality hardening. Every task starts from fresh `main` after its
+  declared prerequisites; no stacked PR is allowed.
+- **Rationale:** the split keeps framework setup, verified content, API
+  integration, and final cross-cutting quality review independently
+  reviewable while leaving the concrete frontend-agent assignment to the
+  user.
+- **Evidence:** the user's explicit F1-F6 choice and T5 authorization.
+- **Canonical source:** [TASKS](../../TASKS.md).
+- **Supersedes:** the unplanned frontend placeholder represented by
+  Q-20260718-004.
+- **Review-by:** any frontend task split, dependency, or ownership change.
 
 ## Entry rules
 

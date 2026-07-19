@@ -61,5 +61,5 @@ Undecided values an agent must never invent (stop and ask; see
 - Trusted proxy CIDRs / `X-Forwarded-For` trust — blocked on Timeweb proxy
   verification (Q-20260718-001).
 - Analytics vendor — undecided.
-- Legal texts and verified company requisites — blocked on the sanitized
-  brief (Q-20260718-003).
+- Legal texts and verified company requisites — remain open product inputs in
+  the [canonical technical brief](product/technical-brief.ru.md).
