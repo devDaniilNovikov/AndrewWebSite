@@ -1,5 +1,5 @@
 # fix-tracker-canonical-links handoff
-Signature: HND T2 [in_progress] topics: tracker → predecessor: 2026-07-19-182536-task-context-refactor-handoff.md
+Signature: HND T2 [draft_pr] topics: tracker → predecessor: 2026-07-19-182536-task-context-refactor-handoff.md
 
 ## Durable — safe to cite later
 
@@ -22,7 +22,7 @@ Signature: HND T2 [in_progress] topics: tracker → predecessor: 2026-07-19-1825
 - PR #24 is merged and its source branch remains retained at `4fc6699`.
 - Post-merge Repository policy, verify, Java security/CodeQL workflow, and
   Semgrep completed successfully on `main`.
-- `TASKS.md` records T2 as `in_progress`; no PR exists for T2 yet.
+- `TASKS.md` records T2 as `draft_pr`; PR #25 is open as Draft.
 - User-owned untracked `receipts/` and `review-receipts/` remain outside the
   task diff.
 
