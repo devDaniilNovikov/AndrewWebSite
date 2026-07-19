@@ -1,30 +1,38 @@
 # Handoff index
 
-The episodic base is the append-only [handoff directory](../../docs/handoffs/).
-This index is chronological navigation, not mutable repository truth. Recheck
-Git/GitHub and reconcile `TASKS.md` before acting on branch, PR, check, or task
-status.
+Navigation over the append-only [handoff directory](../../docs/handoffs/).
+This index is not repository truth: re-verify any status live before acting.
+Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
-## Current
+## Active chain
 
-[`2026-07-18-110204-ci-backend-gates-ready-handoff.md`](../../docs/handoffs/2026-07-18-110204-ci-backend-gates-ready-handoff.md)
-is the current handoff.
-
-## Chronology
-
-| Order | Handoff | State | Predecessor |
+| Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| 1 | [`2026-07-17-backend-superpowers-handoff.md`](../../docs/handoffs/2026-07-17-backend-superpowers-handoff.md) | Historical | No predecessor declared |
-| 2 | [`2026-07-18-backend-skeleton-handoff.md`](../../docs/handoffs/2026-07-18-backend-skeleton-handoff.md) | Historical | No predecessor declared |
-| 3 | [`2026-07-18-094835-backend-skeleton-ready-handoff.md`](../../docs/handoffs/2026-07-18-094835-backend-skeleton-ready-handoff.md) | Historical | [`2026-07-18-backend-skeleton-handoff.md`](../../docs/handoffs/2026-07-18-backend-skeleton-handoff.md) |
-| 4 | [`2026-07-18-101804-branch-retention-handoff.md`](../../docs/handoffs/2026-07-18-101804-branch-retention-handoff.md) | Historical | [`2026-07-18-094835-backend-skeleton-ready-handoff.md`](../../docs/handoffs/2026-07-18-094835-backend-skeleton-ready-handoff.md) |
-| 5 | [`2026-07-18-104909-task-agents-memory-handoff.md`](../../docs/handoffs/2026-07-18-104909-task-agents-memory-handoff.md) | Historical | [`2026-07-18-101804-branch-retention-handoff.md`](../../docs/handoffs/2026-07-18-101804-branch-retention-handoff.md) |
-| 6 | [`2026-07-18-131142-backend-skeleton-review-draft-handoff.md`](../../docs/handoffs/2026-07-18-131142-backend-skeleton-review-draft-handoff.md) | Historical | [`2026-07-18-104909-task-agents-memory-handoff.md`](../../docs/handoffs/2026-07-18-104909-task-agents-memory-handoff.md) |
-| 7 | [`2026-07-18-131926-backend-skeleton-review-ready-handoff.md`](../../docs/handoffs/2026-07-18-131926-backend-skeleton-review-ready-handoff.md) | Historical | [`2026-07-18-131142-backend-skeleton-review-draft-handoff.md`](../../docs/handoffs/2026-07-18-131142-backend-skeleton-review-draft-handoff.md) |
-| 8 | [`2026-07-18-062911-ci-backend-gates-dispatch-handoff.md`](../../docs/handoffs/2026-07-18-062911-ci-backend-gates-dispatch-handoff.md) | Historical | [`2026-07-18-131926-backend-skeleton-review-ready-handoff.md`](../../docs/handoffs/2026-07-18-131926-backend-skeleton-review-ready-handoff.md) |
-| 9 | [`2026-07-18-110204-ci-backend-gates-ready-handoff.md`](../../docs/handoffs/2026-07-18-110204-ci-backend-gates-ready-handoff.md) | Current | [`2026-07-18-062911-ci-backend-gates-dispatch-handoff.md`](../../docs/handoffs/2026-07-18-062911-ci-backend-gates-dispatch-handoff.md) |
+| `task-context-refactor` | `2026-07-19-180745-task-context-refactor-handoff` → `2026-07-19-182536-task-context-refactor-handoff` | ready; merge requires explicit user authorization | memory, process, tracker |
 
-Historical handoffs are immutable. The current handoff may receive focused
-corrections only until a successor links to it; the successor makes it
-historical. Never delete a handoff or infer current state solely from this
-index.
+Note: chain files named before the UTC rule (LES-20260718-008) keep their
+original names and may sort out of true order; this table's chronology is
+authoritative.
+
+## Closed chains
+
+One line per merged task with committed handoffs: final handoff, outcome,
+topics. Merged tasks that predate the handoff process have no chain here by
+design.
+
+| Task | Handoffs | Final | Outcome | Topics |
+| --- | --- | --- | --- | --- |
+| `task-backend-contract-plans` | 1 | `2026-07-17-backend-superpowers-handoff.md` | merged; Superpowers backend plans committed | backend, process |
+| `task-backend-skeleton` | 2 | `2026-07-18-094835-backend-skeleton-ready-handoff.md` | merged | backend |
+| `fix-preserve-merged-branches` | 1 | `2026-07-18-101804-branch-retention-handoff.md` | merged; retention policy adopted (DEC-20260718-005) | process, incident |
+| `task-agents-memory` | 1 | `2026-07-18-104909-task-agents-memory-handoff.md` | merged; shared memory established (DEC-20260718-001..004) | memory |
+| `fix-backend-skeleton-review` | 2 | `2026-07-18-131926-backend-skeleton-review-ready-handoff.md` | merged | backend, process |
+| `task-ci-backend-gates` | 2 | `2026-07-18-110204-ci-backend-gates-ready-handoff.md` | merged as `c703ae7`; retained source branch | ci, security, incident |
+
+## Rules
+
+- New filenames use UTC `HHMMSS` (LES-20260718-008) so lexicographic order
+  matches chronology; the chronology columns stay authoritative regardless.
+- A successor link makes its predecessor historical and immutable.
+- On task merge, the controller collapses the chain into `## Closed chains`
+  in the same branch. Handoff files themselves are never deleted or moved.

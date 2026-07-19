@@ -1,5 +1,8 @@
 # Memory archive
 
-This directory may contain only superseded non-handoff memory records. It is not read during normal startup.
-
-Move a record here only after a reviewed replacement links its ID and explains the supersession. Never archive, move, or delete committed files from [`../../../docs/handoffs/`](../../../docs/handoffs/): handoffs are append-only episodic history.
+Superseded non-handoff records only, moved after a reviewed replacement
+links their ID. Never read at startup; searched by `grep` on IDs or tags
+when provenance is needed. Handoffs are never archived, moved, or deleted.
+Expected initial content after migration (T8): the bodies of retired
+policy-restatement lessons LES-20260718-001..004 and any decision bodies
+later superseded.

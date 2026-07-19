@@ -1,107 +1,108 @@
 # Shared agent memory
 
-This directory is the file-first shared memory surface for Codex, Claude Code,
-and Jules. It records durable context and evidence; it is a navigation aid, not
-a replacement for live state, canonical specifications, process rules, or an
-assigned task plan.
+File-first shared memory for Codex, Claude Code, and Jules. It records
+durable context and evidence. It is navigation and evidence — never a
+substitute for live Git/GitHub state, `TASKS.md`, canonical contracts,
+process rules, or the assigned plan. Priority on conflict follows the
+context stack defined in the role files; an explicit current user decision
+outranks any older text.
 
-## Startup and context routing
+## Hot layer — what a task start actually reads
 
-An agent must assemble context from all of the following before changing work.
-The order is intentional, but no source alone is sufficient:
+Startup reading is a constant-size budget, not the whole directory:
 
-1. Inspect live Git and GitHub state: `origin/main`, the task branch, open pull
-   requests, checks, and prerequisite status.
-2. Read `TASKS.md` as the living task queue and status tracker, then reconcile
-   it against that live state when the agent owns the task. `TASKS.md` is not
-   long-term memory and is not copied into this directory.
-3. Read the shared development process and Git Flow in
-   [`../workflows/GIT_FLOW.md`](../workflows/GIT_FLOW.md).
-4. Read role and ownership rules in [`../AGENTS.md`](../AGENTS.md),
-   [`../CLAUDE.md`](../CLAUDE.md), and the Jules guide when applicable.
-5. Read the product architecture, API, operations, and task-specific canonical
-   documents that govern the assigned scope.
-6. Read this file, [`HANDOFFS.md`](HANDOFFS.md), the current handoff, and any
-   directly relevant decision, lesson, or question.
-7. Read the executable plan assigned to this task. A plan applies only to its
-   own task and never silently authorizes another task.
+1. This section of this README.
+2. The `## Active` section of [`DECISIONS.md`](DECISIONS.md),
+   [`LESSONS.md`](LESSONS.md), and [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md)
+   — signature lines only.
+3. The `## Active chain` of [`HANDOFFS.md`](HANDOFFS.md) and the current
+   handoff it points to.
 
-Shared memory provides accumulated context and evidence after those sources are
-located. It must never be treated as a copy of the task queue, a substitute for
-live Git/GitHub, or a way to bypass ownership and review.
+**Budget: the hot layer stays under 80 lines total.** If an addition would
+exceed it, compact first (close questions, supersede stale records, collapse
+a merged chain) — then add. Full record bodies, closed chains, and archived
+material are cold: read them only when a task touches their topic, located
+by `grep` on tags, IDs, or `[active]` — not by reading files top to bottom.
 
-## Memory taxonomy
+## Record signature — one line that carries the decision
 
-| Kind | Location | Purpose | Default use |
-| --- | --- | --- | --- |
-| Semantic | `DECISIONS.md`, `OPEN_QUESTIONS.md` | Settled, reviewed choices and unresolved decision prompts | Read when a task touches the recorded scope |
-| Episodic | [`../../docs/handoffs/`](../../docs/handoffs/) and `HANDOFFS.md` | Append-only snapshots, evidence, and transfer context | Read the indexed current handoff, then relevant predecessors |
-| Procedural | `../AGENTS.md`, `../CLAUDE.md`, `../workflows/`, [`../../.github/JULES_AUTOMATION.md`](../../.github/JULES_AUTOMATION.md) | Canonical process, roles, and operating rules | Link to and follow; do not duplicate here |
+Every record's body starts with, and its `## Active` entry consists of, a
+single signature line, at most 120 characters:
 
-## Authority map
+```text
+DEC-YYYYMMDD-NNN [status] scope-tag: one normative sentence → evidence
+```
 
-| Subject | Canonical authority | Memory's role |
+Example:
+`LES-20260718-005 [active] ci: diff agents' later pushes against the last reviewed tree → handoff 110204`
+
+An agent must be able to act on the signature alone; the body exists for
+provenance and edge cases. `grep '\[active\]' .agents/memory/*.md` returns
+the entire live semantic memory.
+
+## Topic vocabulary — closed set
+
+`backend, frontend, product, ci, security, tracker, memory, deploy, process,
+incident`. Used in signatures and the handoff index. Extending the
+vocabulary is a decision (add a DEC record); free-form tags are rejected in
+review.
+
+## Taxonomy
+
+| Kind | Location | Purpose |
 | --- | --- | --- |
-| Current user decision | The explicit, current user decision | Record evidence and supersession; never override it with older text |
-| Mutable repository, PR, check, and branch state | Live Git and GitHub, then reconciled `TASKS.md` | Snapshot only; always recheck live |
-| Living task order and status | `TASKS.md`, reconciled with live Git/GitHub | Navigation only; do not duplicate its queue here |
-| Product architecture and backend behavior | [`../../docs/backend/architecture.md`](../../docs/backend/architecture.md) | Context and links only |
-| HTTP contract | [`../../docs/backend/openapi.yaml`](../../docs/backend/openapi.yaml) | Context and links only |
-| Operations | [`../../docs/backend/operations.md`](../../docs/backend/operations.md) | Context and links only |
-| Process, ownership, and automation | `../AGENTS.md`, `../CLAUDE.md`, `../workflows/GIT_FLOW.md`, and [`../../.github/JULES_AUTOMATION.md`](../../.github/JULES_AUTOMATION.md) | Explain provenance; do not replace rules |
-| Assigned executable work | The plan explicitly assigned to the current task | Evidence and history only; no cross-task authorization |
+| Semantic | `DECISIONS.md`, `LESSONS.md`, `OPEN_QUESTIONS.md` | Settled choices, distilled experience, pending decisions |
+| Episodic | [`../../docs/handoffs/`](../../docs/handoffs/) + `HANDOFFS.md` | Append-only snapshots and evidence |
+| Procedural | Role files, `../workflows/` | Canonical process — link, never duplicate |
 
-If sources conflict, preserve the conflict. Add an entry with status,
-supersession, evidence, and review metadata; do not silently rewrite history.
-An explicit current user decision outranks older planning text. A mutable fact
-must be verified live before it can change a task decision.
+## Write rules
 
-## Controller and write rules
-
-- Exactly one active controller owns a task branch and its memory write at a
-  time. Other agents are read-only until ownership is explicitly yielded.
-- The controller records only verified, task-relevant facts. It does not copy
-  raw tool output, raw issue text, secrets, credentials, or lead PII.
-- A memory record has a stable ID and a status. Use `active`, `deferred`,
-  `superseded`, or `resolved` as applicable; never delete a conflict merely
-  because it was resolved.
-- A task may update only its declared memory scope. Cross-owner changes require
-  the normal ownership decision and Codex review where required.
-
-## Security
-
-Memory stores concise, verified context only. Never add secrets, credentials,
-private keys, lead PII, raw issue text, raw chat transcripts, or raw tool
-output. Refer to canonical records by link and summarize only the minimum
-non-sensitive evidence needed to explain a decision or task boundary.
+- Exactly one active controller per task branch owns memory writes; everyone
+  else is read-only until ownership is explicitly yielded.
+- Supersede, never delete. Status vocabulary: `active`, `deferred`,
+  `resolved`, `superseded`.
+- Never store secrets, credentials, PII, raw issue text, or transcripts —
+  link canonical records and summarize the minimum non-sensitive evidence.
+- **Tripwire → question:** every "stopped and asked the user" event creates a
+  Q record before or with the ask; the answer resolves it with a link to the
+  resulting decision or handoff. Before asking the user anything, `grep`
+  OPEN_QUESTIONS — it may already be answered.
+- **Distillation duty:** closing a task that produced an incident, rollback,
+  rejected approach, or external-service surprise adds a LESSONS record in
+  the same branch. Policy restatements are not lessons; a lesson requires a
+  real incident with linked evidence.
+- **Review-by:** each record names the condition that forces its re-review
+  (e.g. `Review-by: any branch-protection change`). A task touching a
+  record's topic with a triggered condition must re-verify it. Every fifth
+  merged task, the controller sweeps all `[active]` signatures against live
+  state and compacts.
 
 ## Handoff lifecycle
 
-Handoffs use `YYYY-MM-DD-HHMMSS-<task>-handoff.md` in
-[`../../docs/handoffs/`](../../docs/handoffs/). A pause, transfer, or completion
-creates a uniquely named committed handoff and updates `HANDOFFS.md` in the same
-task branch.
+Filenames `YYYY-MM-DD-HHMMSS-<task>-handoff.md` in
+[`../../docs/handoffs/`](../../docs/handoffs/), `HHMMSS` in **UTC** so
+filename order equals chronology. Created, with an index update, in the same
+task branch on every pause, transfer, or completion. The current handoff may
+receive focused corrections only until a successor links to it; then it is
+historical and immutable. Handoffs are never deleted or archived. When a
+task's PR merges, its chain collapses to one line in `## Closed chains`.
 
-The current handoff may receive focused corrections only until a successor
-links to it. Once a successor link exists, it is historical and immutable.
-Handoffs are never deleted or moved to the archive. Every handoff must name its
-predecessor when one exists, identify the snapshot evidence, state scope and
-boundaries, and give conditional next steps that require a live check rather
-than predicting future state.
+Handoff body template — staleness is confined to the timestamped section:
 
-## Record schema and archive policy
+```markdown
+# <task> handoff
+Signature: HND <task> [state] topics: <tags> → predecessor: <file|none>
 
-Decision, lesson, and question records use a stable `ID` and fields for
-`status`, `date`, `scope`, statement, `evidence`, `canonical source`,
-`supersedes`, and `review` as relevant. Handoff filenames are their episodic
-IDs; `HANDOFFS.md` records their chronological status and predecessor.
+## Durable — safe to cite later
+Decisions made, evidence SHAs, rejected approaches, lesson candidates.
 
-[`archive/`](archive/) contains only superseded non-handoff records. It is not
-read by default. A record moves there only after its replacement and review are
-linked. Handoffs never enter the archive and are never removed.
+## Snapshot at YYYY-MM-DDTHH:MMZ — re-verify live before use
+PR/branch/check statuses, tracker rows, environment facts.
 
-## `codex-mem` status
+## Next steps — conditional, each requires the stated live check
+```
 
-`codex-mem` is **deferred**, **inactive**, and **advisory**. It is not a startup
-dependency, source of truth, or production integration. Any future pilot needs
-an explicit user decision, a scoped task, and a reviewed migration rule.
+## Archive
+
+[`archive/`](archive/) holds superseded non-handoff records, moved only
+after a reviewed replacement links their ID. Never read at startup.
