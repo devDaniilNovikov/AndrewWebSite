@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-context-refactor` | `2026-07-19-180745-task-context-refactor-handoff` | draft PR #24; checks and reviews pending | memory, process, tracker |
+| `task-context-refactor` | `2026-07-19-180745-task-context-refactor-handoff` → `2026-07-19-182536-task-context-refactor-handoff` | ready; merge requires explicit user authorization | memory, process, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
