@@ -11,13 +11,14 @@ Signature: HND T4 [active] topics: ci → predecessor: 2026-07-19-193125-fix-tra
   security behavior remain unchanged.
 - Node.js 20 deprecation annotations and action upgrades remain out of scope.
 
-## Snapshot at 2026-07-19T20:02Z — re-verify live before use
+## Snapshot at 2026-07-19T19:51Z — re-verify live before use
 
 - `origin/main` is T2 merge `37d02cf0ce8961cb205d9d5598474cd949bd0152`.
 - PR #25 is merged and its source branch remains retained at `bc5e63b`.
 - Post-merge Repository policy, verify, Java security/CodeQL workflow, and
   Semgrep completed successfully on `main`.
-- Draft PR #26 points to head `09be3ab`; merge remains unauthorized.
+- Draft PR #26 contains implementation commit `09be3ab`; its live head must
+  be re-verified after every metadata update. Merge remains unauthorized.
 - Local actionlint, Maven verify, exact-scope, immutable-SHA,
   memory-signature, link, and secret-pattern checks passed.
 
