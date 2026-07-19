@@ -10,7 +10,6 @@ only. Signature format: [`README.md`](README.md).
 
 ```text
 Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on Timeweb proxy verification → user
-Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 17 deps → user
 ```
 
 ## Records
@@ -55,13 +54,15 @@ Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before
 
 ## Q-20260718-004 — Frontend track granularity
 
-`Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 17 deps → user`
+`Q-20260718-004 [resolved] tracker: frontend track approved as six atomic tasks → DEC-20260719-007`
 
 - **Question:** approve, adjust, or re-cut the proposed frontend task rows
   before they enter `TASKS.md` and row 17's prerequisites.
-- **Why now:** the frontend track is unplanned while it could run parallel
-  to backend phases; row 17 depends on it.
+- **Why now:** the frontend track was unplanned while it could run parallel
+  to backend phases; static JAR integration depends on its output.
 - **Owner:** user with Codex.
+- **Resolution:** the user approved the six-task F1-F6 split with explicit
+  prerequisites and separate non-stacked PRs; see DEC-20260719-007.
 
 ## Q-20260719-005 — Topic vocabulary for product-source questions
 
