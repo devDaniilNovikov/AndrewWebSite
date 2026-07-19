@@ -72,4 +72,3 @@ LES-20260718-008 [active] memory: handoff filename timestamps are UTC; mixed zon
 - **Evidence:** [`HANDOFFS.md`](HANDOFFS.md) chronology rows 7–9.
 - **Applicability:** every new handoff.
 - **Review-by:** any change to the handoff lifecycle.
-
