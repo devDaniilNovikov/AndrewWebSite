@@ -12,7 +12,8 @@ only. Signature format: [`README.md`](README.md).
 Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on Timeweb proxy verification → user
 Q-20260718-002 [active] ci: T4 owner — Jules dispatch or direct Codex fix for ci.yml timeouts → user
 Q-20260718-003 [active] product: sanitized technical brief needed to commit docs/product/technical-brief.ru.md → user
-Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 16 deps → user
+Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 17 deps → user
+Q-20260719-005 [active] memory: add product to the topic vocabulary or retag Q-20260718-003? → user
 ```
 
 ## Records
@@ -52,13 +53,25 @@ Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before
 
 ## Q-20260718-004 — Frontend track granularity
 
-`Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 16 deps → user`
+`Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 17 deps → user`
 
 - **Question:** approve, adjust, or re-cut the proposed frontend task rows
-  before they enter `TASKS.md` and row 16's prerequisites.
+  before they enter `TASKS.md` and row 17's prerequisites.
 - **Why now:** the frontend track is unplanned while it could run parallel
-  to backend phases; row 16 depends on it.
+  to backend phases; row 17 depends on it.
 - **Owner:** user with Codex.
+
+## Q-20260719-005 — Topic vocabulary for product-source questions
+
+`Q-20260719-005 [active] memory: add product to the topic vocabulary or retag Q-20260718-003? → user`
+
+- **Question:** should `product` be added to the closed topic vocabulary via
+  a decision record, or should Q-20260718-003 use an existing topic tag?
+- **Why now:** the v3 README defines a closed vocabulary but the supplied
+  active question uses `product`, so Ready would otherwise certify two
+  contradictory memory rules.
+- **Owner:** user with Codex.
+- **Review-by:** resolution of `task-context-refactor` review findings.
 
 ## Entry rules
 

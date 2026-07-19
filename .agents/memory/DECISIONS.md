@@ -7,7 +7,7 @@ Signature format and status vocabulary: [`README.md`](README.md).
 
 ```text
 DEC-20260718-001 [active] memory: all active agents share one file-first memory surface → user brief
-DEC-20260718-002 [active] memory: committed docs/handoffs/ files are the episodic base indexed by HANDOFFS.md → history
+DEC-20260718-002 [active] memory: docs/handoffs is the episodic base indexed by HANDOFFS.md → history
 DEC-20260718-003 [active] process: live Git/GitHub, then reconciled TASKS.md, outrank memory snapshots → user routing
 DEC-20260718-004 [active] memory: file-first implementation; codex-mem deferred, inactive, advisory → user brief
 DEC-20260718-005 [active] process: merged branches stay retained read-only; worktree removal never deletes → 288fdd5b
@@ -32,7 +32,7 @@ DEC-20260718-005 [active] process: merged branches stay retained read-only; work
 
 ## DEC-20260718-002 — Committed handoff base and index
 
-`DEC-20260718-002 [active] memory: committed docs/handoffs/ files are the episodic base indexed by HANDOFFS.md → history`
+`DEC-20260718-002 [active] memory: docs/handoffs is the episodic base indexed by HANDOFFS.md → history`
 
 - **Date:** 2026-07-18
 - **Scope:** episodic task context

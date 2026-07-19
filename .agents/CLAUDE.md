@@ -25,7 +25,7 @@ fullstack agent.
 ## Ownership
 
 **Own (within an assigned task):** the frontend app under
-`{{FRONTEND_DIR}}/` with its manifest, lockfile, and framework/styling
+`frontend/` with its manifest, lockfile, and framework/styling
 config; design system and tokens; components, layout, responsive behavior,
 animations with reduced-motion support; accessibility; frontend performance
 and technical SEO; user-facing forms, client validation, the typed

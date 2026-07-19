@@ -43,9 +43,9 @@
 ## Pull request contract
 
 - Titles: `feat|fix|docs|test|refactor|perf|chore|ci(scope): description`.
-- Required checks: {{REQUIRED_CHECK_NAMES}}. Renaming a required job updates
-  branch protection in the same change — never leave an obsolete required
-  context behind.
+- Required checks: `Repository policy`, `verify`, and `dependency-security`.
+  Renaming a required job updates branch protection in the same change —
+  never leave an obsolete required context behind.
 - Automation (Jules or any bot) may open PRs but never merges; auto-merge
   stays disabled repository-wide.
 - Report only checks that actually ran; stale evidence is no evidence.
@@ -56,11 +56,11 @@ Require: PR before merge, the configured checks, branch up to date,
 conversation resolution, linear history, squash-only. Enforce for
 administrators; block force pushes and deletion.
 
-**Branch retention after merge:** {{RETAIN_OR_DELETE}}. Whichever policy you
-pick, verify the matching GitHub setting ("Automatically delete head
-branches") — a platform setting can silently violate a documented policy;
-verify settings, not only documents. Record the decision in
-`memory/DECISIONS.md`.
+**Branch retention after merge:** completed task and fix branches stay as
+read-only history; removing a worktree never authorizes branch deletion.
+Verify that GitHub's "Automatically delete head branches" setting stays
+disabled — a platform setting can silently violate a documented policy.
+Record the decision in `memory/DECISIONS.md`.
 
 ## Handoffs
 

@@ -29,7 +29,8 @@ Never apply both labels to one issue — that creates duplicate sessions.
 
 ## One-time setup
 
-1. Install and authorize the Jules GitHub App for `{{REPO_SLUG}}`.
+1. Install and authorize the Jules GitHub App for
+   `devDaniilNovikov/AndrewWebSite`.
 2. Create a **fresh** Jules API key — any key that has ever appeared in chat,
    source control, logs, or a PR is compromised: rotate, never reuse. Store
    it only as the Actions secret `JULES_API_KEY`.

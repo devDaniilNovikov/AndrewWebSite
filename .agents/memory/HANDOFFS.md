@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-ci-backend-gates` | `2026-07-18-062911-ci-backend-gates-dispatch` → `2026-07-18-110204-ci-backend-gates-ready` | ready; merge awaits explicit user authorization | ci, security, incident |
+| `task-context-refactor` | `2026-07-19-180745-task-context-refactor-handoff` | paused; Q-20260719-005 awaits user decision | memory, process, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -27,6 +27,7 @@ design.
 | `fix-preserve-merged-branches` | 1 | `2026-07-18-101804-branch-retention-handoff.md` | merged; retention policy adopted (DEC-20260718-005) | process, incident |
 | `task-agents-memory` | 1 | `2026-07-18-104909-task-agents-memory-handoff.md` | merged; shared memory established (DEC-20260718-001..004) | memory |
 | `fix-backend-skeleton-review` | 2 | `2026-07-18-131926-backend-skeleton-review-ready-handoff.md` | merged | backend, process |
+| `task-ci-backend-gates` | 2 | `2026-07-18-110204-ci-backend-gates-ready-handoff.md` | merged as `c703ae7`; retained source branch | ci, security, incident |
 
 ## Rules
 
