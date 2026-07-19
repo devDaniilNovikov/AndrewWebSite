@@ -13,7 +13,6 @@ Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on 
 Q-20260718-002 [active] ci: T4 owner — Jules dispatch or direct Codex fix for ci.yml timeouts → user
 Q-20260718-003 [active] product: sanitized technical brief needed to commit docs/product/technical-brief.ru.md → user
 Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 17 deps → user
-Q-20260719-005 [active] memory: add product to the topic vocabulary or retag Q-20260718-003? → user
 ```
 
 ## Records
@@ -63,7 +62,7 @@ Q-20260719-005 [active] memory: add product to the topic vocabulary or retag Q-2
 
 ## Q-20260719-005 — Topic vocabulary for product-source questions
 
-`Q-20260719-005 [active] memory: add product to the topic vocabulary or retag Q-20260718-003? → user`
+`Q-20260719-005 [resolved] memory: product added to the topic vocabulary → DEC-20260719-006`
 
 - **Question:** should `product` be added to the closed topic vocabulary via
   a decision record, or should Q-20260718-003 use an existing topic tag?
@@ -72,6 +71,8 @@ Q-20260719-005 [active] memory: add product to the topic vocabulary or retag Q-2
   contradictory memory rules.
 - **Owner:** user with Codex.
 - **Review-by:** resolution of `task-context-refactor` review findings.
+- **Resolution:** the user authorized adding `product`; see
+  DEC-20260719-006.
 
 ## Entry rules
 

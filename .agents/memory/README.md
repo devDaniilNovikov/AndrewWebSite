@@ -42,7 +42,7 @@ the entire live semantic memory.
 
 ## Topic vocabulary — closed set
 
-`backend, frontend, ci, security, tracker, memory, deploy, process,
+`backend, frontend, product, ci, security, tracker, memory, deploy, process,
 incident`. Used in signatures and the handoff index. Extending the
 vocabulary is a decision (add a DEC record); free-form tags are rejected in
 review.

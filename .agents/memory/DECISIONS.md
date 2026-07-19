@@ -11,6 +11,7 @@ DEC-20260718-002 [active] memory: docs/handoffs is the episodic base indexed by 
 DEC-20260718-003 [active] process: live Git/GitHub, then reconciled TASKS.md, outrank memory snapshots → user routing
 DEC-20260718-004 [active] memory: file-first implementation; codex-mem deferred, inactive, advisory → user brief
 DEC-20260718-005 [active] process: merged branches stay retained read-only; worktree removal never deletes → 288fdd5b
+DEC-20260719-006 [active] memory: product is an allowed topic tag for product-source records → user decision
 ```
 
 ## Records
@@ -101,6 +102,21 @@ DEC-20260718-005 [active] process: merged branches stay retained read-only; work
 - **Supersedes:** prior delete-after-merge behavior
 - **Review-by:** any exception requires an explicit user decision and a
   merged Git Flow update; re-verify on any repository-settings change.
+
+## DEC-20260719-006 — Product topic in the closed vocabulary
+
+`DEC-20260719-006 [active] memory: product is an allowed topic tag for product-source records → user decision`
+
+- **Date:** 2026-07-19
+- **Scope:** semantic-memory topic vocabulary
+- **Decision:** `product` is an allowed topic tag for records about product
+  requirements and their canonical sources.
+- **Rationale:** Q-20260718-003 concerns the sanitized product brief and
+  cannot be classified accurately under the previously listed tags.
+- **Evidence:** explicit user authorization during `task-context-refactor`.
+- **Canonical source:** [README](README.md)
+- **Supersedes:** the prior closed vocabulary without `product`.
+- **Review-by:** any further change to the closed topic vocabulary.
 
 ## Entry rules
 
