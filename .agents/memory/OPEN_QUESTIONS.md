@@ -10,7 +10,6 @@ only. Signature format: [`README.md`](README.md).
 
 ```text
 Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on Timeweb proxy verification → user
-Q-20260718-003 [active] product: sanitized technical brief needed to commit docs/product/technical-brief.ru.md → user
 Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before planning row 17 deps → user
 ```
 
@@ -42,7 +41,7 @@ Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before
 
 ## Q-20260718-003 — Committing the sanitized technical brief
 
-`Q-20260718-003 [active] product: sanitized technical brief needed to commit docs/product/technical-brief.ru.md → user`
+`Q-20260718-003 [resolved] product: sanitized technical brief committed as canonical product source → 6cd858e`
 
 - **Question:** user supplies a sanitized brief (no PII, credentials, or
   non-public client data) for in-repo commitment as the canonical product
@@ -50,6 +49,9 @@ Q-20260718-004 [active] tracker: approve frontend track granularity F1-F6 before
 - **Why now:** remote agents cannot read the workstation-only original;
   requirements are unversioned until committed.
 - **Owner:** user.
+- **Resolution:** the user approved the sanitized workstation source, which
+  was normalized without changing requirement statuses and committed as the
+  [canonical product brief](../../docs/product/technical-brief.ru.md).
 
 ## Q-20260718-004 — Frontend track granularity
 

@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-ci-timeouts-annotations` | `2026-07-19-194032-fix-ci-timeouts-annotations-handoff` → `2026-07-19-195143-fix-ci-timeouts-annotations-ready-handoff` | ready; merge requires explicit user authorization | ci, process |
+| `task-product-technical-brief` | `2026-07-19-201720-task-product-technical-brief-handoff` → `2026-07-19-202411-task-product-technical-brief-ready-handoff` | ready; merge requires explicit user authorization | product, process |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -30,6 +30,7 @@ design.
 | `task-ci-backend-gates` | 2 | `2026-07-18-110204-ci-backend-gates-ready-handoff.md` | merged as `c703ae7`; retained source branch | ci, security, incident |
 | `task-context-refactor` | 2 | `2026-07-19-182536-task-context-refactor-handoff.md` | merged as `66e2afa`; retained source branch | memory, process, tracker |
 | `fix-tracker-canonical-links` | 2 | `2026-07-19-193125-fix-tracker-canonical-links-ready-handoff.md` | merged as `37d02cf`; retained source branch | process, tracker |
+| `fix-ci-timeouts-annotations` | 2 | `2026-07-19-195143-fix-ci-timeouts-annotations-ready-handoff.md` | merged as `326c9f4`; retained source branch | ci, process |
 
 ## Rules
 
