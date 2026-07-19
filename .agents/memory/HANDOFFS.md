@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-ci-timeouts-annotations` | `2026-07-19-194032-fix-ci-timeouts-annotations-handoff` | in progress; merge unauthorized | ci, process |
+| `fix-ci-timeouts-annotations` | `2026-07-19-194032-fix-ci-timeouts-annotations-handoff` | draft PR #26; merge unauthorized | ci, process |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
