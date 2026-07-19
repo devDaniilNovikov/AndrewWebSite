@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-frontend-track-planning` | `2026-07-19-204641-task-frontend-track-planning-handoff` | draft PR; checks and final review pending | frontend, tracker |
+| `task-frontend-track-planning` | `2026-07-19-204641-task-frontend-track-planning-handoff` → `2026-07-19-205058-task-frontend-track-planning-ready-handoff` | ready; merge requires explicit user authorization | frontend, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
