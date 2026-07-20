@@ -15,6 +15,7 @@ concurrency:
 jobs:
   prewarm-odc:
     name: Prewarm Dependency-Check Database
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -30,11 +31,15 @@ jobs:
           java-version: '25'
           cache: maven
 
+      - name: Generate cache key
+        id: set_key
+        run: echo "cache_key=odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
       - name: Restore ODC data directory cache
         uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ${{ github.workspace }}/.odc-data
-          key: odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.set_key.outputs.cache_key }}
           restore-keys: |
             odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-
 
@@ -43,8 +48,15 @@ jobs:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: ./mvnw -B dependency-check:update-only -DdataDirectory=${{ github.workspace }}/.odc-data
 
+      - name: Validate H2 database
+        run: |
+          if [ ! -s ${{ github.workspace }}/.odc-data/odc.mv.db ]; then
+            echo "H2 database is missing or empty"
+            exit 1
+          fi
+
       - name: Save ODC data directory cache
         uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ${{ github.workspace }}/.odc-data
-          key: odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.set_key.outputs.cache_key }}

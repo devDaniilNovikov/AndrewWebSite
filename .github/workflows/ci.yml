@@ -87,6 +87,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - name: Set up Temurin 25
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
@@ -99,25 +101,30 @@ jobs:
   dependency-security-prep:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     permissions:
       contents: read
     outputs:
-      cache_key: ${{ steps.save_cache.outputs.cache_key }}
+      cache_key: ${{ steps.set_key.outputs.cache_key }}
     steps:
       - name: Check out repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - name: Set up Temurin 25
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
+      - name: Generate cache key
+        id: set_key
+        run: echo "cache_key=odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
       - name: Restore ODC DB prep cache
         uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ${{ github.workspace }}/.odc-data
-          key: odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.set_key.outputs.cache_key }}
           restore-keys: |
             odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-
       - name: Prewarm dependencies
@@ -131,13 +138,10 @@ jobs:
             exit 1
           fi
       - name: Save ODC prep cache
-        id: save_cache
         uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ${{ github.workspace }}/.odc-data
-          key: odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-${{ github.run_id }}-${{ github.run_attempt }}
-      - name: Output cache key
-        run: echo "cache_key=odc-${{ runner.os }}-${{ runner.arch }}-odc12.2.2-h2-2.4.240-schema1-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+          key: ${{ steps.set_key.outputs.cache_key }}
 
   dependency-security:
     if: always() && github.event_name == 'pull_request'
@@ -149,6 +153,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - name: Ensure prep job succeeded
         run: |
           if [ "${{ needs.dependency-security-prep.result }}" != "success" ]; then
@@ -174,8 +180,6 @@ jobs:
             exit 1
           fi
       - name: Scan dependencies for known vulnerabilities
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: ./mvnw -B dependency-check:check -DdataDirectory=${{ github.workspace }}/.odc-data -DautoUpdate=false
 
   java-security:
@@ -188,6 +192,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - name: Initialize CodeQL for Java
         uses: github/codeql-action/init@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3.37.1
         with:
