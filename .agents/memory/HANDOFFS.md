@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-dependency-security-cache` | `2026-07-20-084110-task-dependency-security-cache-handoff` | draft_pr; checks pending | ci, security |
+| `task-dependency-security-cache` | `2026-07-20-091111-task-dependency-security-cache-v2-handoff` | in_progress | ci, security |
 
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
