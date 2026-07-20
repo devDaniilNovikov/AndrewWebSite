@@ -10,6 +10,7 @@ only. Signature format: [`README.md`](README.md).
 
 ```text
 Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on Timeweb proxy verification → user
+Q-20260720-006 [active] product: user provides verified F2-F4 content package before F2 starts → user
 ```
 
 ## Records
@@ -77,6 +78,27 @@ Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on 
 - **Review-by:** resolution of `task-context-refactor` review findings.
 - **Resolution:** the user authorized adding `product`; see
   DEC-20260719-006.
+
+## Q-20260720-006 — Verified frontend content package
+
+`Q-20260720-006 [active] product: user provides verified F2-F4 content package before F2 starts → user`
+
+- **Question:** provide and approve one canonical content package containing:
+  - legal and public company names;
+  - the phone display format and matching `tel:` link;
+  - navigation labels and their order;
+  - approved route slugs;
+  - F3 page copy or explicit placeholder decisions;
+  - publishable price wording and pricing policy;
+  - personal-data policy, form consent, and company requisites;
+  - cases and reviews with publication rights and sources;
+  - photographs and media with usage rights, including the first-screen asset;
+  - publishable service-area and warranty wording.
+- **Why now:** F1 can proceed without business content, but missing verified
+  inputs block F2-F4 Ready gates and would otherwise stop the frontend track
+  repeatedly.
+- **Owner:** user.
+- **Review-by:** before `task-frontend-shell` starts.
 
 ## Entry rules
 

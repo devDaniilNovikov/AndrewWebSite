@@ -7,23 +7,25 @@ static-export contract consumed later by backend JAR integration.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Claude Code.
 - **Prerequisite:** F3, F4, and F5 merged into fresh `origin/main`.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Backend,
   container, deployment, API, and CI architecture remain outside scope.
-- **Sources:** [SPEC](../docs/SPEC.md),
-  [product brief](../docs/product/technical-brief.ru.md),
-  [architecture](../docs/backend/architecture.md), and
-  [Git Flow](../.agents/workflows/GIT_FLOW.md).
+- **Sources:** [SPEC](../SPEC.md),
+  [product brief](../product/technical-brief.ru.md),
+  [architecture](../backend/architecture.md), and
+  [Git Flow](../../.agents/workflows/GIT_FLOW.md).
 
 ## Tasks
 
 1. Audit all routes and critical flows for semantic structure, keyboard and
    screen-reader use, responsive behavior, reduced motion, metadata, internal
-   links, real 404 behavior, and safe failure fallbacks.
+   links, real 404 behavior, safe failure fallbacks, and the sitemap, robots,
+   canonical, and Open Graph artifacts introduced by F3.
 2. Optimize production assets and rendering within the approved stack; verify
-   deterministic static output without introducing an analytics vendor,
-   runtime server, or deployment behavior.
+   deterministic static output and every frontend budget linked from SPEC
+   without introducing an analytics vendor, runtime server, or deployment
+   behavior.
 3. Run the complete frontend unit, component, accessibility, and E2E suites;
    document the package-manager command and output path needed by the later
    backend integration task.

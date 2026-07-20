@@ -8,23 +8,24 @@ approved claims.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Claude Code.
 - **Prerequisite:** F2 merged; route slugs, page copy, prices, legal text, and
   required assets for the selected pages verified in canonical product
   sources.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Coordinate
   tracker and shared-memory changes with Codex.
-- **Sources:** [product brief](../docs/product/technical-brief.ru.md),
-  [SPEC](../docs/SPEC.md), and [Git Flow](../.agents/workflows/GIT_FLOW.md).
+- **Sources:** [product brief](../product/technical-brief.ru.md),
+  [SPEC](../SPEC.md), and [Git Flow](../../.agents/workflows/GIT_FLOW.md).
 
 ## Tasks
 
 1. Implement the confirmed page and route set with semantic heading structure,
-   reusable content sections, navigation integration, and intentional 404
-   behavior.
+   reusable content sections, navigation integration, intentional 404
+   behavior, and generated `sitemap.xml` and `robots.txt` artifacts.
 2. Render only verified business claims, pricing, geography, guarantees,
-   requisites, and legal copy. Stop on missing required content; never invent
-   production text.
+   requisites, and legal copy. Add canonical URLs that follow the canonical
+   trailing-slash policy and Open Graph metadata for shipped routes. Stop on
+   missing required content; never invent production text.
 3. Add route, content-status, link, component, accessibility, and critical
    navigation E2E tests; verify the production export.
 

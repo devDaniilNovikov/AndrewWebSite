@@ -33,6 +33,28 @@ boundaries. Nothing from that document is restated anywhere else.
   under the backend source tree become the canonical schema history.
 - **Async delivery semantics:** [`backend/architecture.md`](backend/architecture.md)
   — queue states, transitions, retry policy, delivery guarantees.
+- **Frontend design:** [`frontend/design.md`](frontend/design.md) — visual
+  foundations, motion, responsive breakpoints, and static-export images.
+- **Public routes:** [`product/route-map.md`](product/route-map.md) — page
+  status and the approval state of proposed public slugs.
+
+## Frontend budgets
+
+These budgets apply to every production route and are evaluated against the
+production static export on a mid-tier mobile profile:
+
+- LCP ≤ 2.5 s.
+- CLS < 0.1.
+- INP < 200 ms.
+- Lighthouse ≥ 90 in each of Performance, Accessibility, Best Practices, and
+  SEO.
+- **[предложено, требует утверждения]** First-load JavaScript ≤ 120 KiB gzip
+  per route, including shared and route JavaScript and excluding source maps.
+  This keeps transfer and parse work bounded while leaving room for narrowly
+  scoped interactive components on a primarily static site.
+
+The proposed JavaScript budget is not an approved contract and blocks Ready
+until the user explicitly approves it.
 
 ## Security and privacy
 
