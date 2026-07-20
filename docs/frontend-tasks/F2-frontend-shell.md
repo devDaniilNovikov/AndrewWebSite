@@ -8,19 +8,20 @@ primitives.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
-- **Prerequisite:** F1 merged; verified company name, navigation labels, phone,
-  and contact facts available in canonical product sources.
+- **Owner:** Claude Code.
+- **Prerequisite:** F1 and `task-frontend-ci-gates` merged; verified company
+  name, navigation labels, phone, and contact facts available in canonical
+  product sources.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Coordinate
   tracker and shared-memory changes with Codex.
-- **Sources:** [product brief](../docs/product/technical-brief.ru.md),
-  [SPEC](../docs/SPEC.md), and [Git Flow](../.agents/workflows/GIT_FLOW.md).
+- **Sources:** [product brief](../product/technical-brief.ru.md),
+  [SPEC](../SPEC.md), and [Git Flow](../../.agents/workflows/GIT_FLOW.md).
 
 ## Tasks
 
-1. Implement semantic root layout, skip navigation, header, primary
-   navigation, footer, and responsive layout primitives using only verified
-   content.
+1. Implement the semantic root layout with `lang="ru"`, skip navigation,
+   header, primary navigation, footer, and responsive layout primitives using
+   only verified content.
 2. Implement phone and form-entry CTAs, keyboard/focus behavior, mobile
    navigation, reduced-motion behavior, and active-route feedback.
 3. Add component, accessibility, keyboard, responsive-navigation, and

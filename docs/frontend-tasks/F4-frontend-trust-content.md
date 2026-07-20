@@ -7,13 +7,13 @@ traceable provenance and safe, performant presentation.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Claude Code.
 - **Prerequisite:** F3 merged; real cases, reviews, media usage rights, source
   links, and descriptive copy confirmed by the user.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Coordinate
   tracker and shared-memory changes with Codex.
-- **Sources:** [product brief](../docs/product/technical-brief.ru.md),
-  [SPEC](../docs/SPEC.md), and [Git Flow](../.agents/workflows/GIT_FLOW.md).
+- **Sources:** [product brief](../product/technical-brief.ru.md),
+  [SPEC](../SPEC.md), and [Git Flow](../../.agents/workflows/GIT_FLOW.md).
 
 ## Tasks
 

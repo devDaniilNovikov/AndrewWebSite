@@ -8,26 +8,30 @@ fallbacks.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Claude Code.
 - **Prerequisite:** F2 and `task-leads-api` merged; start from their resulting
   fresh `origin/main`.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Backend and
   OpenAPI changes require a separate Codex-owned task.
-- **Sources:** [OpenAPI](../docs/backend/openapi.yaml),
-  [architecture](../docs/backend/architecture.md),
-  [product brief](../docs/product/technical-brief.ru.md), and
-  [Git Flow](../.agents/workflows/GIT_FLOW.md).
+- **Sources:** [OpenAPI](../backend/openapi.yaml),
+  [architecture](../backend/architecture.md),
+  [product brief](../product/technical-brief.ru.md), and
+  [Git Flow](../../.agents/workflows/GIT_FLOW.md).
 
 ## Tasks
 
-1. Implement the typed same-origin client and form payload directly from
-   OpenAPI, including contract-required idempotency, intent, source, consent,
-   and anti-automation behavior without redefining server rules.
+1. Generate the same-origin client's schema types from the canonical OpenAPI
+   file as a deterministic build/CI step with `openapi-typescript` or an
+   equivalent approved generator, then implement the form payload without
+   redefining server rules. Hand-written schema types are prohibited; preserve
+   contract-required idempotency, intent, source, consent, and anti-automation
+   behavior.
 2. Implement client validation for UX, all documented success/error states,
    in-flight and retry behavior, accessible field errors/status messages, and
    a persistent phone fallback. The server remains authoritative.
 3. Add unit, component, accessibility, retry/idempotency, error-mapping, and
-   browser E2E tests against a contract-faithful test boundary.
+   browser E2E tests against a contract-faithful network boundary using MSW
+   or Playwright route interception, not client-function mocks.
 
 ## Acceptance
 
