@@ -100,7 +100,7 @@ jobs:
   dependency-security:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -112,10 +112,18 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
+      - name: Restore ODC data directory cache
+        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ${{ github.workspace }}/.odc-data
+          key: odc-${{ runner.os }}-12.2.2-${{ github.run_id }}
+          restore-keys: |
+            odc-${{ runner.os }}-12.2.2-
+
       - name: Scan dependencies for known vulnerabilities
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: ./mvnw -B dependency-check:check
+        run: ./mvnw -B dependency-check:check -DdependencyCheck.dataDirectory=${{ github.workspace }}/.odc-data
 
   java-security:
     if: github.event_name == 'push'
