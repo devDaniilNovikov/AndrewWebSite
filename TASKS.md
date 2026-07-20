@@ -35,6 +35,10 @@ Status transitions are strictly `blocked -> planned -> in_progress -> draft_pr -
 | 27 | `task-static-jar-integration` | 5 | Codex | `task-backend-observability` and F6 merged | `blocked` | pending | pending | pending | frontend build/tests, Maven verify, container smoke, routing/cache/404/API/health checks, CI, reviews | Not authorized |
 | 28 | `task-frontend-track-gaps` | 1 | Codex | T5 merged | `draft_pr` | `task-frontend-track-gaps` | `/Users/daniilnovikov/.codex/worktrees/frontend-track-gaps/AndrewWorkWebSite` | [PR #29](https://github.com/devDaniilNovikov/AndrewWebSite/pull/29) | Paused Draft | Not authorized |
 | 29 | `task-ci-odc-fail` | CI | Jules | - | `draft_pr` | `task-ci-odc-fail` | `.worktrees/task-ci-odc-fail` | [PR #30](https://github.com/devDaniilNovikov/AndrewWebSite/pull/30) | Paused Draft | Not authorized |
+| 30 | `task-dependency-security-cache` | CI | Jules | - | `in_progress` | `task-dependency-security-cache-v3` | `.worktrees/task-dependency-security-cache-v3` | [Issue #31](https://github.com/devDaniilNovikov/AndrewWebSite/issues/31) | Work in progress | Not authorized |
+
+| 28 | `task-frontend-track-gaps` | 1 | Codex | T5 merged | `draft_pr` | `task-frontend-track-gaps` | `/Users/daniilnovikov/.codex/worktrees/frontend-track-gaps/AndrewWorkWebSite` | [PR #29](https://github.com/devDaniilNovikov/AndrewWebSite/pull/29) | Paused Draft | Not authorized |
+| 29 | `task-ci-odc-fail` | CI | Jules | - | `draft_pr` | `task-ci-odc-fail` | `.worktrees/task-ci-odc-fail` | [PR #30](https://github.com/devDaniilNovikov/AndrewWebSite/pull/30) | Paused Draft | Not authorized |
 | 30 | `task-dependency-security-cache` | CI | Jules | - | `in_progress` | `task-dependency-security-cache-v2` | `.worktrees/task-dependency-security-cache-v2` | [Issue #31](https://github.com/devDaniilNovikov/AndrewWebSite/issues/31) | Work in progress | Not authorized |
 
 
