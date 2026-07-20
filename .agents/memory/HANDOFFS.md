@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-backend-deploy-stub` | `2026-07-19-212139-task-backend-deploy-stub-handoff` | draft PR; Docker build/smoke pending | backend, deploy, tracker |
+| `task-backend-deploy-stub` | `2026-07-19-212139-task-backend-deploy-stub-handoff` → `2026-07-20-065910-task-backend-deploy-stub-handoff` | paused; waiting for a new user command | backend, deploy, frontend, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
