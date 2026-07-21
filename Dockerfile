@@ -3,7 +3,7 @@ WORKDIR /workspace
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
 RUN ./mvnw -B -DskipTests dependency:go-offline
-COPY Dockerfile Dockerfile
+COPY Dockerfile .dockerignore ./
 COPY src src
 RUN ./mvnw -B verify
 

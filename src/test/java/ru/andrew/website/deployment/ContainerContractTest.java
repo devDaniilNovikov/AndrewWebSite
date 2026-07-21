@@ -13,14 +13,14 @@ class ContainerContractTest {
 
         assertThat(dockerfile).contains(
                 "AS backend-build",
-                "COPY Dockerfile Dockerfile",
+                "COPY Dockerfile .dockerignore ./",
                 "COPY --from=backend-build",
                 "USER 10001:10001");
         assertThat(dockerfile).contains("/actuator/health/liveness");
         assertThat(dockerfile).doesNotContain("ENV SPRING_DATASOURCE_PASSWORD");
         assertThat(dockerfile).doesNotContain("ENV TELEGRAM_BOT_TOKEN");
 
-        int dockerfileCopy = dockerfile.indexOf("COPY Dockerfile Dockerfile");
+        int dockerfileCopy = dockerfile.indexOf("COPY Dockerfile .dockerignore ./");
         int mavenVerify = dockerfile.indexOf("RUN ./mvnw -B verify");
         assertThat(dockerfileCopy).isGreaterThanOrEqualTo(0);
         assertThat(mavenVerify).isGreaterThan(dockerfileCopy);
