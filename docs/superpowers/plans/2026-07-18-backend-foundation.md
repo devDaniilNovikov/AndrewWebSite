@@ -19,7 +19,7 @@
 - PII hard limit is 30 days, operational anonymization is 29 days, fingerprint is removed, undelivered work blocks as `privacy_expired`, technical rows delete after 12 months, and backup/Telegram auto-delete are each at most 30 days.
 - Liveness is dependency-free. Readiness ultimately combines PostgreSQL availability and a worker heartbeat while returning no sensitive detail. Every liveness/readiness response has exact `Cache-Control: no-store`.
 - Actuator/Micrometer are present from foundation; OTLP is not configured until `task-backend-observability`.
-- JaCoCo line coverage must be at least 80%; OWASP Dependency-Check fails on known vulnerabilities with CVSS 7.0 or higher; all third-party GitHub Actions are pinned to full commit SHAs and use least privilege.
+- JaCoCo line coverage must be at least 80%; dependency security follows the [canonical backend architecture](../../backend/architecture.md); all third-party GitHub Actions are pinned to full commit SHAs and use least privilege.
 - No secrets, lead PII, credentials, private keys, request bodies, or realistic token-shaped fixtures in source, logs, tests, images, Issues, or workflow output.
 - Follow the [canonical Git Flow](../../../.agents/workflows/GIT_FLOW.md): each approved product task uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch from the latest `origin/main`, then one Draft PR; direct pushes to `main`, stacked PRs, reused worktrees, non-squash merges, and auto-merge are forbidden. Mark Ready only after required CI is green and Codex review is complete; squash-merge only after explicit user authorization; then confirm `main`, close the issue, allow automatic remote-branch deletion, remove only a worktree with no tracked or untracked work to preserve, and run `git fetch --prune`.
 - Every AI-authored commit adds the executing agent's own `Co-Authored-By` attribution footer and never attributes a human identity.
@@ -488,12 +488,13 @@ git commit -m "feat(backend-skeleton): add Spring Boot foundation" \
 
 **Files:**
 - Create: `.github/workflows/ci.yml`
+- Create: `.github/workflows/dependency-submission.yml`
 - Modify: `pom.xml`
-- Test: `.github/workflows/ci.yml` through `actionlint` and a trusted branch push
+- Test: both workflows through `actionlint`, a pull request run, and a trusted `main` dependency submission
 
 **Interfaces:**
 - Consumes: merged `task-backend-skeleton`, `./mvnw -B verify`, JaCoCo `0.80`, and `.github/JULES_AUTOMATION.md`.
-- Produces: least-privilege CI jobs for Temurin 25 verification, OWASP Dependency-Check at CVSS 7.0, Java security analysis, and Testcontainers-compatible Docker execution.
+- Produces: least-privilege CI jobs for Temurin 25 verification, the dependency-security controls defined by the [canonical backend architecture](../../backend/architecture.md), Java security analysis, and Testcontainers-compatible Docker execution.
 
 - [ ] **Step 1: Start Jules only through the approved Issue boundary**
 
@@ -511,7 +512,7 @@ Expected: exit 1 because the backend CI workflow is absent.
 
 - [ ] **Step 3: GREEN — create the least-privilege workflow and security gate**
 
-Before writing YAML, resolve the current immutable commits with `gh api repos/actions/checkout/git/ref/tags/v4`, `gh api repos/actions/setup-java/git/ref/tags/v4`, and `gh api repos/github/codeql-action/git/ref/tags/v3`. Dereference an annotated tag through its returned tag object until a commit object is reached, and record that 40-hex commit in the workflow. Pin `org.owasp:dependency-check-maven` to the approved `12.2.2` release in `pom.xml`; configure `failBuildOnCVSS` as `7.0`, `failOnError` as `true`, and read the NVD API key only from the `NVD_API_KEY` environment variable backed by the same-named GitHub Actions secret. The committed workflow must contain no mutable `@vN` references. Create jobs with these exact semantics:
+Before writing YAML, resolve every action release to its immutable 40-hex commit and record the release in a comment. The GitHub-native replacement removes the OWASP Dependency-Check Maven plugin and every NVD credential, cache, prewarm, and data-feed reference. The required pull-request job keeps the stable `dependency-security` context and enforces the vulnerability threshold and scopes defined by the [canonical backend architecture](../../backend/architecture.md). A separate trusted-`main` workflow submits the complete Maven dependency graph so Dependabot can monitor transitive dependencies continuously. The committed workflows contain no mutable `@vN` references. Create jobs with these semantics:
 
 ```yaml
 name: CI
@@ -539,21 +540,21 @@ jobs:
   dependency-security:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
       - name: Check out repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-      - name: Set up Temurin 25
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
         with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
-      - name: Scan dependencies for known vulnerabilities
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: ./mvnw -B dependency-check:check
+          persist-credentials: false
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          fail-on-scopes: runtime, development, unknown
+          vulnerability-check: true
+          warn-only: false
   java-security:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -579,6 +580,8 @@ jobs:
         uses: github/codeql-action/analyze@b7351df727350dca84cb9d725d57dcf5bc82ba26
 ```
 
+The trusted submission workflow runs only for `push` to `main` or a manual dispatch whose ref is `main`. It checks out without persisted credentials, prepares Java 25, and invokes `advanced-security/maven-dependency-submission-action` at a reviewed immutable release with job-scoped `contents: write`. It never runs for `pull_request` or `pull_request_target`, so unreviewed PR code never receives a write-capable token.
+
 The executor must replace an action SHA above only when the tag-resolution check proves a newer approved immutable commit; review the diff before commit. Docker is available on `ubuntu-latest`, so later PostgreSQL Testcontainers tests run under the same `verify` job without a service container.
 
 - [ ] **Step 4: REFACTOR and validate workflow behavior**
@@ -586,17 +589,18 @@ The executor must replace an action SHA above only when the tag-resolution check
 Run:
 
 ```bash
-actionlint .github/workflows/ci.yml
+actionlint .github/workflows/ci.yml .github/workflows/dependency-submission.yml
 git grep -nE 'uses: [^ ]+@v[0-9]'
+git grep -nE 'dependency-check|NVD_API_KEY|odc-prewarm|\.odc-data'
 ./mvnw -B verify
 ```
 
-Expected: `actionlint` and Maven exit 0; the mutable-action grep has no matches and exits 1. Confirm the workflow accepts only `main`, `task-*`, and `fix-*`, cannot merge a PR, and cannot write repository contents.
+Expected: `actionlint` and Maven exit 0; both forbidden-pattern greps have no matches and exit 1. Confirm the required pull-request job cannot write repository contents, while only the trusted-`main` submission job has job-scoped `contents: write`.
 
 - [ ] **Step 5: Commit and complete the canonical Draft-review boundary**
 
 ```bash
-git add .github/workflows/ci.yml pom.xml
+git add .github/workflows/ci.yml .github/workflows/dependency-submission.yml pom.xml
 git commit -m "ci(backend-gates): enforce Java verification and security"
 ```
 
