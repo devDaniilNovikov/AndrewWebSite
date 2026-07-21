@@ -1,6 +1,22 @@
 spring:
   application:
     name: andrew-website
+  autoconfigure:
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  mvc:
+    problemdetails:
+      enabled: true
+app:
+  web:
+    max-request-bytes: 16384
+    rate-limit:
+      enabled: true
+      max-clients: 10000
+      client-idle-ttl: 1h
+      global-limit: 60
+      global-window: 1m
+      client-capacity: 5
+      client-refill: 1m
 management:
   endpoints:
     web:

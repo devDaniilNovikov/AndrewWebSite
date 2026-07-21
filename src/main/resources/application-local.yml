@@ -2,3 +2,6 @@ spring:
   config:
     activate:
       on-profile: local
+app:
+  web:
+    local-cors-origins: ${LOCAL_CORS_ORIGINS:}

@@ -6,12 +6,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UriUtils;
 import org.springframework.web.util.UrlPathHelper;
 
 @Component
@@ -30,7 +32,9 @@ public final class HealthCacheControlFilter extends OncePerRequestFilter {
             return false;
         }
         try {
-            return !isActuatorPath(normalizedPath(request));
+            String normalizedPath = normalizedPath(request);
+            return !isActuatorPath(normalizedPath)
+                    && !isActuatorPath(UriUtils.decode(normalizedPath, StandardCharsets.UTF_8));
         } catch (IllegalArgumentException invalidEncoding) {
             return true;
         }
