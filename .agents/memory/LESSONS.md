@@ -14,9 +14,28 @@ LES-20260718-006 [active] process: verify platform settings, not only policy doc
 LES-20260718-007 [active] ci: provision and prove external-scan credentials before a gate becomes required → run #100
 LES-20260718-008 [active] memory: handoff filename timestamps are UTC; mixed zones broke ordering → HANDOFFS rows 7-9
 LES-20260719-009 [active] ci: workflow success can precede CodeQL processing completion → run 29698729563
+LES-20260721-010 [active] security: inspect servlet filters before changing Security matchers → handoff 114211
 ```
 
 ## Records
+
+## LES-20260721-010 — Servlet filters can own route status before Security
+
+`LES-20260721-010 [active] security: inspect servlet filters before changing Security matchers → handoff 114211`
+
+- **Date:** 2026-07-21
+- **Lesson:** when route status contracts fail under Spring Boot/Security,
+  inspect the full servlet filter chain before iterating on authorization
+  matchers. Earlier filters can determine CORS preflight and actuator fallback
+  responses before the Security matcher under review can apply.
+- **Evidence:** the [tripwire handoff](../../docs/handoffs/2026-07-21-110405-task-backend-http-security-handoff.md)
+  records three matcher attempts with the same symptoms; the
+  [successor handoff](../../docs/handoffs/2026-07-21-114211-task-backend-http-security-handoff.md)
+  records the accepted filter and framework-native backlog task.
+- **Applicability:** any future Spring Security route-authorization or
+  CORS/filter-order change.
+- **Review-by:** `fix-http-security-framework-native-deny` or any change to
+  the HTTP boundary filter ordering.
 
 ## LES-20260718-005 — Implementer agents can silently revert reviewed gates
 

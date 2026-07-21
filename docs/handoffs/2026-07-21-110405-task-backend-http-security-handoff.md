@@ -1,6 +1,6 @@
 # task-backend-http-security handoff
 
-Signature: HND task-backend-http-security [in_progress] topics: backend, security, web → predecessor: 2026-07-21-104203-task-backend-http-security-handoff.md
+Signature: HND task-backend-http-security [in_progress] topics: backend, security → predecessor: 2026-07-21-104203-task-backend-http-security-handoff.md
 
 ## Durable — safe to cite later
 

@@ -14,6 +14,20 @@ Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on 
 
 ## Records
 
+## Q-20260721-006 — Dedicated deny filter authorization
+
+`Q-20260721-006 [resolved] security: dedicated deny filter authorized; native matcher fix backlogged → handoff 114211`
+
+- **Question:** after three attempts failed to make Spring Security matchers
+  produce the exact deny-path contracts, may this task use a dedicated
+  path-scoped deny filter and defer the framework-native replacement?
+- **Why now:** repository tripwire 3 blocked a fourth implementation attempt
+  for the same deny-path root cause without explicit user authorization.
+- **Owner:** user with Codex.
+- **Resolution:** the user authorized the dedicated deny-filter continuation
+  and asked to keep the framework-native replacement in the backlog; see
+  [`2026-07-21-114211-task-backend-http-security-handoff.md`](../../docs/handoffs/2026-07-21-114211-task-backend-http-security-handoff.md).
+
 ## Q-20260718-001 — Trusting forwarded client addresses
 
 `Q-20260718-001 [active] security: may the app trust X-Forwarded-For? blocked on Timeweb proxy verification → user`
