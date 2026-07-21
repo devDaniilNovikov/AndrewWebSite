@@ -13,6 +13,7 @@ DEC-20260718-004 [active] memory: file-first implementation; codex-mem deferred,
 DEC-20260718-005 [active] process: merged branches stay retained read-only; worktree removal never deletes → 288fdd5b
 DEC-20260719-006 [active] memory: product is an allowed topic tag for product-source records → user decision
 DEC-20260719-007 [active] tracker: frontend delivery uses six tasks F1-F6 assigned by the user → user
+DEC-20260721-008 [active] security: GitHub-native dependency controls replace ODC → architecture
 ```
 
 ## Records
@@ -138,6 +139,28 @@ DEC-20260719-007 [active] tracker: frontend delivery uses six tasks F1-F6 assign
 - **Supersedes:** the unplanned frontend placeholder represented by
   Q-20260718-004.
 - **Review-by:** any frontend task split, dependency, or ownership change.
+
+## DEC-20260721-008 — GitHub-native dependency security
+
+`DEC-20260721-008 [active] security: GitHub-native dependency controls replace ODC → architecture`
+
+- **Date:** 2026-07-21
+- **Scope:** repository dependency-vulnerability detection and remediation.
+- **Decision:** replace the ODC/NVD required gate with the GitHub-native
+  dependency controls defined by the canonical architecture; keep Snyk as an
+  informational external signal.
+- **Rationale:** repeated cold-data timeouts and cache-provenance risks made
+  ODC unreliable as a required pull-request gate, while the approved
+  GitHub-native design separates pull-request dependency review from
+  continuous default-branch monitoring.
+- **Evidence:** explicit user selection of option 1, live enablement of
+  Dependabot alerts and security updates, and
+  [`2026-07-21-081833-task-dependency-security-github-native-handoff.md`](../../docs/handoffs/2026-07-21-081833-task-dependency-security-github-native-handoff.md).
+- **Canonical source:** [backend architecture](../../docs/backend/architecture.md).
+- **Supersedes:** the ODC/NVD dependency-gate design in the original backend
+  foundation plan; historical incident records remain valid.
+- **Review-by:** any change to dependency-security semantics, required check
+  names, Dependabot settings, or branch protection.
 
 ## Entry rules
 
