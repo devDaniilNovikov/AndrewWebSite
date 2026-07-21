@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-dependency-security-github-native` | `2026-07-21-081833-task-dependency-security-github-native-handoff` | in_progress; local implementation and review only | ci, security, tracker |
+| `task-dependency-security-github-native` | `2026-07-21-081833-task-dependency-security-github-native-handoff` → `2026-07-21-085612-task-dependency-security-github-native-handoff` | in_progress; local review passed; publication not authorized | ci, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
