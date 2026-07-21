@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-backend-http-security` | `2026-07-21-104203-task-backend-http-security-handoff` → `2026-07-21-110405-task-backend-http-security-handoff` → `2026-07-21-114211-task-backend-http-security-handoff` | In progress; implementation committed and final metadata/PR publication pending | backend, security |
+| `task-backend-http-security` | `2026-07-21-104203-task-backend-http-security-handoff` → `2026-07-21-110405-task-backend-http-security-handoff` → `2026-07-21-114211-task-backend-http-security-handoff` | Draft PR #35; local gates and reviews green, exact-head GitHub checks pending | backend, security |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is

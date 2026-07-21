@@ -1,6 +1,6 @@
 # task-backend-http-security handoff
 
-Signature: HND task-backend-http-security [in_progress] topics: backend, security → predecessor: 2026-07-21-110405-task-backend-http-security-handoff.md
+Signature: HND task-backend-http-security [draft_pr] topics: backend, security → predecessor: 2026-07-21-110405-task-backend-http-security-handoff.md
 
 ## Durable — safe to cite later
 
@@ -24,6 +24,10 @@ Signature: HND task-backend-http-security [in_progress] topics: backend, securit
   `459d493da0e5c4377f5778e90b8798a113568f8b`, matching merged PR #29.
 - Implementation commit:
   `afdda37f0dc468b60e8598d3197987fec2e58929`.
+- [PR #35](https://github.com/devDaniilNovikov/AndrewWebSite/pull/35) is
+  open as Draft against `main`; its initial remote head was
+  `a6aad10e839ad59271e12144d2bd23b81a9e41b9` before this final tracker
+  checkpoint.
 - Local implementation gate passed: focused security/payload/CORS/limiter
   tests passed, then `./mvnw -B verify` passed with 69 tests and the existing
   JaCoCo gate.
@@ -35,15 +39,14 @@ Signature: HND task-backend-http-security [in_progress] topics: backend, securit
   conflict-marker scan, relative-link scan, changed-text secret scan, and
   owner-scope review. Frontend, PR #30, CI workflows, production config, and
   secrets remain untouched.
-- Final metadata commit, normal push, Draft PR creation, and exact-head
-  GitHub checks are still pending.
+- Final tracker metadata push and exact-head GitHub checks are still pending.
 
 ## Next steps — conditional, each requires the stated live check
 
-1. Commit the tracker/memory/handoff metadata without modifying the
+1. Commit this Draft-PR tracker checkpoint without modifying the
    implementation commit.
 2. Rerun `./mvnw -B verify` on the final metadata head, then run the final
-   diff/scope/secret review.
-3. Push `task-backend-http-security`, create a Draft PR only, update tracker
-   to `draft_pr`, and wait for the exact pushed SHA checks.
+   diff/scope/secret review and push normally.
+3. Confirm PR #35 still targets `main`, remains Draft, and has all required
+   checks green on the exact pushed SHA.
 4. Do not mark Ready or merge without a new explicit user command.
