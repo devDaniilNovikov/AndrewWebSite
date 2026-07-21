@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-backend-http-security` | `2026-07-21-104203-task-backend-http-security-handoff` | In progress from fresh `origin/main`; baseline verify passed, TDD implementation pending | backend, security, web |
+| `task-backend-http-security` | `2026-07-21-104203-task-backend-http-security-handoff` → `2026-07-21-110405-task-backend-http-security-handoff` | In progress; focused implementation paused at the three-attempt deny-path tripwire | backend, security, web |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
