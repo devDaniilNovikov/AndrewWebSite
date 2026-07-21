@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-dependency-security-github-native` | `2026-07-21-081833-task-dependency-security-github-native-handoff` → `2026-07-21-085612-task-dependency-security-github-native-handoff` → `2026-07-21-090424-task-dependency-security-github-native-handoff` → `2026-07-21-090947-task-dependency-security-github-native-handoff` → `2026-07-21-091553-task-dependency-security-github-native-handoff` | ready; PR #34; merge authorized after latest-head green | ci, security, tracker |
+| `task-backend-deploy-stub` | `2026-07-19-212139-task-backend-deploy-stub-handoff` → `2026-07-20-065910-task-backend-deploy-stub-handoff` → `2026-07-21-094937-task-backend-deploy-stub-handoff` | Draft PR #29; local Docker gate and final review complete, awaiting an explicit Ready command | backend, deploy, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -33,6 +33,7 @@ design.
 | `fix-ci-timeouts-annotations` | 2 | `2026-07-19-195143-fix-ci-timeouts-annotations-ready-handoff.md` | merged as `326c9f4`; retained source branch | ci, process |
 | `task-product-technical-brief` | 2 | `2026-07-19-202411-task-product-technical-brief-ready-handoff.md` | merged as `2be8a2c`; retained source branch | product, process |
 | `task-frontend-track-planning` | 2 | `2026-07-19-205058-task-frontend-track-planning-ready-handoff.md` | merged as `8940abe`; retained source branch | frontend, tracker |
+| `task-dependency-security-github-native` | 5 | `2026-07-21-091553-task-dependency-security-github-native-handoff.md` | merged as `3ce978c`; retained source branch | ci, security, tracker |
 
 ## Rules
 
