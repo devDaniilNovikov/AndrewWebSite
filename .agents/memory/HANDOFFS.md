@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-backend-http-security` | `2026-07-21-104203-task-backend-http-security-handoff` → `2026-07-21-110405-task-backend-http-security-handoff` → `2026-07-21-114211-task-backend-http-security-handoff` → `2026-07-21-121057-task-backend-http-security-handoff` | Ready and squash merge authorized; readiness-head checks pending | backend, security |
+| `task-db-flyway-baseline` | `2026-07-24-133729-task-db-flyway-baseline-handoff` → `2026-07-24-151614-task-db-flyway-baseline-handoff` | Draft PR #36; local PostgreSQL 18, Docker, and review gates green; exact-head CI pending | backend, deploy |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -35,6 +35,7 @@ design.
 | `task-frontend-track-planning` | 2 | `2026-07-19-205058-task-frontend-track-planning-ready-handoff.md` | merged as `8940abe`; retained source branch | frontend, tracker |
 | `task-dependency-security-github-native` | 5 | `2026-07-21-091553-task-dependency-security-github-native-handoff.md` | merged as `3ce978c`; retained source branch | ci, security, tracker |
 | `task-backend-deploy-stub` | 3 | `2026-07-21-094937-task-backend-deploy-stub-handoff.md` | merged as `459d493`; retained source branch | backend, deploy, tracker |
+| `task-backend-http-security` | 4 | `2026-07-21-121057-task-backend-http-security-handoff.md` | merged as `806b39d`; retained source branch | backend, security |
 
 ## Rules
 
