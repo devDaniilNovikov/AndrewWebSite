@@ -1,6 +1,6 @@
 # fix-db-identity-generation-contract handoff
 
-Signature: HND fix-db-identity-generation-contract [in_progress] topics: backend, tracker → predecessor: 2026-07-24-154752-task-db-flyway-baseline-handoff.md
+Signature: HND fix-db-identity-generation-contract [draft_pr] topics: backend, tracker → predecessor: 2026-07-24-154752-task-db-flyway-baseline-handoff.md
 
 ## Durable — safe to cite later
 
@@ -15,22 +15,23 @@ Signature: HND fix-db-identity-generation-contract [in_progress] topics: backend
 - An independent whole-diff review found no Critical, Important, or Minor
   issues.
 
-## Snapshot at 2026-07-24T16:32Z — re-verify live before use
+## Snapshot at 2026-07-24T16:34Z — re-verify live before use
 
 - Local branch `fix-db-identity-generation-contract` starts from current
   `origin/main` at `ec5641205b88d302eef3acf32581ebd28955e030`.
 - The test-only implementation commit is
   `e598716ffe4f347cb0f6bd97ed9f41012a314c26`.
-- No remote fix branch or pull request exists yet. No production service,
-  secret, frontend path, CI workflow, or user-owned desktop-root file was
-  changed.
+- Draft [PR #37](https://github.com/devDaniilNovikov/AndrewWebSite/pull/37)
+  is open against `main`, mergeable, and pointed to
+  `e3bfb3dd912847c1cd56f8894e94db482b9224fb` before the final tracker
+  checkpoint.
+- No production service, secret, frontend path, CI workflow, or user-owned
+  desktop-root file was changed.
 
 ## Next steps — conditional, each requires the stated live check
 
-1. Fetch `origin` and confirm the branch still has the intended base and
-   test-only scope, then normally push it and open a Draft PR.
-2. Record the live PR and exact head in the tracker and this handoff, rerun the
-   final local gate, and normally push the metadata checkpoint.
-3. Wait for every required and applicable CI/security check on that exact
-   SHA; only then report a Ready candidate.
+1. Rerun the final local gate and normally push this tracker checkpoint.
+2. Confirm PR #37 remains Draft against `main`, then wait for every required
+   and applicable CI/security check on the exact pushed SHA.
+3. Only after all checks and reviews are green, report a Ready candidate.
 4. Do not mark Ready or merge without a new explicit user command.
