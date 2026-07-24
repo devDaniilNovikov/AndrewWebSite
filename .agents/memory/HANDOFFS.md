@@ -8,6 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
+| `task-leads-api` | `2026-07-24-175642-task-leads-api-handoff` | Draft PR #38; exact metadata-head CI pending | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
