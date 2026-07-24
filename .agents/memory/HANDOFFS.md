@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-db-identity-generation-contract` | `2026-07-24-163204-fix-db-identity-generation-contract-handoff` | Draft PR #37; final metadata push and exact-head checks pending | backend, tracker |
+| `fix-db-identity-generation-contract` | `2026-07-24-163204-fix-db-identity-generation-contract-handoff` → `2026-07-24-164212-fix-db-identity-generation-contract-handoff` | Ready and squash merge authorized; readiness-head checks pending | backend, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
