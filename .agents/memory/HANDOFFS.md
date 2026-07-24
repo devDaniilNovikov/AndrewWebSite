@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-db-flyway-baseline` | `2026-07-24-133729-task-db-flyway-baseline-handoff` → `2026-07-24-151614-task-db-flyway-baseline-handoff` → `2026-07-24-153930-task-db-flyway-baseline-handoff` → `2026-07-24-154752-task-db-flyway-baseline-handoff` | Ready authorized; exact implementation-head CI/security green; readiness-head checks pending | backend, deploy, security |
+| `fix-db-identity-generation-contract` | `2026-07-24-163204-fix-db-identity-generation-contract-handoff` → `2026-07-24-164212-fix-db-identity-generation-contract-handoff` | Ready and squash merge authorized; readiness-head checks pending | backend, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -36,6 +36,7 @@ design.
 | `task-dependency-security-github-native` | 5 | `2026-07-21-091553-task-dependency-security-github-native-handoff.md` | merged as `3ce978c`; retained source branch | ci, security, tracker |
 | `task-backend-deploy-stub` | 3 | `2026-07-21-094937-task-backend-deploy-stub-handoff.md` | merged as `459d493`; retained source branch | backend, deploy, tracker |
 | `task-backend-http-security` | 4 | `2026-07-21-121057-task-backend-http-security-handoff.md` | merged as `806b39d`; retained source branch | backend, security |
+| `task-db-flyway-baseline` | 4 | `2026-07-24-154752-task-db-flyway-baseline-handoff.md` | merged as `ec56412`; retained source branch | backend, deploy, security |
 
 ## Rules
 

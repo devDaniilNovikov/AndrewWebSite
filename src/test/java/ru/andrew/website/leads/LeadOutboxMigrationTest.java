@@ -46,7 +46,7 @@ class LeadOutboxMigrationTest {
     @Test
     void createsExactLeadColumns() {
         assertThat(columns("leads")).containsExactly(
-                column("id", "bigint", null, false, true, null),
+                identityColumn("id", "bigint", null, false, null),
                 column("request_id", "uuid", null, false, false, null),
                 column("payload_fingerprint", "bytea", null, true, false, null),
                 column("name", "character varying", 100, true, false, null),
@@ -62,7 +62,7 @@ class LeadOutboxMigrationTest {
     @Test
     void createsExactOutboxColumns() {
         assertThat(columns("telegram_outbox")).containsExactly(
-                column("id", "bigint", null, false, true, null),
+                identityColumn("id", "bigint", null, false, null),
                 column("lead_id", "bigint", null, false, false, null),
                 column("state", "character varying", 16, false, false, null),
                 column("attempt_count", "integer", null, false, false, "0"),
@@ -149,6 +149,7 @@ class LeadOutboxMigrationTest {
                             character_maximum_length,
                             is_nullable,
                             is_identity,
+                            identity_generation,
                             column_default
                         from information_schema.columns
                         where table_schema = 'public' and table_name = :table
@@ -161,6 +162,7 @@ class LeadOutboxMigrationTest {
                         result.getObject("character_maximum_length", Integer.class),
                         "YES".equals(result.getString("is_nullable")),
                         "YES".equals(result.getString("is_identity")),
+                        result.getString("identity_generation"),
                         result.getString("column_default")))
                 .list();
     }
@@ -203,7 +205,18 @@ class LeadOutboxMigrationTest {
             boolean nullable,
             boolean identity,
             String defaultValue) {
-        return new ColumnContract(name, dataType, maximumLength, nullable, identity, defaultValue);
+        return new ColumnContract(
+                name, dataType, maximumLength, nullable, identity, null, defaultValue);
+    }
+
+    private static ColumnContract identityColumn(
+            String name,
+            String dataType,
+            Integer maximumLength,
+            boolean nullable,
+            String defaultValue) {
+        return new ColumnContract(
+                name, dataType, maximumLength, nullable, true, "BY DEFAULT", defaultValue);
     }
 
     private record MigrationHistory(
@@ -216,6 +229,7 @@ class LeadOutboxMigrationTest {
             Integer maximumLength,
             boolean nullable,
             boolean identity,
+            String identityGeneration,
             String defaultValue) {
     }
 }
