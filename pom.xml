@@ -15,7 +15,9 @@
   <properties>
     <java.version>25</java.version>
     <jacoco.version>0.8.14</jacoco.version>
+    <jackson-bom.version>3.1.5</jackson-bom.version>
     <log4j2.version>2.25.5</log4j2.version>
+    <postgresql.version>42.7.13</postgresql.version>
     <tomcat.version>11.0.24</tomcat.version>
   </properties>
   <dependencies>
