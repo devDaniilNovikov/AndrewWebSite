@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,8 +31,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest(properties = {
         "app.web.rate-limit.enabled=false",
-        "spring.autoconfigure.exclude="
-                + "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration"
+        NO_DATABASE
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")

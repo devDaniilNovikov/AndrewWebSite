@@ -5,7 +5,7 @@ COPY mvnw pom.xml ./
 RUN ./mvnw -B -DskipTests dependency:go-offline
 COPY Dockerfile .dockerignore ./
 COPY src src
-RUN ./mvnw -B verify
+RUN ./mvnw -B -DexcludedGroups=database verify
 
 FROM eclipse-temurin:25-jre
 RUN apt-get update \
