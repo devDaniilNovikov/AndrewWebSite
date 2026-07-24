@@ -3,5 +3,7 @@ spring:
     activate:
       on-profile: local
 app:
+  leads:
+    fingerprint-key: ${LEAD_FINGERPRINT_HMAC_KEY}
   web:
     local-cors-origins: ${LOCAL_CORS_ORIGINS:}

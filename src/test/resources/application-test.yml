@@ -2,3 +2,6 @@ spring:
   config:
     activate:
       on-profile: test
+app:
+  leads:
+    fingerprint-key: test-only-key-material-not-for-production-0001

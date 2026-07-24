@@ -1,12 +1,14 @@
 package ru.andrew.website.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import ru.andrew.website.AndrewWebsiteApplication;
 
 class RuntimeProfileGuardTest {
@@ -15,7 +17,11 @@ class RuntimeProfileGuardTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(AndrewWebsiteApplication.class)
-            .withPropertyValues("spring.main.web-application-type=none", NO_DATABASE);
+            .withBean(JdbcClient.class, () -> mock(JdbcClient.class))
+            .withPropertyValues(
+                    "spring.main.web-application-type=none",
+                    "app.leads.fingerprint-key=profile-guard-key-material-for-tests-0001",
+                    NO_DATABASE);
 
     @ParameterizedTest
     @ValueSource(strings = {"test", "local", "prod"})

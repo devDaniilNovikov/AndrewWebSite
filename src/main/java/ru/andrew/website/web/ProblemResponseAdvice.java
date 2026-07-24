@@ -2,6 +2,7 @@ package ru.andrew.website.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -14,6 +15,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.transaction.TransactionException;
+import ru.andrew.website.leads.IdempotencyConflictException;
+import ru.andrew.website.leads.InvalidLeadRequestException;
 
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -28,7 +32,8 @@ final class ProblemResponseAdvice {
             HttpMessageNotReadableException.class,
             MethodArgumentNotValidException.class,
             HandlerMethodValidationException.class,
-            ConstraintViolationException.class
+            ConstraintViolationException.class,
+            InvalidLeadRequestException.class
     })
     ResponseEntity<ProblemDetail> invalidRequest(HttpServletRequest request) {
         ProblemDetail problem = problems.problem(
@@ -36,6 +41,28 @@ final class ProblemResponseAdvice {
                 "urn:andrew:problem:invalid-request",
                 "Invalid request",
                 "One or more request fields are invalid.",
+                path(request));
+        return response(problem);
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    ResponseEntity<ProblemDetail> idempotencyConflict(HttpServletRequest request) {
+        ProblemDetail problem = problems.problem(
+                HttpStatus.CONFLICT,
+                "urn:andrew:problem:idempotency-conflict",
+                "Idempotency conflict",
+                "The request identifier cannot be reused for this payload.",
+                path(request));
+        return response(problem);
+    }
+
+    @ExceptionHandler({DataAccessException.class, TransactionException.class})
+    ResponseEntity<ProblemDetail> serviceUnavailable(HttpServletRequest request) {
+        ProblemDetail problem = problems.problem(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "urn:andrew:problem:service-unavailable",
+                "Service unavailable",
+                "The request cannot be accepted durably at this time.",
                 path(request));
         return response(problem);
     }

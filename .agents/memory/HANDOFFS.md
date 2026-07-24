@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-db-identity-generation-contract` | `2026-07-24-163204-fix-db-identity-generation-contract-handoff` → `2026-07-24-164212-fix-db-identity-generation-contract-handoff` | Ready and squash merge authorized; readiness-head checks pending | backend, tracker |
+| `task-leads-api` | `2026-07-24-175642-task-leads-api-handoff` → `2026-07-24-180342-task-leads-api-handoff` | Ready and squash merge authorized; readiness-head CI pending | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -37,6 +37,7 @@ design.
 | `task-backend-deploy-stub` | 3 | `2026-07-21-094937-task-backend-deploy-stub-handoff.md` | merged as `459d493`; retained source branch | backend, deploy, tracker |
 | `task-backend-http-security` | 4 | `2026-07-21-121057-task-backend-http-security-handoff.md` | merged as `806b39d`; retained source branch | backend, security |
 | `task-db-flyway-baseline` | 4 | `2026-07-24-154752-task-db-flyway-baseline-handoff.md` | merged as `ec56412`; retained source branch | backend, deploy, security |
+| `fix-db-identity-generation-contract` | 2 | `2026-07-24-164212-fix-db-identity-generation-contract-handoff.md` | merged as `ac7d21a`; retained source branch | backend, tracker |
 
 ## Rules
 

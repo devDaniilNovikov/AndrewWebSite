@@ -2,3 +2,6 @@ spring:
   config:
     activate:
       on-profile: prod
+app:
+  leads:
+    fingerprint-key: ${LEAD_FINGERPRINT_HMAC_KEY}

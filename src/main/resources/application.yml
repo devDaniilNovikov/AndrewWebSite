@@ -15,6 +15,14 @@ spring:
     validate-on-migrate: true
     baseline-on-migrate: false
     clean-disabled: true
+  jackson:
+    datatype:
+      enum:
+        fail-on-numbers-for-enums: true
+    deserialization:
+      fail-on-unknown-properties: true
+    mapper:
+      allow-coercion-of-scalars: false
 app:
   web:
     max-request-bytes: 16384
