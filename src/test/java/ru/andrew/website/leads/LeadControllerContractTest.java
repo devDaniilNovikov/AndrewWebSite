@@ -98,6 +98,44 @@ class LeadControllerContractTest {
     }
 
     @ParameterizedTest
+    @MethodSource("validStrictBoundaryBodies")
+    void canonicalUuidAndExactIntentValuesRemainAccepted(String body) throws Exception {
+        mvc.perform(post("/api/leads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isAccepted())
+                .andExpect(content().string(""));
+    }
+
+    @Test
+    void honeypotAcceptsCanonicalUuidAndExactIntentWithoutPersistence() throws Exception {
+        mvc.perform(post("/api/leads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"website":"bot",
+                                 "requestId":"AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+                                 "intent":"maintenance"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(content().string(""));
+        verifyNoInteractions(transaction);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidLegitimateStrictBoundaryBodies")
+    void legitimateRequestRejectsNonCanonicalOrAmbiguousJson(String body) throws Exception {
+        expectInvalidProblem(body);
+        verifyNoInteractions(transaction);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidHoneypotStrictBoundaryBodies")
+    void honeypotRejectsNonCanonicalOrAmbiguousKnownFields(String body) throws Exception {
+        expectInvalidProblem(body);
+        verifyNoInteractions(transaction);
+    }
+
+    @ParameterizedTest
     @MethodSource("acceptedOutcomes")
     void internalAcceptanceOutcomeIsNeverDisclosed(AcceptanceOutcome outcome) throws Exception {
         when(transaction.accept(any(), any())).thenReturn(outcome);
@@ -158,6 +196,15 @@ class LeadControllerContractTest {
                 "One or more request fields are invalid.");
     }
 
+    private void expectInvalidProblem(String body) throws Exception {
+        expectProblem(
+                body,
+                "urn:andrew:problem:invalid-request",
+                "Invalid request",
+                400,
+                "One or more request fields are invalid.");
+    }
+
     private void expectProblem(
             String body, String type, String title, int expectedStatus, String detail)
             throws Exception {
@@ -181,6 +228,54 @@ class LeadControllerContractTest {
                 AcceptanceOutcome.CREATED,
                 AcceptanceOutcome.DUPLICATE,
                 AcceptanceOutcome.RETAINED);
+    }
+
+    private static Stream<String> validStrictBoundaryBodies() {
+        return Stream.of(
+                validBodyWithRequestIdAndIntent(
+                        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "repair"),
+                validBodyWithRequestIdAndIntent(
+                        "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA", "maintenance"));
+    }
+
+    private static Stream<String> invalidLegitimateStrictBoundaryBodies() {
+        return Stream.of(
+                validBodyWithRequestId("AAAAAAAAAAAAAAAAAAAAAA=="),
+                validBodyWithRequestId("AAAAAAAAAAAAAAAAAAAAAA"),
+                validBodyWithRequestId(" 11111111-1111-4111-8111-111111111111 "),
+                validBodyWithIntent(" repair "),
+                validBodyWithIntent("Repair"),
+                validBodyWithIntent("unknown"),
+                validBodyWithField(
+                        "\"intent\":\"repair\"", "\"intent\":123,\"intent\":\"repair\""),
+                validBodyWithField(
+                        "\"name\":\"Иван\"", "\"name\":123,\"name\":\"Иван\""),
+                validBodyWithField(
+                        "\"requestId\":\"14141414-1414-4414-8414-141414141414\"",
+                        "\"requestId\":123,"
+                                + "\"requestId\":\"14141414-1414-4414-8414-141414141414\""),
+                validBodyWithField(
+                        "\"website\":\"\"", "\"website\":123,\"website\":\"\""));
+    }
+
+    private static Stream<String> invalidHoneypotStrictBoundaryBodies() {
+        return Stream.of(
+                "{\"website\":\"bot\",\"requestId\":\"AAAAAAAAAAAAAAAAAAAAAA==\"}",
+                "{\"website\":\"bot\",\"requestId\":\"AAAAAAAAAAAAAAAAAAAAAA\"}",
+                """
+                {"website":"bot",
+                 "requestId":" 11111111-1111-4111-8111-111111111111 "}
+                """,
+                "{\"website\":\"bot\",\"intent\":\" repair \"}",
+                "{\"website\":\"bot\",\"intent\":\"Repair\"}",
+                "{\"website\":\"bot\",\"intent\":\"unknown\"}",
+                "{\"website\":\"bot\",\"intent\":123,\"intent\":\"repair\"}",
+                "{\"website\":\"bot\",\"name\":123,\"name\":\"ok\"}",
+                """
+                {"website":"bot","requestId":123,
+                 "requestId":"11111111-1111-4111-8111-111111111111"}
+                """,
+                "{\"website\":\"\",\"website\":\"bot\"}");
     }
 
     private static Stream<String> invalidBodies() {
@@ -279,6 +374,22 @@ class LeadControllerContractTest {
     private static String validBodyWithSourcePath(String sourcePath) {
         return validBodyWithField(
                 "\"sourcePath\":\"/service/\"", "\"sourcePath\":\"" + sourcePath + "\"");
+    }
+
+    private static String validBodyWithRequestId(String requestId) {
+        return validBodyWithField(
+                "\"requestId\":\"14141414-1414-4414-8414-141414141414\"",
+                "\"requestId\":\"" + requestId + "\"");
+    }
+
+    private static String validBodyWithIntent(String intent) {
+        return validBodyWithField(
+                "\"intent\":\"repair\"", "\"intent\":\"" + intent + "\"");
+    }
+
+    private static String validBodyWithRequestIdAndIntent(String requestId, String intent) {
+        return validBodyWithRequestId(requestId)
+                .replace("\"intent\":\"repair\"", "\"intent\":\"" + intent + "\"");
     }
 
     private static String validBodyWithField(String original, String replacement) {

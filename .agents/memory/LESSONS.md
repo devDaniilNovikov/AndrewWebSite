@@ -15,9 +15,28 @@ LES-20260718-007 [active] ci: provision and prove external-scan credentials befo
 LES-20260718-008 [active] memory: handoff filename timestamps are UTC; mixed zones broke ordering → HANDOFFS rows 7-9
 LES-20260719-009 [active] ci: workflow success can precede CodeQL processing completion → run 29698729563
 LES-20260721-010 [active] security: inspect servlet filters before changing Security matchers → handoff 114211
+LES-20260724-011 [active] security: strict public JSON boundaries cannot rely on general-purpose Jackson value conversion → PR #39
 ```
 
 ## Records
+
+## LES-20260724-011 — Public JSON boundaries need explicit lexical checks
+
+`LES-20260724-011 [active] security: strict public JSON boundaries cannot rely on general-purpose Jackson value conversion → PR #39`
+
+- **Date:** 2026-07-24
+- **Lesson:** when a public contract requires exact lexical forms, parse the
+  raw JSON scalar and enforce the grammar before converting it to a domain
+  type. General-purpose mapper conversion can accept alternate encodings,
+  enum aliases, trimming, or duplicate-key last-value semantics that violate a
+  stricter boundary contract.
+- **Evidence:** the strict-boundary remediation [PR #39](https://github.com/devDaniilNovikov/AndrewWebSite/pull/39)
+  and handoff `2026-07-24-191031` record fixes for non-canonical UUID,
+  non-exact `intent`, and duplicate-key bypass findings after PR #38.
+- **Applicability:** public request deserializers and any future Jackson,
+  Spring MVC, OpenAPI, or JSON tree-reading boundary change.
+- **Review-by:** any lead intake boundary change or Jackson configuration
+  change.
 
 ## LES-20260721-010 — Servlet filters can own route status before Security
 

@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-leads-api` | `2026-07-24-175642-task-leads-api-handoff` → `2026-07-24-180342-task-leads-api-handoff` | Ready and squash merge authorized; readiness-head CI pending | backend, security, tracker |
+| `fix-leads-api-json-boundary` | `2026-07-24-191031-fix-leads-api-json-boundary-handoff` | Draft PR open; GitHub checks pending on final metadata head | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -38,6 +38,7 @@ design.
 | `task-backend-http-security` | 4 | `2026-07-21-121057-task-backend-http-security-handoff.md` | merged as `806b39d`; retained source branch | backend, security |
 | `task-db-flyway-baseline` | 4 | `2026-07-24-154752-task-db-flyway-baseline-handoff.md` | merged as `ec56412`; retained source branch | backend, deploy, security |
 | `fix-db-identity-generation-contract` | 2 | `2026-07-24-164212-fix-db-identity-generation-contract-handoff.md` | merged as `ac7d21a`; retained source branch | backend, tracker |
+| `task-leads-api` | 2 | `2026-07-24-180342-task-leads-api-handoff.md` | merged as `731a17d`; retained source branch | backend, security, tracker |
 
 ## Rules
 
