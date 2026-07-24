@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-db-flyway-baseline` | `2026-07-24-133729-task-db-flyway-baseline-handoff` → `2026-07-24-151614-task-db-flyway-baseline-handoff` → `2026-07-24-153930-task-db-flyway-baseline-handoff` | Draft PR #36; Snyk remediation and refreshed local gates green; new exact-head CI pending | backend, deploy, security |
+| `task-db-flyway-baseline` | `2026-07-24-133729-task-db-flyway-baseline-handoff` → `2026-07-24-151614-task-db-flyway-baseline-handoff` → `2026-07-24-153930-task-db-flyway-baseline-handoff` → `2026-07-24-154752-task-db-flyway-baseline-handoff` | Ready authorized; exact implementation-head CI/security green; readiness-head checks pending | backend, deploy, security |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
