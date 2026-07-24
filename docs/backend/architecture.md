@@ -4,7 +4,7 @@
 
 This document is the binding Phase 0 backend design for AndrewWebSite. It defines the names, types, boundaries, transactions, and operating rules reused by the OpenAPI contract and the implementation plans. The MVP is a Russian-language B2B static website plus one public lead command. It has no login, sessions, user accounts, administration UI, CRM, ecommerce, booking, payments, CMS, blog, Redis, or separate message broker.
 
-The fixed platform is Java 25 LTS, Spring Boot 4.1.0, one root Maven module, Maven Wrapper, PostgreSQL 17, and one final Java container. The Java root package is `ru.andrew.website`. The frontend remains owned under `frontend/` and uses Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only during the build.
+The fixed platform is Java 25 LTS, Spring Boot 4.1.0, one root Maven module, Maven Wrapper, PostgreSQL 18, and one final Java container. The Java root package is `ru.andrew.website`. The frontend remains owned under `frontend/` and uses Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only during the build.
 
 ## System and trust boundaries
 
@@ -23,7 +23,7 @@ Single non-root Spring Boot container
   |-- privacy retention worker
   |-- safe health and telemetry
   |
-  +---- TLS/VPC ----> managed PostgreSQL 17 in the Moscow region
+  +---- TLS/VPC ----> managed PostgreSQL 18 in the Moscow region
   +---- HTTPS ------> Telegram Bot API
   +---- HTTPS/OTLP -> Grafana Cloud collector (production only after gate)
 ```
@@ -207,9 +207,9 @@ No PII, raw URL, exception message, dynamic status text, or request ID is a metr
 
 ## Build and runtime topology
 
-Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, invokes the manifest-declared manager directly through Corepack with a writable `COREPACK_HOME` and no shim installation, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. Before any `COPY frontend/`, `.dockerignore` excludes root and nested `.env*`, local secret/credential directories, and private-key/keystore material; an executable container contract test pins those exclusions. The final container contains Java 25 runtime plus that JAR, runs as a non-root numeric user, exposes no Node runtime, and health-checks liveness.
+Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, invokes the manifest-declared manager directly through Corepack with a writable `COREPACK_HOME` and no shim installation, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. Before any `COPY frontend/`, `.dockerignore` excludes root and nested `.env*`, local secret/credential directories, and private-key/keystore material; an executable container contract test pins those exclusions. Host and CI `./mvnw -B verify` run the PostgreSQL Testcontainers suites with Docker available. The containerized `backend-build` uses `./mvnw -B -DexcludedGroups=database verify`, excluding only the nested-Docker database group while still running every other test; broad test skipping is forbidden. The final container contains Java 25 runtime plus that JAR, runs as a non-root numeric user, exposes no Node runtime, and health-checks liveness.
 
-Production gates are: PostgreSQL 17 in the same Moscow region/VPC; secret-store bindings and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and an explicitly user-authorized squash merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
+Production gates are: PostgreSQL 18 in the same Moscow region/VPC; secret-store bindings and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and an explicitly user-authorized squash merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
 
 ## Ordered product-task dependency chain
 
@@ -242,7 +242,7 @@ The skeleton merge triggers only the normal `push` CI path. It does not assign J
 | Temurin 25 CI, verify, 80% coverage, Testcontainers runtime, required GitHub Dependency Review for newly introduced `high` and `critical` vulnerabilities across runtime, development, and unknown scopes, continuous Dependabot alerts/security updates backed by full Maven dependency submission from trusted `main`, informational Snyk, Java security gate, sanitized owner Issue trigger | `task-ci-backend-gates` and `task-dependency-security-github-native` | backend foundation Task 2 plus the GitHub-native replacement task |
 | multi-stage Java 25 image, non-root runtime, liveness healthcheck, Docker-context environment/credential/key exclusions, smoke test, no secrets/deploy mutation | `task-backend-deploy-stub` | backend foundation Task 3 |
 | stateless security, allowlist, no auth endpoints, RFC 9457, 16 KiB JSON boundary, same-origin, bounded rate limits, proxy fallback, closed actuator | `task-backend-http-security` | `2026-07-18-lead-intake.md` Task 1 |
-| PostgreSQL 17, separate constrained lead/outbox tables, unique request ID, indexes, leases, privacy timestamps, Flyway/Testcontainers | `task-db-flyway-baseline` | lead intake Task 2 |
+| PostgreSQL 18, separate constrained lead/outbox tables, unique request ID, indexes, leases, privacy timestamps, Flyway/Testcontainers | `task-db-flyway-baseline` | lead intake Task 2 |
 | mutually exclusive legitimate/website-only honeypot shapes, typed/unknown JSON boundary, HMAC, atomic commit, duplicate/conflict/post-retention behavior, no-row/rollback/race/unavailable tests | `task-leads-api` | lead intake Task 3 |
 | RestClient gateway, secret binding, actionable minimal message, compiling OptionalLong retry parser, Telegram success/permanent/429/5xx/timeout/network outcomes | `task-telegram-client` | `2026-07-18-telegram-delivery.md` Task 1 |
 | 15-second poll, batch 10, two-minute lease, SKIP LOCKED, HTTP outside transaction, retries, recovery, transitions, two-worker tests, bounded metrics | `task-telegram-worker` | telegram delivery Task 2 |
@@ -256,6 +256,6 @@ The skeleton merge triggers only the normal `push` CI path. It does not assign J
 
 - Spring Boot 4.1.0 reference/API: health groups, `spring-boot-starter-webmvc`, configuration-property validation, Actuator, Micrometer OTLP, and static resources.
 - Next.js 16.2.9 static export guide: `output: 'export'`, `next build`, and the default `out/` artifact.
-- PostgreSQL 17 documentation: transactions, row-level locks, constraints, partial indexes, and `FOR UPDATE SKIP LOCKED`.
+- PostgreSQL 18 documentation: transactions, row-level locks, constraints, partial indexes, and `FOR UPDATE SKIP LOCKED`.
 - OpenAPI 3.1.1 and RFC 9457 for the HTTP contract and problem details.
-- Testcontainers for Java 2.0.3 for the `testcontainers-postgresql` and JUnit Jupiter integration.
+- Testcontainers for Java 2.0.5 for the `testcontainers-postgresql` and JUnit Jupiter integration.

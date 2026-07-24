@@ -33,7 +33,7 @@ AndrewWebSite — русскоязычный B2B-сайт компании по 
   статический экспорт.
 - Backend: Java 25 LTS, Spring Boot 4.1.0, Maven Wrapper, Spring MVC,
   Bean Validation, Spring Security, JdbcClient и Flyway.
-- Хранилище: управляемый PostgreSQL 17 в том же московском регионе и VPC.
+- Хранилище: управляемый PostgreSQL 18 в том же московском регионе и VPC.
 - Очередь доставки в Telegram реализуется через PostgreSQL outbox с арендой,
   повторными попытками и восстановлением после перезапуска.
 - Frontend встраивается в Spring Boot JAR; production использует один Java

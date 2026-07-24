@@ -10,9 +10,9 @@ The application has a safe common configuration plus exactly three allowed profi
 
 | Profile | Dependencies | Network behavior | Secret policy |
 | --- | --- | --- | --- |
-| `test` | PostgreSQL 17 Testcontainers and an in-process/fake Telegram server | no production outbound calls; scheduling disabled unless a focused test enables it | the only profile allowed to use a committed fixed non-production HMAC test key; no realistic token-shaped test data |
-| `local` | developer-supplied PostgreSQL 17 and fake Telegram endpoint by default | only explicitly configured loopback development CORS origins; forwarded client headers ignored | local untracked environment or approved developer secret store; never a tracked `.env` |
-| `prod` | Timeweb managed PostgreSQL 17, Telegram Bot API, and approved Grafana Cloud OTLP endpoint | same-origin public HTTP; Telegram and OTLP outbound HTTPS; forwarded client headers ignored until CIDR verification gate | orchestration-injected secret-store values only; fail fast when required bindings are absent or invalid |
+| `test` | PostgreSQL 18 Testcontainers and an in-process/fake Telegram server | no production outbound calls; scheduling disabled unless a focused test enables it | the only profile allowed to use a committed fixed non-production HMAC test key; no realistic token-shaped test data |
+| `local` | developer-supplied PostgreSQL 18 and fake Telegram endpoint by default | only explicitly configured loopback development CORS origins; forwarded client headers ignored | local untracked environment or approved developer secret store; never a tracked `.env` |
+| `prod` | Timeweb managed PostgreSQL 18, Telegram Bot API, and approved Grafana Cloud OTLP endpoint | same-origin public HTTP; Telegram and OTLP outbound HTTPS; forwarded client headers ignored until CIDR verification gate | orchestration-injected secret-store values only; fail fast when required bindings are absent or invalid |
 
 There is no `spring.profiles.default` and no implicit fallback. A startup guard rejects zero active profiles, multiple active profiles, or any profile outside `test|local|prod`; therefore every test or launch command activates exactly one profile explicitly. Production deployment sets `SPRING_PROFILES_ACTIVE=prod`, and no additional profile may accompany it. H2 and another database dialect are not used because migration, locking, idempotency, and queue tests require PostgreSQL semantics.
 
@@ -52,7 +52,7 @@ The application process must fail startup before accepting traffic when any appl
 
 The deployment/release gate must fail even if the process could technically start when any of these is unverified:
 
-- PostgreSQL is version 17 and resides in the intended Moscow region/VPC;
+- PostgreSQL is version 18 and resides in the intended Moscow region/VPC;
 - PostgreSQL backup retention is no more than 30 days;
 - Telegram destination auto-delete is no more than 30 days;
 - the Timeweb proxy behavior remains unverified while forwarded-header trust is enabled;
@@ -70,12 +70,12 @@ validation, HMAC, database, outbox, or Telegram work.
 
 ## Database migration and connection operations
 
-Flyway owns schema history. `V1__lead_outbox_baseline.sql` creates `leads`, `telegram_outbox`, constraints, and indexes before lead traffic is enabled. Migrations are forward-only, reviewed, transactional where PostgreSQL permits, and tested against PostgreSQL 17 with Testcontainers. Hibernate/JPA schema generation is not used.
+Flyway owns schema history. `V1__lead_outbox_baseline.sql` creates `leads`, `telegram_outbox`, constraints, and indexes before lead traffic is enabled. Migrations are forward-only, reviewed, transactional where PostgreSQL permits, and tested against PostgreSQL 18 with Testcontainers. Hibernate/JPA schema generation is not used.
 
 Before deployment:
 
 1. verify a recoverable backup exists and its retention policy remains at most 30 days;
-2. run the complete migration/constraint tests against PostgreSQL 17;
+2. run the complete migration/constraint tests against PostgreSQL 18;
 3. review SQL lock duration, index construction, and backward compatibility with the currently running JAR;
 4. deploy one schema-compatible JAR and wait for Flyway plus readiness;
 5. run the API, queue, privacy, and health smoke matrix.
@@ -178,7 +178,7 @@ Application rollback selects a previously verified image only when its code is c
 
 ## Verification and release gates
 
-For each implementation PR, run only commands introduced by its committed manifests. Once the skeleton owns the wrapper, the backend gate is `./mvnw -B verify`; JaCoCo must fail `verify` below 80%. Database changes additionally run PostgreSQL 17 Testcontainers tests. Container tasks build and smoke-test the exact image. The final integration verifies home page, hashed asset, real 404, lead API, liveness, and readiness.
+For each implementation PR, run only commands introduced by its committed manifests. Once the skeleton owns the wrapper, the host/CI backend gate is `./mvnw -B verify`; JaCoCo must fail `verify` below 80%. Database changes run both `@Tag("database")` PostgreSQL 18 Testcontainers suites, `LeadOutboxMigrationTest` and `LeadOutboxConstraintTest`, with Docker available. The containerized `backend-build` runs `./mvnw -B -DexcludedGroups=database verify` because it cannot start a sibling Testcontainers database; this excludes only the database group, must not use `-DskipTests` or `maven.test.skip`, and still runs all other tests. Container tasks build and smoke-test the exact image. The final integration verifies home page, hashed asset, real 404, lead API, liveness, and readiness.
 
 Before production release, confirm all of the following with fresh evidence:
 

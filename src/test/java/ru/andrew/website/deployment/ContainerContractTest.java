@@ -21,9 +21,15 @@ class ContainerContractTest {
         assertThat(dockerfile).doesNotContain("ENV TELEGRAM_BOT_TOKEN");
 
         int dockerfileCopy = dockerfile.indexOf("COPY Dockerfile .dockerignore ./");
-        int mavenVerify = dockerfile.indexOf("RUN ./mvnw -B verify");
+        String verifyCommand = "RUN ./mvnw -B -DexcludedGroups=database verify";
+        int mavenVerify = dockerfile.indexOf(verifyCommand);
         assertThat(dockerfileCopy).isGreaterThanOrEqualTo(0);
         assertThat(mavenVerify).isGreaterThan(dockerfileCopy);
+        assertThat(dockerfile)
+                .doesNotContain("maven.test.skip");
+        assertThat(dockerfile.lines()
+                        .filter(line -> line.startsWith("RUN ./mvnw") && line.contains("verify")))
+                .containsExactly(verifyCommand);
     }
 
     @Test

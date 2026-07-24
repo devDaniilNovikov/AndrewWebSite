@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 17.
+- One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 18.
 - Do not start until refreshed Claude instructions and the Claude-owned frontend scaffold, package-manager declaration, lockfile, static-export command, output path, and frontend tests are merged into fresh `origin/main`.
 - Frontend remains under `frontend/`; use its one committed package manager and lockfile without conversion or mixing; Next.js is exactly 16.2.9 with `output: 'export'`; the build artifact is `frontend/out/`.
 - Node 24 is build-time only. Use a writable `COREPACK_HOME` and direct `corepack <manager>` execution for the exact manifest declaration; never run `corepack enable` or install global shims. The final artifact and container contain one Spring Boot executable JAR on Java 25 and no Node executable, package-manager cache, frontend source, or build credential.
@@ -392,7 +392,7 @@ RUN ./mvnw -B -DskipTests dependency:go-offline
 COPY Dockerfile Dockerfile
 COPY src src
 COPY --from=frontend-build /workspace/frontend/out frontend/out
-RUN ./mvnw -B verify
+RUN ./mvnw -B -DexcludedGroups=database verify
 
 FROM eclipse-temurin:25-jre
 RUN apt-get update \
@@ -489,7 +489,7 @@ cleanup
 docker network create "$network" >/dev/null
 docker run --detach --name "$database" --network "$network" \
   --env POSTGRES_DB=smoke --env POSTGRES_USER=smoke \
-  --env POSTGRES_PASSWORD=smoke-only-not-a-secret postgres:17-alpine >/dev/null
+  --env POSTGRES_PASSWORD=smoke-only-not-a-secret postgres:18-alpine >/dev/null
 
 for attempt in $(seq 1 15); do
   if docker exec "$database" pg_isready --quiet --timeout=1 \
@@ -541,7 +541,7 @@ curl --fail --silent http://127.0.0.1:18080/actuator/health/readiness
 test "$(docker inspect --format '{{.Config.User}}' "$application")" = "10001:10001"
 ```
 
-The script runs at most 15 one-second `pg_isready` probes, with a one-second pause after each non-final failure, before it starts the application. On terminal failure it emits only the database container state plus the last 50 fixture log lines; it never inspects environment variables or expands credentials. It then obtains the actual hashed asset path from built `index.html`, asserts the lead response status is 202 with an empty body, and cleans up only its exact named resources in a trap. Maven verification inside the final `backend-build` stage reruns the unchanged `ContainerContractTest` after `Dockerfile` has been copied, so its stage-name, copy-order, and Docker-context secret-exclusion assertions remain executable.
+The script runs at most 15 one-second `pg_isready` probes, with a one-second pause after each non-final failure, before it starts the application. On terminal failure it emits only the database container state plus the last 50 fixture log lines; it never inspects environment variables or expands credentials. It then obtains the actual hashed asset path from built `index.html`, asserts the lead response status is 202 with an empty body, and cleans up only its exact named resources in a trap. Maven verification inside the final `backend-build` stage reruns every non-database test, including the unchanged `ContainerContractTest`, after `Dockerfile` has been copied. It uses `-DexcludedGroups=database` only because nested Testcontainers cannot start there and never uses broad `-DskipTests` or `maven.test.skip`; host/CI `./mvnw -B verify` remains the full database-enabled gate.
 
 - [ ] **Step 4: REFACTOR, verify one-runtime topology, and commit**
 

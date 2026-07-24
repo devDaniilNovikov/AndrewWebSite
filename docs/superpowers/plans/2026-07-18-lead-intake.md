@@ -2,15 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver the exact public JSON lead contract with stateless security, PostgreSQL 17 persistence, HMAC idempotency, and atomic lead/outbox acceptance.
+**Goal:** Deliver the exact public JSON lead contract with stateless security, PostgreSQL 18 persistence, HMAC idempotency, and atomic lead/outbox acceptance.
 
 **Architecture:** The web boundary enforces route, media type, body, validation, and bounded rate-limit rules before an application service normalizes the lead. One PostgreSQL transaction uses the unique request ID and keyed fingerprint to create the lead/outbox pair or resolve duplicate/conflict/retained replay. The outbox references the lead and contains no duplicate PII.
 
-**Tech Stack:** Spring Boot 4.1.0, Java 25, Spring Security 7, Spring MVC `ProblemDetail`, Bean Validation, `JdbcClient`, Flyway, PostgreSQL 17, Testcontainers 2.0.x, MockMvc, JUnit Jupiter
+**Tech Stack:** Spring Boot 4.1.0, Java 25, Spring Security 7, Spring MVC `ProblemDetail`, Bean Validation, `JdbcClient`, Flyway, PostgreSQL 18, Testcontainers 2.0.x, MockMvc, JUnit Jupiter
 
 ## Global Constraints
 
-- One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 17.
+- One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 18.
 - Frontend remains under `frontend/` with Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only at build time.
 - `POST /api/leads` accepts only `application/json` up to 16 KiB. Its mutually exclusive OpenAPI `oneOf` permits either a fully validated legitimate lead with empty/absent `website` or a synthetic request requiring only a non-empty `website`; both reject unknown properties and retain typed JSON deserialization. Every accepted branch returns the same empty `202`.
 - Problem responses are RFC 9457 `application/problem+json`: exactly `400`, `409`, `413`, `415`, `429`, and `503` where applicable; rejected values and internals are never echoed.
@@ -444,7 +444,7 @@ git add pom.xml src
 git commit -m "feat(backend-http-security): secure the public HTTP boundary"
 ```
 
-### Task 2: `task-db-flyway-baseline` — PostgreSQL 17 schema and constraints
+### Task 2: `task-db-flyway-baseline` — PostgreSQL 18 schema and constraints
 
 **Files:**
 - Modify: `pom.xml`
@@ -452,16 +452,19 @@ git commit -m "feat(backend-http-security): secure the public HTTP boundary"
 - Create: `src/main/resources/db/migration/V1__lead_outbox_baseline.sql`
 - Create: `src/test/java/ru/andrew/website/testing/PostgresTestConfiguration.java`
 - Create: `src/test/java/ru/andrew/website/leads/LeadOutboxMigrationTest.java`
+- Create: `src/test/java/ru/andrew/website/leads/LeadOutboxConstraintTest.java`
+- Modify: `Dockerfile`
+- Modify: `src/test/java/ru/andrew/website/deployment/ContainerContractTest.java`
 
 **Interfaces:**
-- Consumes: PostgreSQL 17 and Spring transaction management.
+- Consumes: PostgreSQL 18 and Spring transaction management.
 - Produces: exact `leads` and `telegram_outbox` tables, `uk_leads_request_id`, `uk_telegram_outbox_lead_id`, queue/retention indexes, and Boot-auto-configured `org.springframework.jdbc.core.simple.JdbcClient`.
 
-- [ ] **Step 1: Add current PostgreSQL/Flyway/Testcontainers coordinates**
+- [ ] **Step 1: Add Boot-managed PostgreSQL/Flyway/Testcontainers coordinates**
 
-Add `spring-boot-starter-jdbc`, `org.flywaydb:flyway-core`, `org.flywaydb:flyway-database-postgresql`, runtime `org.postgresql:postgresql`, test `spring-boot-testcontainers`, `org.testcontainers:testcontainers-postgresql`, and `org.testcontainers:testcontainers-junit-jupiter`. Do not pin versions managed by Spring Boot 4.1.0.
+Add Boot-managed `org.springframework.boot:spring-boot-starter-flyway`; runtime `org.flywaydb:flyway-database-postgresql` and `org.postgresql:postgresql`; and test-scoped `org.springframework.boot:spring-boot-testcontainers` and `org.testcontainers:testcontainers-postgresql`. Do not declare manual versions. Do not add separate `spring-boot-starter-jdbc`, `flyway-core`, or `testcontainers-junit-jupiter` coordinates: the selected starters/modules provide the required JDBC/Flyway integration, and Spring owns the container bean lifecycle.
 
-- [ ] **Step 2: RED — write a PostgreSQL 17 migration contract test**
+- [ ] **Step 2: RED — write a PostgreSQL 18 migration contract test**
 
 ```java
 package ru.andrew.website.leads;
@@ -470,6 +473,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -479,6 +483,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
+@Tag("database")
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(PostgresTestConfiguration.class)
@@ -511,7 +516,7 @@ class LeadOutboxMigrationTest {
 }
 ```
 
-`PostgresTestConfiguration` is a `@TestConfiguration(proxyBeanMethods = false)` with a `@Bean @ServiceConnection PostgreSQLContainer<?> postgres()` returning `new PostgreSQLContainer<>("postgres:17-alpine")`. Spring owns the bean lifecycle so cached test contexts do not outlive a JUnit-managed container.
+`PostgresTestConfiguration` is a `@TestConfiguration(proxyBeanMethods = false)` with a `@Bean @ServiceConnection PostgreSQLContainer<?> postgres()` returning `new PostgreSQLContainer<>("postgres:18-alpine")`. Spring owns the bean lifecycle so cached test contexts do not outlive a JUnit-managed container.
 
 Run: `./mvnw -B -Dtest=LeadOutboxMigrationTest test`
 
@@ -574,11 +579,13 @@ create index idx_telegram_outbox_expired_lease on telegram_outbox(lease_until, i
 
 Run: `./mvnw -B -Dtest=LeadOutboxMigrationTest test`
 
-Expected: PASS against `postgres:17-alpine`.
+Expected: PASS against `postgres:18-alpine`.
 
 - [ ] **Step 4: REFACTOR and verify every constraint/index**
 
-Extend the test with exact invalid intent, 31-byte fingerprint, illegal lease shape, legal anonymized shape, cascade delete, and `pg_indexes` assertions. Run `./mvnw -B verify` and expect PASS with Flyway validation green and at least 80% line coverage.
+Keep exactly two database integration test classes, both annotated `@Tag("database")`: `LeadOutboxMigrationTest` verifies the PostgreSQL 18 server version, Flyway history/idempotency, exact columns, named constraints, and partial indexes; `LeadOutboxConstraintTest` verifies duplicate IDs, invalid intent, 31/33-byte fingerprints, phone bounds, privacy shapes, outbox state/lease shapes, foreign keys, valid rows, and cascade delete.
+
+Run host/CI `./mvnw -B verify` with Docker available and expect both database-tagged suites to pass with Flyway validation green and at least 80% line coverage. In the Dockerfile `backend-build` stage run `./mvnw -B -DexcludedGroups=database verify`: exclude only the nested-Docker database group, keep every other test enabled, and forbid broad `-DskipTests` or `maven.test.skip`.
 
 - [ ] **Step 5: Commit**
 

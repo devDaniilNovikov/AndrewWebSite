@@ -6,11 +6,11 @@
 
 **Architecture:** A Boot-managed `RestClient.Builder` implements a narrow Telegram gateway with explicit status classification and safe 429 parsing. A separate scheduled worker claims bounded rows transactionally with `FOR UPDATE SKIP LOCKED`, commits, sends HTTP without a transaction, and marks outcomes through lease-token compare-and-set updates. Delivery is intentionally at least once.
 
-**Tech Stack:** Java 25, Spring Boot 4.1.0, Spring RestClient, JdbcClient, PostgreSQL 17, Spring Scheduling, Micrometer, MockRestServiceServer, JUnit Jupiter, Testcontainers 2.0.x
+**Tech Stack:** Java 25, Spring Boot 4.1.0, Spring RestClient, JdbcClient, PostgreSQL 18, Spring Scheduling, Micrometer, MockRestServiceServer, JUnit Jupiter, Testcontainers 2.0.x
 
 ## Global Constraints
 
-- One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 17. Frontend remains `frontend/` with Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only at build time.
+- One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 18. Frontend remains `frontend/` with Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only at build time.
 - Public surface remains static content, JSON-only 16 KiB `POST /api/leads`, dependency-free liveness, and minimal readiness; no login/session/form login/HTTP Basic or sensitive/raw actuator endpoint.
 - Lead validation remains name 2–100, phone input 32 and normalized digits 7–15, optional comment 1000, local source path, intents exactly `repair|maintenance`, consent true, empty indistinguishable `202`, RFC 9457 errors, and HMAC key only from `LEAD_FINGERPRINT_HMAC_KEY`.
 - Bounded limits remain a rolling global maximum of 60 admissions in every `(t - 60 seconds, t]` interval and a separate per-connection burst 5/refill 1 token per minute; forwarded headers remain untrusted until Timeweb CIDRs are verified.
@@ -903,7 +903,7 @@ Expected: PASS for all state, ordering, concurrency, transaction-boundary, retry
 
 - [ ] **Step 4: REFACTOR and complete verification**
 
-Factor SQL row mapping and result application below 50 lines, add the accepted crash-after-send test showing a recovered duplicate with the same request ID, then run `./mvnw -B verify`. Expected: PASS with PostgreSQL 17, at least 80% coverage, no sleeping tests, and captured logs/metrics free of PII.
+Factor SQL row mapping and result application below 50 lines, add the accepted crash-after-send test showing a recovered duplicate with the same request ID, then run `./mvnw -B verify`. Expected: PASS with PostgreSQL 18, at least 80% coverage, no sleeping tests, and captured logs/metrics free of PII.
 
 - [ ] **Step 5: Commit**
 

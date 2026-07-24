@@ -1,6 +1,7 @@
 package ru.andrew.website.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,7 +15,7 @@ class RuntimeProfileGuardTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(AndrewWebsiteApplication.class)
-            .withPropertyValues("spring.main.web-application-type=none");
+            .withPropertyValues("spring.main.web-application-type=none", NO_DATABASE);
 
     @ParameterizedTest
     @ValueSource(strings = {"test", "local", "prod"})

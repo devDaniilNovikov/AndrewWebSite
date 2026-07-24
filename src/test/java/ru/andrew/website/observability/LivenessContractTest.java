@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +25,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+@SpringBootTest(properties = NO_DATABASE)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class LivenessContractTest {

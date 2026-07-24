@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(properties = {
         "app.web.rate-limit.enabled=false",
         "app.web.local-cors-origins[0]=http://127.0.0.1:3000",
-        "spring.autoconfigure.exclude="
-                + "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration"
+        NO_DATABASE
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("local")

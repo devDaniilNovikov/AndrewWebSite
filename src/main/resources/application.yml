@@ -6,6 +6,15 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  sql:
+    init:
+      mode: never
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    baseline-on-migrate: false
+    clean-disabled: true
 app:
   web:
     max-request-bytes: 16384

@@ -6,11 +6,11 @@
 
 **Architecture:** An hourly clock-driven retention worker atomically blocks undelivered queue entries and anonymizes their leads at 29 days, then deletes anonymized technical rows after 12 months. Observability composes dependency-free liveness with database/worker readiness, exports only bounded PII-free meters over OTLP, and never exposes raw metrics or health detail publicly.
 
-**Tech Stack:** Java 25, Spring Boot 4.1.0 Actuator, JdbcClient, PostgreSQL 17, Spring Scheduling, Micrometer OTLP, JUnit Jupiter, MockMvc, Testcontainers 2.0.x
+**Tech Stack:** Java 25, Spring Boot 4.1.0 Actuator, JdbcClient, PostgreSQL 18, Spring Scheduling, Micrometer OTLP, JUnit Jupiter, MockMvc, Testcontainers 2.0.x
 
 ## Global Constraints
 
-- One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 17. Frontend remains `frontend/` with Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only at build time.
+- One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 18. Frontend remains `frontend/` with Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only at build time.
 - Public surface remains static content, JSON-only 16 KiB `POST /api/leads`, liveness, and minimal readiness; no login/session/form login/HTTP Basic or sensitive/raw actuator endpoint.
 - Lead acceptance remains empty indistinguishable `202`; RFC 9457 `400/409/413/415/429/503`; name 2–100, phone input 32/normalized digits 7–15, optional comment 1000, local source path, exact `repair|maintenance`, consent true, HMAC only from `LEAD_FINGERPRINT_HMAC_KEY`.
 - Bounded limits remain a rolling global maximum of 60 admissions in every `(t - 60 seconds, t]` interval and a separate per-connection burst 5/refill 1 token per minute; forwarded headers remain untrusted until Timeweb CIDRs are verified.
@@ -50,7 +50,7 @@
 
 - [ ] **Step 1: RED — prove the 29-day action and 30-day invariant**
 
-Use the existing PostgreSQL 17 service-connection configuration and mutable clock. Seed pending, retry, processing, delivered, and already anonymized examples with fictional content. Add these exact assertions:
+Use the existing PostgreSQL 18 service-connection configuration and mutable clock. Seed pending, retry, processing, delivered, and already anonymized examples with fictional content. Add these exact assertions:
 
 ```java
 package ru.andrew.website.privacy;
@@ -325,7 +325,7 @@ class HealthContractIntegrationTest {
 }
 ```
 
-The imported, Spring-owned `PostgresTestConfiguration` is the established PostgreSQL 17 Testcontainers fixture from the database plan; Flyway completes against it before these methods execute. Create focused test methods for PostgreSQL down while liveness remains UP, retention staleness not changing readiness, `/actuator/metrics|prometheus|env|configprops|heapdump|shutdown` forbidden, meter tag allowlist, finite queue gauges, and captured structured logs lacking fictional name/phone/comment/request ID/token/chat/database URL/OTLP authorization.
+The imported, Spring-owned `PostgresTestConfiguration` is the established PostgreSQL 18 Testcontainers fixture from the database plan; Flyway completes against it before these methods execute. Create focused test methods for PostgreSQL down while liveness remains UP, retention staleness not changing readiness, `/actuator/metrics|prometheus|env|configprops|heapdump|shutdown` forbidden, meter tag allowlist, finite queue gauges, and captured structured logs lacking fictional name/phone/comment/request ID/token/chat/database URL/OTLP authorization.
 
 Run: `./mvnw -B -Dtest=HealthContractIntegrationTest,TelemetryPrivacyTest test`
 

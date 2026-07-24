@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - One Maven module at root `pom.xml`; Maven Wrapper; Java 25 LTS; Spring Boot 4.1.0; root package `ru.andrew.website`; feature-oriented packages.
-- PostgreSQL target is managed PostgreSQL 17; do not introduce H2, Redis, a broker, authentication, sessions, form login, HTTP Basic, public raw metrics, environment, configuration, shutdown, or heap endpoints.
+- PostgreSQL target is managed PostgreSQL 18; do not introduce H2, Redis, a broker, authentication, sessions, form login, HTTP Basic, public raw metrics, environment, configuration, shutdown, or heap endpoints.
 - Frontend ownership remains under `frontend/`; Next.js 16.2.9, React 19.2.x, TypeScript strict, Tailwind CSS 4, Motion, and Node 24 only at build time.
 - Lead contract remains empty indistinguishable `202`; RFC 9457 `400/409/413/415/429/503`; name 2–100, phone input 32 and normalized digits 7–15, optional comment 1000, local source path, intents exactly `repair|maintenance`, consent exactly true, HMAC key only from `LEAD_FINGERPRINT_HMAC_KEY`.
 - Bounded in-memory limits remain a rolling global maximum of 60 admissions in every `(t - 60 seconds, t]` interval and a separate per-connection burst 5/refill 1 token per minute; forwarded headers remain untrusted until Timeweb CIDRs are verified.
@@ -641,9 +641,13 @@ class ContainerContractTest {
         assertThat(dockerfile).doesNotContain("ENV SPRING_DATASOURCE_PASSWORD");
         assertThat(dockerfile).doesNotContain("ENV TELEGRAM_BOT_TOKEN");
         int dockerfileCopy = dockerfile.indexOf("COPY Dockerfile Dockerfile");
-        int mavenVerify = dockerfile.indexOf("RUN ./mvnw -B verify");
+        int mavenVerify =
+                dockerfile.indexOf("RUN ./mvnw -B -DexcludedGroups=database verify");
         assertThat(dockerfileCopy).isGreaterThanOrEqualTo(0);
         assertThat(mavenVerify).isGreaterThan(dockerfileCopy);
+        assertThat(dockerfile)
+                .doesNotContain("RUN ./mvnw -B -DskipTests verify")
+                .doesNotContain("maven.test.skip");
     }
 
     @Test
@@ -683,7 +687,7 @@ COPY mvnw pom.xml ./
 RUN ./mvnw -B -DskipTests dependency:go-offline
 COPY Dockerfile Dockerfile
 COPY src src
-RUN ./mvnw -B verify
+RUN ./mvnw -B -DexcludedGroups=database verify
 
 FROM eclipse-temurin:25-jre
 RUN apt-get update \
@@ -754,7 +758,7 @@ id_ed25519
 
 Run: `./mvnw -B -Dtest=ContainerContractTest test`
 
-Expected: PASS. The Maven invocation inside `backend-build` can read the copied root `Dockerfile`; the same stage name remains valid when the static plan later adds a disposable frontend stage; root and nested environment files, credential/secret directories, and local key/keystore material are already excluded and protected by the unchanged contract test.
+Expected: PASS. The Maven invocation inside `backend-build` can read the copied root `Dockerfile`; it excludes only `@Tag("database")` because nested Testcontainers cannot start there, runs every other test, and never uses a broad `-DskipTests` or `maven.test.skip`. Host and CI `./mvnw -B verify` remain responsible for the full database-tagged suite with Docker available. The same stage name remains valid when the static plan later adds a disposable frontend stage; root and nested environment files, credential/secret directories, and local key/keystore material are already excluded and protected by the unchanged contract test.
 
 - [ ] **Step 3: REFACTOR — build and smoke the exact image without secrets**
 
