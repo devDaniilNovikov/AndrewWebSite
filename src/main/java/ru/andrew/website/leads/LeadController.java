@@ -1,15 +1,21 @@
-package ru.andrew.website.web;
+package ru.andrew.website.leads;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import tools.jackson.databind.JsonNode;
 
 @RestController
-class LeadBoundaryStubController {
+final class LeadController {
+    private final LeadAcceptanceService acceptance;
+
+    LeadController(LeadAcceptanceService acceptance) {
+        this.acceptance = acceptance;
+    }
+
     @PostMapping(path = "/api/leads", consumes = "application/json")
-    ResponseEntity<Void> accept(@RequestBody JsonNode ignored) {
+    ResponseEntity<Void> submit(@RequestBody LeadRequest request) {
+        acceptance.accept(request);
         return ResponseEntity.accepted().build();
     }
 }

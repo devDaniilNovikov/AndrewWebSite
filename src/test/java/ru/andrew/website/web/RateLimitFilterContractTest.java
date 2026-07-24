@@ -16,17 +16,23 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import ru.andrew.website.leads.LeadAcceptanceTransaction;
 
 @SpringBootTest(properties = NO_DATABASE)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class RateLimitFilterContractTest {
     private static final int MAX_REQUEST_BYTES = 16_384;
+    private static final String HONEYPOT_JSON = "{\"website\":\"bot\"}";
 
     @Autowired
     MockMvc mvc;
+
+    @MockitoBean
+    LeadAcceptanceTransaction transaction;
 
     @Test
     void oversizedBodyDoesNotConsumeAdmissionAndForwardedHeadersNeverSplitTheBucket()
@@ -47,7 +53,7 @@ class RateLimitFilterContractTest {
                             .with(connection)
                             .header("X-Forwarded-For", "198.51.100." + index)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content(HONEYPOT_JSON))
                     .andExpect(status().isAccepted());
         }
 
@@ -55,7 +61,7 @@ class RateLimitFilterContractTest {
                         .with(connection)
                         .header("Forwarded", "for=203.0.113.9")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(HONEYPOT_JSON))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(header().string(HttpHeaders.RETRY_AFTER, "60"))

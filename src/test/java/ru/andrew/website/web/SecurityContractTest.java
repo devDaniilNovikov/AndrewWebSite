@@ -24,10 +24,12 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import ru.andrew.website.leads.LeadAcceptanceTransaction;
 
 @SpringBootTest(properties = {
         "app.web.rate-limit.enabled=false",
@@ -37,6 +39,7 @@ import org.springframework.test.web.servlet.ResultActions;
 @ActiveProfiles("test")
 class SecurityContractTest {
     private static final int MAX_REQUEST_BYTES = 16_384;
+    private static final String HONEYPOT_JSON = "{\"website\":\"bot\"}";
 
     @Autowired
     MockMvc mvc;
@@ -46,6 +49,9 @@ class SecurityContractTest {
 
     @Autowired
     ProblemResponseWriter problems;
+
+    @MockitoBean
+    LeadAcceptanceTransaction transaction;
 
     @Test
     void publicAllowlistKeepsDiagnosticsAndAuthenticationRoutesClosed() throws Exception {
@@ -95,7 +101,7 @@ class SecurityContractTest {
     void leadIsStatelessJsonOnlyAndProductionCorsStaysClosed() throws Exception {
         mvc.perform(post("/api/leads")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(HONEYPOT_JSON))
                 .andExpect(status().isAccepted())
                 .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE));
 
@@ -122,7 +128,7 @@ class SecurityContractTest {
         mvc.perform(post("/api/leads")
                         .header(HttpHeaders.ORIGIN, "https://cross-origin.invalid")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content(HONEYPOT_JSON))
                 .andExpect(status().isAccepted())
                 .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
         mvc.perform(options("/api/leads")
@@ -233,7 +239,7 @@ class SecurityContractTest {
     }
 
     private String asciiJsonBody(int byteLength) {
-        String body = "{\"x\":\"" + "x".repeat(byteLength - 8) + "\"}";
+        String body = "{\"website\":\"" + "x".repeat(byteLength - 14) + "\"}";
         if (body.getBytes(StandardCharsets.UTF_8).length != byteLength) {
             throw new IllegalStateException("ASCII fixture length mismatch");
         }
@@ -241,11 +247,11 @@ class SecurityContractTest {
     }
 
     private String multibyteJsonBody(int byteLength) {
-        int contentBytes = byteLength - 8;
+        int contentBytes = byteLength - 14;
         if (contentBytes % 2 != 0) {
             throw new IllegalArgumentException("Multibyte fixture requires an even payload length");
         }
-        String body = "{\"x\":\"" + "é".repeat(contentBytes / 2) + "\"}";
+        String body = "{\"website\":\"" + "é".repeat(contentBytes / 2) + "\"}";
         if (body.getBytes(StandardCharsets.UTF_8).length != byteLength) {
             throw new IllegalStateException("Multibyte fixture length mismatch");
         }

@@ -23,7 +23,9 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.andrew.website.leads.LeadAcceptanceTransaction;
 
 @SpringBootTest(properties = NO_DATABASE)
 @AutoConfigureMockMvc
@@ -31,6 +33,9 @@ import org.springframework.test.web.servlet.MockMvc;
 class LivenessContractTest {
     @Autowired
     MockMvc mvc;
+
+    @MockitoBean
+    LeadAcceptanceTransaction transaction;
 
     @Test
     void livenessIsMinimalAndDependencyFree() throws Exception {
