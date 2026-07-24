@@ -1,57 +1,45 @@
 # fix-leads-api-json-boundary handoff
 
-- **UTC:** 2026-07-24T19:10:31Z
-- **Branch:** `fix-leads-api-json-boundary`
-- **Worktree:** `/Users/daniilnovikov/.codex/worktrees/leads-api-json-boundary/AndrewWorkWebSite`
-- **Base:** `origin/main` at `731a17dbba5503b7a3ea94ac32ff9567f490d443`
-- **PR:** Draft [#39](https://github.com/devDaniilNovikov/AndrewWebSite/pull/39)
+Signature: HND fix-leads-api-json-boundary [draft_pr] topics: backend, security, tracker → predecessor: none
 
-## State
+## Durable — safe to cite later
 
-Draft PR #39 is open for the strict JSON boundary remediation. The code fix is
-committed as `d5cd296` after the initial metadata commit `c31c082`. A final
-metadata commit follows this handoff and is expected to become the PR head.
-
-## Fixed Findings
-
-- Non-canonical UUID strings no longer reach Jackson UUID conversion. The lead
-  deserializer now accepts only exact 36-character hex/hyphen UUID strings,
-  preserving upper- and lower-case hex and avoiding Base64 or trimming paths.
-- `intent` no longer uses mapper enum conversion. The deserializer accepts only
-  raw string literals `repair` and `maintenance`.
+- Feature commit `d5cd296f93871ae73290bb3cde05488a77d4b53b` fixes all
+  three Important findings from the post-merge PR #38 review. Non-canonical
+  UUID aliases and non-exact `intent` strings now fail at the raw JSON
+  boundary before domain conversion.
 - Duplicate JSON keys now fail during tree reading through Jackson
   `DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY`.
-
-## Verification
-
-- `./mvnw -B -Dtest=LeadControllerContractTest test` passed with 62 tests.
-- `./mvnw -B verify` passed with 172 tests, PostgreSQL 18.4 Testcontainers,
-  and JaCoCo coverage check met.
-- `git diff --check` passed.
-- `semgrep scan --config auto --error --quiet .` passed with no findings.
-- `trufflehog filesystem --no-update --fail --results=verified,unknown .`
-  passed with 0 verified and 0 unknown secrets.
-- Whole-diff review found only `TASKS.md`, memory handoff/lesson metadata,
-  `LeadRequestDeserializer`, `StrictJsonConfiguration`, and
-  `LeadControllerContractTest` changes.
-- Repeat review across OpenAPI/HTTP boundary, Jackson/security, and
-  tests/regressions found no Critical, Important, or actionable Minor issues.
-
-## Documentation Evidence
-
-- Spring Boot 4.1 documentation identifies
-  `org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer`
-  as the callback for customizing the auto-configured Jackson 3
-  `JsonMapper.Builder`.
-- Jackson Databind documentation for `FAIL_ON_READING_DUP_TREE_KEY` states
-  duplicate property names throw while parsing JSON Trees when the feature is
-  enabled; otherwise the last encountered value is used.
-- Local Jackson 3.1.5 API inspection confirmed
-  `MapperBuilder.enable(DeserializationFeature...)` and the
-  `FAIL_ON_READING_DUP_TREE_KEY` enum constant exist in the project dependency.
-
-## Boundaries
-
+- Every malformed legitimate or honeypot payload uses the existing generic
+  five-field `400 Problem` before validation, HMAC, or transaction access.
+  Canonical upper- and lower-case UUIDs, both allowed intents, and the empty
+  successful `202` response remain unchanged.
+- The strict-boundary incident is distilled as `LES-20260724-011`.
 - No OpenAPI, Flyway, frontend, CI workflow, production configuration,
   production service, secret, or user-owned `receipts/` path was changed.
 - Ready, merge, and production deploy remain unauthorized.
+
+## Snapshot at 2026-07-24T19:17Z — re-verify live before use
+
+- Draft [PR #39](https://github.com/devDaniilNovikov/AndrewWebSite/pull/39)
+  is open against `main`, mergeable, and was at published metadata head
+  `6025d731d9bb7c1e3b8637f271d089fe9b6b30c4` before this focused handoff
+  correction.
+- Fresh focused verification passed 62/62 controller contract tests. Fresh
+  `./mvnw -B verify` passed 172/172 tests with PostgreSQL 18.4 Testcontainers,
+  Flyway V1, and the JaCoCo gate green (92.16% lines, 81.68% branches).
+- Local Semgrep ran 88 Java/security rules with 0 findings. TruffleHog found
+  no verified, unverified, or unknown secrets. `git diff --check` passed.
+- Independent OpenAPI/HTTP, Jackson/security, and tests/regressions reviews
+  reported no Critical, Important, Minor, or other actionable findings.
+- Repository policy, Maven verify, dependency-security, Java security,
+  CodeQL, Semgrep, and Snyk were green on `6025d73`; the final corrected
+  metadata head still requires its own exact-head check verification.
+
+## Next steps — conditional, each requires the stated live check
+
+1. Normally push this focused handoff correction and wait for every required
+   and applicable GitHub check on the exact resulting PR head.
+2. Keep PR #39 Draft. Mark it Ready or merge only after a separate explicit
+   user command and a fresh exact-head/base/review verification.
+3. Do not deploy or modify production services/configuration.
