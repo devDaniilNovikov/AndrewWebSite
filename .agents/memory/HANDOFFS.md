@@ -8,6 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
+| `fix-leads-api-json-boundary-replacement` | 1: `2026-07-25-042750-fix-leads-api-json-boundary-replacement-handoff.md` | `draft_pr` | backend, security |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
