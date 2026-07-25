@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-production-http-invariants` | 1: `2026-07-25-075015-fix-production-http-invariants-handoff.md` → 2: `2026-07-25-100022-fix-production-http-invariants-handoff.md` | In progress; second-pass Important findings await RED/GREEN remediation | backend, security, deploy, tracker |
+| `fix-production-http-invariants` | 1: `2026-07-25-075015-fix-production-http-invariants-handoff.md` → 2: `2026-07-25-100022-fix-production-http-invariants-handoff.md` → 3: `2026-07-25-142445-fix-production-http-invariants-handoff.md` | In progress; early guards are focused-green, real server test is sandbox-blocked, full exact-diff gates remain pending | backend, security, deploy, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
