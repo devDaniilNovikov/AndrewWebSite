@@ -8,7 +8,6 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-production-http-invariants` | 1: `2026-07-25-075015-fix-production-http-invariants-handoff.md` → 2: `2026-07-25-100022-fix-production-http-invariants-handoff.md` → 3: `2026-07-25-142445-fix-production-http-invariants-handoff.md` → 4: `2026-07-25-175036-fix-production-http-invariants-ready-handoff.md` | Ready; implementation and full CI are green, metadata-only exact-head CI refresh is required before the authorized merge | backend, security, deploy, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -41,6 +40,7 @@ design.
 | `task-leads-api` | 2 | `2026-07-24-180342-task-leads-api-handoff.md` | merged as `731a17d`; retained source branch | backend, security, tracker |
 | `fix-leads-api-json-boundary-replacement` | 3 | `2026-07-25-045958-fix-leads-api-json-boundary-replacement-ready-handoff.md` | merged as `2f565dd`; retained source branch | backend, security, tracker |
 | `fix-leads-unicode-boundary` | 3 | `2026-07-25-074000-fix-leads-unicode-boundary-ready-handoff.md` | merged as `4da6448`; retained source branch | backend, security, tracker |
+| `fix-production-http-invariants` | 5 | `2026-07-25-180844-fix-production-http-invariants-merged-handoff.md` | merged as `d29e788`; retained source branch | backend, security, deploy, tracker |
 
 ## Rules
 
