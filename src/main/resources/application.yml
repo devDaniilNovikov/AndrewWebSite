@@ -6,6 +6,14 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  web:
+    error:
+      path: /error
+      include-exception: false
+      include-message: never
+      include-binding-errors: never
+      include-stacktrace: never
+      include-path: never
   sql:
     init:
       mode: never
@@ -37,10 +45,12 @@ app:
 management:
   endpoints:
     web:
+      base-path: /actuator
       exposure:
         include: health
   endpoint:
     health:
+      access: READ_ONLY
       show-details: never
       probes:
         enabled: true
@@ -50,7 +60,4 @@ management:
         readiness:
           include: readinessState
 server:
-  error:
-    include-message: never
-    include-binding-errors: never
-    include-stacktrace: never
+  forward-headers-strategy: none

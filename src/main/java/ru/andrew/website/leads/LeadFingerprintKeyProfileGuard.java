@@ -1,28 +1,32 @@
 package ru.andrew.website.leads;
 
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.EnvironmentPostProcessor;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.Ordered;
+import org.springframework.core.env.ConfigurableEnvironment;
 
-@Component
-final class LeadFingerprintKeyProfileGuard implements InitializingBean {
-    private static final String TEST_KEY =
-            "test-only-key-material-not-for-production-0001";
+public final class LeadFingerprintKeyProfileGuard implements EnvironmentPostProcessor, Ordered {
+    static final String TEST_KEY_MESSAGE =
+            "The test fingerprint key is not allowed outside the test profile";
 
-    private final LeadProperties properties;
-    private final Environment environment;
+    private static final int ORDER = ConfigDataEnvironmentPostProcessor.ORDER + 2;
 
-    LeadFingerprintKeyProfileGuard(LeadProperties properties, Environment environment) {
-        this.properties = properties;
-        this.environment = environment;
+    @Override
+    public void postProcessEnvironment(
+            ConfigurableEnvironment environment, SpringApplication application) {
+        String fingerprintKey = Binder.get(environment)
+                .bind("app.leads.fingerprint-key", String.class)
+                .orElse(null);
+        LeadProperties.validateFingerprintKey(fingerprintKey);
+        if (LeadProperties.TEST_KEY.equals(fingerprintKey) && !environment.matchesProfiles("test")) {
+            throw new IllegalStateException(TEST_KEY_MESSAGE);
+        }
     }
 
     @Override
-    public void afterPropertiesSet() {
-        if (TEST_KEY.equals(properties.fingerprintKey())
-                && !environment.matchesProfiles("test")) {
-            throw new IllegalStateException(
-                    "The test fingerprint key is not allowed outside the test profile");
-        }
+    public int getOrder() {
+        return ORDER;
     }
 }

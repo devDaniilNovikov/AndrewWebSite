@@ -1,5 +1,6 @@
 package ru.andrew.website.web;
 
+import jakarta.servlet.DispatcherType;
 import java.time.Clock;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -54,6 +55,8 @@ class SecurityConfiguration {
         http.csrf(csrf -> csrf.ignoringRequestMatchers(
                 methodAndPath(HttpMethod.POST, "/api/leads")));
         http.authorizeHttpRequests(auth -> auth
+                .requestMatchers(errorDispatch("/error")).permitAll()
+                .requestMatchers(exactPath("/error")).denyAll()
                 .requestMatchers(methodAndPath(HttpMethod.POST, "/api/leads")).permitAll()
                 .requestMatchers(
                         methodAndPath(HttpMethod.GET, "/actuator/health/liveness"),
@@ -69,6 +72,15 @@ class SecurityConfiguration {
     private static RequestMatcher methodAndPath(HttpMethod method, String expectedPath) {
         return request -> method.matches(request.getMethod())
                 && expectedPath.equals(path(request));
+    }
+
+    private static RequestMatcher errorDispatch(String expectedPath) {
+        return request -> request.getDispatcherType() == DispatcherType.ERROR
+                && expectedPath.equals(path(request));
+    }
+
+    private static RequestMatcher exactPath(String expectedPath) {
+        return request -> expectedPath.equals(path(request));
     }
 
     private static RequestMatcher namespace(String namespace) {
