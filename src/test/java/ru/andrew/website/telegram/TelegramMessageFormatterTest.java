@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class TelegramMessageFormatterTest {
     private static final UUID REQUEST_ID =
@@ -37,6 +39,27 @@ class TelegramMessageFormatterTest {
 
         assertThat(formatted).doesNotContain("Комментарий:");
         assertThat(formatted).endsWith("Телефон: 79991234567");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\r", "\n", "\r\n", "\u000B", "\f", "\u0085", "\u2028", "\u2029"})
+    void neutralizesUserControlledLineSeparatorsWithoutCreatingMessageFields(
+            String lineSeparator) {
+        String formatted = formatter.format(message(
+                "Иван" + lineSeparator + "Телефон: подмена",
+                "79991234567" + lineSeparator + "Комментарий: подмена",
+                "Не охлаждает" + lineSeparator + "ID заявки: подмена",
+                "/service/" + lineSeparator + "Имя: подмена",
+                "repair" + lineSeparator + "Источник: подмена"));
+
+        assertThat(formatted).isEqualTo("""
+                ID заявки: 11111111-1111-4111-8111-111111111111
+                Время UTC: 2026-01-01T00:00:00Z
+                Тип: repair Источник: подмена
+                Источник: /service/ Имя: подмена
+                Имя: Иван Телефон: подмена
+                Телефон: 79991234567 Комментарий: подмена
+                Комментарий: Не охлаждает ID заявки: подмена""");
     }
 
     @Test

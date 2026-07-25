@@ -44,7 +44,11 @@ import tools.jackson.databind.json.JsonMapper;
 @ExtendWith(OutputCaptureExtension.class)
 class TelegramRestClientGatewayTest {
     private static final String BOT_PATH_VALUE =
-            "test-only-bot-token-not-a-secret";
+            "000000000" + ":" + "test-only-bot-token-not-a-secret";
+    private static final String ENCODED_BOT_PATH_VALUE =
+            BOT_PATH_VALUE.replace(":", "%3A");
+    private static final String BOT_ENDPOINT =
+            "https://api.telegram.org/bot" + ENCODED_BOT_PATH_VALUE + "/sendMessage";
     private static final String CHAT = "test-only-chat-not-a-destination";
     private RestClient.Builder builder;
     private MockRestServiceServer server;
@@ -59,10 +63,7 @@ class TelegramRestClientGatewayTest {
 
     @Test
     void sendsOnlyRequiredPlainTextJsonFieldsToFixedTelegramMethod() {
-        server.expect(once(), requestTo(
-                        "https://api.telegram.org/bot"
-                                + BOT_PATH_VALUE
-                                + "/sendMessage"))
+        server.expect(once(), requestTo(BOT_ENDPOINT))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.chat_id").value(CHAT))
@@ -80,10 +81,7 @@ class TelegramRestClientGatewayTest {
     @MethodSource("statusClassifications")
     void classifiesHttpStatuses(
             HttpStatus status, TelegramDeliveryResult expected) {
-        server.expect(once(), requestTo(
-                        "https://api.telegram.org/bot"
-                                + BOT_PATH_VALUE
-                                + "/sendMessage"))
+        server.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withStatus(status));
 
         assertThat(gateway.send(message())).isEqualTo(expected);
@@ -123,10 +121,7 @@ class TelegramRestClientGatewayTest {
     @MethodSource("retryAfterBodies")
     void parsesOnlyBoundedPositiveIntegralRetryAfter(
             String body, Duration expected) {
-        server.expect(once(), requestTo(
-                        "https://api.telegram.org/bot"
-                                + BOT_PATH_VALUE
-                                + "/sendMessage"))
+        server.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body));
@@ -163,17 +158,14 @@ class TelegramRestClientGatewayTest {
     @MethodSource("networkFailures")
     void networkFailuresAreRetryableAndNeverLeakExceptionText(
             IOException failure, CapturedOutput output) {
-        server.expect(once(), requestTo(
-                        "https://api.telegram.org/bot"
-                                + BOT_PATH_VALUE
-                                + "/sendMessage"))
+        server.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withException(failure));
 
         assertThat(gateway.send(message()))
                 .isEqualTo(new TelegramDeliveryResult.Retryable("network", null));
         assertThat(output.getAll()).doesNotContain(
-                failure.getMessage(), BOT_PATH_VALUE, CHAT, "Иван", "79991234567",
-                "Не охлаждает", "/service/",
+                failure.getMessage(), BOT_PATH_VALUE, ENCODED_BOT_PATH_VALUE, CHAT,
+                "Иван", "79991234567", "Не охлаждает", "/service/",
                 "11111111-1111-4111-8111-111111111111");
     }
 
@@ -182,10 +174,7 @@ class TelegramRestClientGatewayTest {
         Logger restClientLogger = (Logger) LoggerFactory.getLogger(
                 "org.springframework.web.client.DefaultRestClient");
         Level previousLevel = restClientLogger.getLevel();
-        server.expect(once(), requestTo(
-                        "https://api.telegram.org/bot"
-                                + BOT_PATH_VALUE
-                                + "/sendMessage"))
+        server.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withStatus(HttpStatus.OK));
 
         try {
@@ -199,6 +188,7 @@ class TelegramRestClientGatewayTest {
                 .contains("content=<redacted>")
                 .doesNotContain(
                         BOT_PATH_VALUE,
+                        ENCODED_BOT_PATH_VALUE,
                         CHAT,
                         "Иван",
                         "79991234567",
@@ -241,10 +231,7 @@ class TelegramRestClientGatewayTest {
                 MockRestServiceServer.bindTo(observedBuilder).build();
         TelegramRestClientGateway observedGateway =
                 gateway(observedBuilder, observations);
-        observedServer.expect(once(), requestTo(
-                        "https://api.telegram.org/bot"
-                                + BOT_PATH_VALUE
-                                + "/sendMessage"))
+        observedServer.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withStatus(HttpStatus.OK));
 
         observedGateway.send(message());
@@ -264,6 +251,7 @@ class TelegramRestClientGatewayTest {
                             .allSatisfy(tag -> assertThat(tag.getValue())
                                     .doesNotContain(
                                             BOT_PATH_VALUE,
+                                            ENCODED_BOT_PATH_VALUE,
                                             CHAT,
                                             "Иван",
                                             "79991234567",
@@ -303,10 +291,7 @@ class TelegramRestClientGatewayTest {
                 MockRestServiceServer.bindTo(observedBuilder).build();
         TelegramRestClientGateway observedGateway =
                 gateway(observedBuilder, observations);
-        observedServer.expect(once(), requestTo(
-                        "https://api.telegram.org/bot"
-                                + BOT_PATH_VALUE
-                                + "/sendMessage"))
+        observedServer.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withException(
                         new IOException("fictional-network-failure")));
 
@@ -326,6 +311,7 @@ class TelegramRestClientGatewayTest {
                             .allSatisfy(tag -> assertThat(tag.getValue())
                                     .doesNotContain(
                                             BOT_PATH_VALUE,
+                                            ENCODED_BOT_PATH_VALUE,
                                             CHAT,
                                             "Иван",
                                             "79991234567",
