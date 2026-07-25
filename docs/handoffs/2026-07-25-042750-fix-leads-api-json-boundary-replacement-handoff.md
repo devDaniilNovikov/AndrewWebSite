@@ -31,12 +31,17 @@ Signature: HND fix-leads-api-json-boundary-replacement [draft_pr] topics: backen
   tests/regressions/metadata — report no unresolved Critical, Important, or
   actionable Minor finding.
 
-## Snapshot at 2026-07-25T04:27Z — re-verify live before use
+## Snapshot at 2026-07-25T04:36Z — re-verify live before use
 
 - Draft [PR #40](https://github.com/devDaniilNovikov/AndrewWebSite/pull/40)
-  targets `main`; its pre-metadata head is
-  `76906b9af634cc729e29185ad3917fca8265aa76` and its base is
+  targets `main`; its proven metadata head is
+  `c23c7c43ce5dc67ab55d744bf6adcdac6b8313df` and its base is
   `731a17dbba5503b7a3ea94ac32ff9567f490d443`.
+- On exact head `c23c7c4`, Repository policy, both verify paths,
+  dependency-security, push java-security, CodeQL, Semgrep, and Snyk passed.
+  Push/PR-specific complementary jobs and the disabled PR relay skipped as
+  designed. The PR remained Draft, open, mergeable, and had no review or
+  comment after those checks.
 - TDD evidence: the focused suite first ran 66 tests with 16 expected
   failures, then passed 67/67 after the fix and added regression control.
   `./mvnw -B verify` passed 177/177 tests with PostgreSQL 18.4 Testcontainers,
@@ -44,23 +49,23 @@ Signature: HND fix-leads-api-json-boundary-replacement [draft_pr] topics: backen
   branches.
 - Semgrep ran 88 rules over 33 Java files with zero findings. TruffleHog
   reported zero verified or unverified findings. `git diff --check` passed.
-- Draft [PR #39](https://github.com/devDaniilNovikov/AndrewWebSite/pull/39)
-  remains open at `a6dbbe5c07333fde9aaf05c7530bb58e19858918` until every
-  applicable check passes on the replacement's exact metadata head. Its
-  untracked `.claude/reviews/pr-39-review.md` remains untouched.
-- This handoff metadata commit creates a new PR #40 head. No check result from
-  `76906b9` may be reused as exact-head CI evidence.
+- [PR #39](https://github.com/devDaniilNovikov/AndrewWebSite/pull/39) was
+  commented and closed unmerged at `2026-07-25T04:35:40Z` only after those
+  checks passed. Its remote branch still points to
+  `a6dbbe5c07333fde9aaf05c7530bb58e19858918`; its worktree and untracked
+  `.claude/reviews/pr-39-review.md` remain untouched.
+- This focused closure correction to the current handoff creates another
+  PR #40 head. Checks from `c23c7c4` prove the closure precondition but may
+  not be reused as exact-head evidence for the new metadata SHA.
 - Frontend, Draft PR #30, CI workflows, OpenAPI, Flyway V1, production
   services/configuration, secrets, and user-owned receipt files remain
   untouched.
 
 ## Next steps — conditional, each requires the stated live check
 
-1. Commit and normally push this metadata checkpoint, then wait for every
+1. Commit and normally push this closure checkpoint, then wait for every
    required and applicable GitHub check on its exact SHA.
 2. Confirm PR #40 remains Draft, targets `main`, is mergeable, has no new
    review finding, and still matches the locally reviewed tree.
-3. After exact-head gates pass, comment on PR #39 that PR #40 supersedes it
-   and close PR #39 unmerged. Do not delete or rewrite its branch.
-4. Leave PR #40 Draft. Ready, merge, and production deployment require
+3. Leave PR #40 Draft. Ready, merge, and production deployment require
    separate explicit user commands.
