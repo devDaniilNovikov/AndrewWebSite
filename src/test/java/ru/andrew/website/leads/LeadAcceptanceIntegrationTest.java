@@ -143,6 +143,52 @@ class LeadAcceptanceIntegrationTest {
     }
 
     @Test
+    void nulAndMalformedUtf16NeverReachPostgresAndSupplementaryTextRoundTrips()
+            throws Exception {
+        UUID nulId =
+                UUID.fromString("37373737-3737-4737-8737-373737373737");
+        String nulBody = """
+                {"requestId":"%s","name":"A\\u0000B","phone":"+7 999 123-45-67",
+                 "sourcePath":"/service/","intent":"repair","consent":true,"website":""}
+                """.formatted(nulId);
+        UUID malformedId =
+                UUID.fromString("38383838-3838-4838-8838-383838383838");
+        String malformedBody = """
+                {"requestId":"%s","name":"A\\uD800B","phone":"+7 999 123-45-67",
+                 "sourcePath":"/service/","intent":"repair","consent":true,"website":""}
+                """.formatted(malformedId);
+
+        assertThat(submit(nulBody)).isEqualTo(400);
+        assertThat(submit(malformedBody)).isEqualTo(400);
+        assertCounts(0, 0);
+
+        UUID acceptedId =
+                UUID.fromString("39393939-3939-4939-8939-393939393939");
+        String acceptedBody = """
+                {"requestId":"%s","name":"A\\uD83D\\uDE00B",
+                 "phone":"+7 999 123-45-67","comment":"C\\uD83D\\uDE00D",
+                 "sourcePath":"/service/\\uD83D\\uDE00/","intent":"repair",
+                 "consent":true,"website":""}
+                """.formatted(acceptedId);
+
+        assertThat(submit(acceptedBody)).isEqualTo(202);
+        assertThat(submit(acceptedBody)).isEqualTo(202);
+        assertThat(jdbc.sql("""
+                                select name, comment, source_path
+                                from leads
+                                where request_id = :requestId
+                                """)
+                        .param("requestId", acceptedId)
+                        .query((result, rowNumber) -> new PersistedText(
+                                result.getString("name"),
+                                result.getString("comment"),
+                                result.getString("source_path")))
+                        .single())
+                .isEqualTo(new PersistedText("A😀B", "C😀D", "/service/😀/"));
+        assertCounts(1, 1);
+    }
+
+    @Test
     void simultaneousEquivalentRequestsCreateOnePair() throws Exception {
         UUID requestId = UUID.fromString("55555555-5555-4555-8555-555555555555");
 
@@ -237,9 +283,13 @@ class LeadAcceptanceIntegrationTest {
     }
 
     private int submit(UUID requestId, String comment) throws Exception {
+        return submit(body(requestId, comment));
+    }
+
+    private int submit(String body) throws Exception {
         return mvc.perform(post("/api/leads")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(requestId, comment)))
+                        .content(body))
                 .andReturn()
                 .getResponse()
                 .getStatus();
@@ -261,6 +311,8 @@ class LeadAcceptanceIntegrationTest {
         assertThat(jdbc.sql("select count(*) from telegram_outbox").query(Integer.class).single())
                 .isEqualTo(outbox);
     }
+
+    private record PersistedText(String name, String comment, String sourcePath) {}
 
     private void dropTestTriggers() {
         jdbc.sql("drop trigger if exists test_fail_outbox on telegram_outbox").update();

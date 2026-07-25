@@ -46,6 +46,7 @@ public final class LeadNormalizer {
         if (value == null) {
             throw new InvalidLeadRequestException();
         }
+        requireDatabaseSafeText(value);
         String normalized = Normalizer.normalize(value.strip(), Normalizer.Form.NFC);
         if (normalized.isEmpty()) {
             throw new InvalidLeadRequestException();
@@ -57,8 +58,18 @@ public final class LeadNormalizer {
         if (value == null) {
             return null;
         }
+        requireDatabaseSafeText(value);
         String normalized = Normalizer.normalize(value.strip(), Normalizer.Form.NFC);
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private static void requireDatabaseSafeText(String value) {
+        if (value.codePoints().anyMatch(codePoint ->
+                codePoint == Character.MIN_VALUE
+                        || codePoint >= Character.MIN_SURROGATE
+                                && codePoint <= Character.MAX_SURROGATE)) {
+            throw new InvalidLeadRequestException();
+        }
     }
 
     private static String phoneDigits(String value) {

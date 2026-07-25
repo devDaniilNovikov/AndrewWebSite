@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class LeadNormalizerTest {
@@ -40,6 +42,7 @@ class LeadNormalizerTest {
         String normalizedName = normalizer.normalize(
                         request(acceptedName, "79991234567", null, "/service/"), NOW)
                 .name();
+        assertThat(normalizedName).isEqualTo(acceptedName);
         assertThat(normalizedName.codePointCount(0, normalizedName.length())).isEqualTo(100);
 
         assertThatThrownBy(() -> normalizer.normalize(
@@ -72,8 +75,10 @@ class LeadNormalizerTest {
                 NOW);
         assertThat(accepted.comment().codePointCount(0, accepted.comment().length()))
                 .isEqualTo(1_000);
+        assertThat(accepted.comment()).isEqualTo("😀".repeat(1_000));
         assertThat(accepted.sourcePath().codePointCount(0, accepted.sourcePath().length()))
                 .isEqualTo(2_048);
+        assertThat(accepted.sourcePath()).isEqualTo("/" + "😀".repeat(2_047));
 
         assertThatThrownBy(() -> normalizer.normalize(
                         request(
@@ -109,6 +114,14 @@ class LeadNormalizerTest {
                 .isInstanceOf(InvalidLeadRequestException.class);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidPersistedTextRequests")
+    void rejectsNulAndMalformedUtf16InPersistedText(
+            String description, LeadRequest request) {
+        assertThatThrownBy(() -> normalizer.normalize(request, NOW))
+                .isInstanceOf(InvalidLeadRequestException.class);
+    }
+
     private static Stream<String> invalidSourcePaths() {
         return Stream.of(
                 "",
@@ -123,6 +136,27 @@ class LeadNormalizerTest {
 
     private static Stream<String> invalidPhones() {
         return Stream.of("123456", "1234567890123456");
+    }
+
+    private static Stream<Arguments> invalidPersistedTextRequests() {
+        List<String> invalidValues = List.of(
+                "A" + Character.MIN_VALUE + "B",
+                "A" + Character.MIN_HIGH_SURROGATE + "B",
+                "A" + Character.MIN_LOW_SURROGATE + "B");
+        return invalidValues.stream().flatMap(value -> Stream.of(
+                Arguments.of(
+                        "name rejects " + display(value),
+                        request(value, "79991234567", null, "/service/")),
+                Arguments.of(
+                        "comment rejects " + display(value),
+                        request("Иван", "79991234567", value, "/service/")),
+                Arguments.of(
+                        "sourcePath rejects " + display(value),
+                        request("Иван", "79991234567", null, "/service/" + value))));
+    }
+
+    private static String display(String value) {
+        return "U+%04X".formatted((int) value.charAt(1));
     }
 
     private static LeadRequest request(
