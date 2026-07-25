@@ -32,7 +32,7 @@ The public browser and all request headers are untrusted. Until Timeweb publishe
 
 The global limiter is a rolling window, not a token bucket: for every instant `t`, the half-open interval `(t - 60 seconds, t]` contains at most 60 globally admitted requests. It stores only the at-most-60 admission timestamps needed for that window; timestamps at or before `t - 60 seconds` expire before the next decision. A separate bounded per-connection-address token bucket has capacity 5 and refills exactly one token per minute. The per-connection decision is evaluated first so traffic already rejected for one connection cannot consume global admissions; a request that passes it then attempts the rolling global decision, so any request passing both gates is necessarily within the global cap. A rejection returns the ceiling in whole seconds until the applicable oldest timestamp or client token becomes available.
 
-PostgreSQL, Telegram, and OTLP are outbound dependencies. Credentials cross into the container only through the platform secret store and environment bindings described in `operations.md`; no secret is embedded in a file, image layer, log, metric, health response, or exception response.
+PostgreSQL, Telegram, and OTLP are outbound dependencies. Credentials cross into the container only through an access-controlled platform secret store that encrypts them at rest and delivers runtime bindings through the platform's protected channel as described in `operations.md`; no secret is embedded in a file, image layer, log, metric, health response, or exception response. The process necessarily receives the usable value in memory because the Telegram protocol authenticates with the token in an HTTPS request path; application-level ciphertext cannot be sent in its place.
 
 ## Container and component boundaries
 
@@ -172,7 +172,7 @@ Delivery is at least once. A crash before the HTTP call leaves a lease that is r
 
 ## Telegram message and gateway
 
-`TelegramGateway.send(TelegramLeadMessage)` returns a sealed `TelegramDeliveryResult`: `Delivered`, `Retryable(code, retryAfter)`, or `PermanentFailure(code)`. The message contains the normalized name, phone, optional comment, source path, intent, lead creation time, and `requestId`. It is assembled only after claim and is never persisted in the outbox or logged. Bot token and chat ID come only from `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, and production startup fails if either is absent.
+`TelegramGateway.send(TelegramLeadMessage)` returns a sealed `TelegramDeliveryResult`: `Delivered`, `Retryable(code, retryAfter)`, or `PermanentFailure(code)`. The message contains the normalized name, phone, optional comment, source path, intent, lead creation time, and `requestId`. It is assembled as plain text only after claim and is never persisted in the outbox or logged. The synchronous gateway uses the Boot-managed `RestClient.Builder` and classifies every HTTP status without deserializing or logging a Telegram response body. Because the Telegram protocol places the credential in the request path and Spring network exceptions retain the expanded URI, framework HTTP observations are disabled for this client. A dedicated `andrew.telegram.client` observation exposes only the static `/bot{token}/sendMessage` route, method, and bounded delivery outcome; it never receives the framework exception. The JSON request projection has a redacted `toString` so framework DEBUG logging cannot expose the destination or message. Bot token and chat ID come only from `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, and production startup fails if either is absent.
 
 ## Privacy lifecycle
 
@@ -192,6 +192,7 @@ Micrometer names are bounded and use only enumerated tags:
 
 - `andrew.leads.accepted` with `outcome=created|duplicate|retained|honeypot`;
 - `andrew.leads.rejected` with `reason=validation|conflict|payload|media_type|rate_limit|unavailable`;
+- `andrew.telegram.client` with `method=POST`, the static token-free route, and `outcome=delivered|retryable|permanent_failure`;
 - `andrew.telegram.delivery` with `outcome=delivered|retry|blocked` and bounded `reason`;
 - `andrew.telegram.queue.depth` with `state` from `OutboxState`;
 - `andrew.telegram.worker.last_success.age`;
@@ -209,7 +210,7 @@ No PII, raw URL, exception message, dynamic status text, or request ID is a metr
 
 Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, invokes the manifest-declared manager directly through Corepack with a writable `COREPACK_HOME` and no shim installation, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. Before any `COPY frontend/`, `.dockerignore` excludes root and nested `.env*`, local secret/credential directories, and private-key/keystore material; an executable container contract test pins those exclusions. Host and CI `./mvnw -B verify` run the PostgreSQL Testcontainers suites with Docker available. The containerized `backend-build` uses `./mvnw -B -DexcludedGroups=database verify`, excluding only the nested-Docker database group while still running every other test; broad test skipping is forbidden. The final container contains Java 25 runtime plus that JAR, runs as a non-root numeric user, exposes no Node runtime, and health-checks liveness.
 
-Production gates are: PostgreSQL 18 in the same Moscow region/VPC; secret-store bindings and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and an explicitly user-authorized squash merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
+Production gates are: PostgreSQL 18 in the same Moscow region/VPC; verified secret-store encryption at rest, access control, protected runtime bindings, and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and an explicitly user-authorized squash merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
 
 ## Ordered product-task dependency chain
 
