@@ -135,6 +135,14 @@ class LeadControllerContractTest {
         verifyNoInteractions(transaction);
     }
 
+    @ParameterizedTest(name = "{0} rejects {1}")
+    @MethodSource("invalidPersistedTextBodies")
+    void persistedTextRejectsNulAndMalformedUtf16BeforeTransaction(
+            String field, String invalidCodeUnit, String body) throws Exception {
+        expectInvalidProblem(body);
+        verifyNoInteractions(transaction);
+    }
+
     @ParameterizedTest
     @MethodSource("acceptedOutcomes")
     void internalAcceptanceOutcomeIsNeverDisclosed(AcceptanceOutcome outcome) throws Exception {
@@ -237,7 +245,40 @@ class LeadControllerContractTest {
                 validBodyWithRequestIdAndIntent(
                         "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA", "maintenance"),
                 validBodyWithRequestIdAndIntent(
-                        "00000000-0000-0000-0000-000000000000", "repair"));
+                        "00000000-0000-0000-0000-000000000000", "repair"),
+                validBodyWithField(
+                                "\"name\":\"Иван\"",
+                                "\"name\":\"A\\uD83D\\uDE00B\"")
+                        .replace(
+                                "\"sourcePath\":\"/service/\"",
+                                "\"sourcePath\":\"/service/\\uD83D\\uDE00/\"")
+                        .replace(
+                                "\"website\":\"\"",
+                                "\"comment\":\"A\\uD83D\\uDE00B\",\"website\":\"\""));
+    }
+
+    private static Stream<Arguments> invalidPersistedTextBodies() {
+        return Stream.of("\\u0000", "\\uD800", "\\uDC00")
+                .flatMap(invalid -> Stream.of(
+                        Arguments.of(
+                                "name",
+                                invalid,
+                                validBodyWithField(
+                                        "\"name\":\"Иван\"",
+                                        "\"name\":\"A" + invalid + "B\"")),
+                        Arguments.of(
+                                "comment",
+                                invalid,
+                                validBodyWithField(
+                                        "\"website\":\"\"",
+                                        "\"comment\":\"A" + invalid
+                                                + "B\",\"website\":\"\"")),
+                        Arguments.of(
+                                "sourcePath",
+                                invalid,
+                                validBodyWithField(
+                                        "\"sourcePath\":\"/service/\"",
+                                        "\"sourcePath\":\"/service/A" + invalid + "B\""))));
     }
 
     private static Stream<String> invalidLegitimateStrictBoundaryBodies() {
