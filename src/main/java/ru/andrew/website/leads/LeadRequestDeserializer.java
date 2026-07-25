@@ -2,6 +2,7 @@ package ru.andrew.website.leads;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
@@ -10,6 +11,9 @@ import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.node.ObjectNode;
 
 public final class LeadRequestDeserializer extends ValueDeserializer<LeadRequest> {
+    private static final Pattern CANONICAL_UUID = Pattern.compile(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+                    + "[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
     private static final Set<String> KNOWN_PROPERTIES = Set.of(
             "requestId",
             "name",
@@ -54,7 +58,12 @@ public final class LeadRequestDeserializer extends ValueDeserializer<LeadRequest
             return context.reportPropertyInputMismatch(
                     LeadRequest.class, property, "Property must be a UUID string");
         }
-        return context.readTreeAsValue(value, UUID.class);
+        String rawUuid = value.stringValue();
+        if (!CANONICAL_UUID.matcher(rawUuid).matches()) {
+            return context.reportPropertyInputMismatch(
+                    LeadRequest.class, property, "Property must be a canonical UUID string");
+        }
+        return UUID.fromString(rawUuid);
     }
 
     private static String optionalText(
@@ -86,7 +95,17 @@ public final class LeadRequestDeserializer extends ValueDeserializer<LeadRequest
             return context.reportPropertyInputMismatch(
                     LeadRequest.class, property, "Property must be a lead intent string");
         }
-        return context.readTreeAsValue(value, LeadIntent.class);
+        String rawIntent = value.stringValue();
+        if ("repair".equals(rawIntent)) {
+            return LeadIntent.repair;
+        }
+        if ("maintenance".equals(rawIntent)) {
+            return LeadIntent.maintenance;
+        }
+        return context.reportPropertyInputMismatch(
+                LeadRequest.class,
+                property,
+                "Property must be exactly repair or maintenance");
     }
 
     private static Boolean optionalBoolean(
