@@ -15,9 +15,31 @@ LES-20260718-007 [active] ci: provision and prove external-scan credentials befo
 LES-20260718-008 [active] memory: handoff filename timestamps are UTC; mixed zones broke ordering → HANDOFFS rows 7-9
 LES-20260719-009 [active] ci: workflow success can precede CodeQL processing completion → run 29698729563
 LES-20260721-010 [active] security: inspect servlet filters before changing Security matchers → handoff 114211
+LES-20260725-011 [active] security: validate lexical JSON before general Jackson conversion → PR #40
 ```
 
 ## Records
+
+## LES-20260725-011 — General-purpose conversion can widen a strict JSON boundary
+
+`LES-20260725-011 [active] security: validate lexical JSON before general Jackson conversion → PR #40`
+
+- **Date:** 2026-07-25
+- **Lesson:** a strict public JSON contract cannot delegate lexical acceptance
+  to general-purpose value conversion. Jackson UUID and enum conversion
+  accepted non-canonical representations, while tree parsing silently retained
+  one duplicate key. Validate the raw token grammar and reject duplicate keys
+  before honeypot classification or any application work.
+- **Evidence:** post-merge review of
+  [PR #38](https://github.com/devDaniilNovikov/AndrewWebSite/pull/38)
+  reproduced all three boundary gaps; the attributed replacement
+  [PR #40](https://github.com/devDaniilNovikov/AndrewWebSite/pull/40) and its
+  [handoff](../../docs/handoffs/2026-07-25-042750-fix-leads-api-json-boundary-replacement-handoff.md)
+  record the regression tests and corrected behavior.
+- **Applicability:** public request deserializers that promise exact lexical
+  forms, strict enums, or duplicate-key rejection.
+- **Review-by:** any Jackson configuration, request DTO/deserializer, or public
+  JSON-boundary change.
 
 ## LES-20260721-010 — Servlet filters can own route status before Security
 
