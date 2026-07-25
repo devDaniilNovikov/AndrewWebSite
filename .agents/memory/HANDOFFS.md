@@ -8,6 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
+| `fix-code-review-hardening` | `2026-07-25-205559-fix-code-review-hardening-handoff.md` | local implementation and review complete; publication not authorized | backend, deploy, tracker, process |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
