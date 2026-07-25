@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-leads-unicode-boundary` | 1: `2026-07-25-071808-fix-leads-unicode-boundary-handoff.md` → 2: `2026-07-25-073543-fix-leads-unicode-boundary-draft-handoff.md` → 3: `2026-07-25-074000-fix-leads-unicode-boundary-ready-handoff.md` | Ready metadata committed; refresh final exact-head CI before merge | backend, security, tracker |
+| `fix-production-http-invariants` | 1: `2026-07-25-075015-fix-production-http-invariants-handoff.md` | In progress; RED startup regressions pending | backend, security, deploy, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -40,6 +40,7 @@ design.
 | `fix-db-identity-generation-contract` | 2 | `2026-07-24-164212-fix-db-identity-generation-contract-handoff.md` | merged as `ac7d21a`; retained source branch | backend, tracker |
 | `task-leads-api` | 2 | `2026-07-24-180342-task-leads-api-handoff.md` | merged as `731a17d`; retained source branch | backend, security, tracker |
 | `fix-leads-api-json-boundary-replacement` | 3 | `2026-07-25-045958-fix-leads-api-json-boundary-replacement-ready-handoff.md` | merged as `2f565dd`; retained source branch | backend, security, tracker |
+| `fix-leads-unicode-boundary` | 3 | `2026-07-25-074000-fix-leads-unicode-boundary-ready-handoff.md` | merged as `4da6448`; retained source branch | backend, security, tracker |
 
 ## Rules
 
