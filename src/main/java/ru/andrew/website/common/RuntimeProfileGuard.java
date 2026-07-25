@@ -3,28 +3,32 @@ package ru.andrew.website.common;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.EnvironmentPostProcessor;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
 import org.springframework.context.ApplicationContextException;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
+import org.springframework.core.Ordered;
+import org.springframework.core.env.ConfigurableEnvironment;
 
-@Component
-public final class RuntimeProfileGuard implements InitializingBean {
+public final class RuntimeProfileGuard implements EnvironmentPostProcessor, Ordered {
+    public static final String MESSAGE =
+            "Exactly one active profile is required: test, local, or prod";
+
     private static final Set<String> ALLOWED = Set.of("test", "local", "prod");
-
-    private final Environment environment;
-
-    public RuntimeProfileGuard(Environment environment) {
-        this.environment = environment;
-    }
+    private static final int ORDER = ConfigDataEnvironmentPostProcessor.ORDER + 1;
 
     @Override
-    public void afterPropertiesSet() {
+    public void postProcessEnvironment(
+            ConfigurableEnvironment environment, SpringApplication application) {
         Set<String> active = Arrays.stream(environment.getActiveProfiles())
                 .collect(Collectors.toUnmodifiableSet());
         if (active.size() != 1 || !ALLOWED.containsAll(active)) {
-            throw new ApplicationContextException(
-                    "Exactly one active profile is required: test, local, or prod");
+            throw new ApplicationContextException(MESSAGE);
         }
+    }
+
+    @Override
+    public int getOrder() {
+        return ORDER;
     }
 }

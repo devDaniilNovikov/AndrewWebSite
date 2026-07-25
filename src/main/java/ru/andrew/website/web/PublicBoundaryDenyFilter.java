@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 final class PublicBoundaryDenyFilter extends OncePerRequestFilter {
     private static final String LEAD_PATH = "/api/leads";
+    private static final String ERROR_PATH = "/error";
     private static final String LIVENESS_PATH = "/actuator/health/liveness";
     private static final String READINESS_PATH = "/actuator/health/readiness";
     private final boolean localProfile;
@@ -45,7 +46,14 @@ final class PublicBoundaryDenyFilter extends OncePerRequestFilter {
     }
 
     private boolean isClosedNamespace(String path) {
-        return isNamespace(path, "/api") || isNamespace(path, "/actuator");
+        return isNamespace(path, "/api")
+                || isNamespace(path, "/actuator")
+                || ERROR_PATH.equals(path);
+    }
+
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        return true;
     }
 
     private boolean isNamespace(String path, String namespace) {

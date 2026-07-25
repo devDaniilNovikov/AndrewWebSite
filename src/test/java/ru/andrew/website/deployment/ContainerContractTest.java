@@ -15,7 +15,10 @@ class ContainerContractTest {
                 "AS backend-build",
                 "COPY Dockerfile .dockerignore ./",
                 "COPY --from=backend-build",
+                "FROM eclipse-temurin:25-jre-alpine",
+                "apk add --no-cache curl",
                 "USER 10001:10001");
+        assertThat(dockerfile).doesNotContain("apt-get");
         assertThat(dockerfile).contains("/actuator/health/liveness");
         assertThat(dockerfile).doesNotContain("ENV SPRING_DATASOURCE_PASSWORD");
         assertThat(dockerfile).doesNotContain("ENV TELEGRAM_BOT_TOKEN");

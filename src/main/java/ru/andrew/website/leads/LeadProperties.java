@@ -9,18 +9,24 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("app.leads")
 public record LeadProperties(@NotBlank String fingerprintKey) {
     private static final int MINIMUM_KEY_BYTES = 32;
+    static final String TEST_KEY =
+            "test-only-key-material-not-for-production-0001";
 
     public LeadProperties {
+        validateFingerprintKey(fingerprintKey);
+    }
+
+    @Override
+    public String toString() {
+        return "LeadProperties[fingerprintKey=<redacted>]";
+    }
+
+    static void validateFingerprintKey(String fingerprintKey) {
         if (fingerprintKey == null
                 || fingerprintKey.isBlank()
                 || fingerprintKey.getBytes(StandardCharsets.UTF_8).length < MINIMUM_KEY_BYTES) {
             throw new IllegalArgumentException(
                     "app.leads.fingerprint-key must contain at least 32 UTF-8 bytes");
         }
-    }
-
-    @Override
-    public String toString() {
-        return "LeadProperties[fingerprintKey=<redacted>]";
     }
 }

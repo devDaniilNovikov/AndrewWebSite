@@ -7,12 +7,10 @@ COPY Dockerfile .dockerignore ./
 COPY src src
 RUN ./mvnw -B -DexcludedGroups=database verify
 
-FROM eclipse-temurin:25-jre
-RUN apt-get update \
-    && apt-get install --yes --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd --gid 10001 app \
-    && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+FROM eclipse-temurin:25-jre-alpine
+RUN apk add --no-cache curl \
+    && addgroup -g 10001 -S app \
+    && adduser -u 10001 -S -D -H -G app -s /sbin/nologin app
 WORKDIR /app
 COPY --from=backend-build --chown=10001:10001 /workspace/target/andrew-website-0.0.1-SNAPSHOT.jar application.jar
 USER 10001:10001
