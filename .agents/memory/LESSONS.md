@@ -16,27 +16,29 @@ LES-20260718-008 [active] memory: handoff filename timestamps are UTC; mixed zon
 LES-20260719-009 [active] ci: workflow success can precede CodeQL processing completion → run 29698729563
 LES-20260721-010 [active] security: inspect servlet filters before changing Security matchers → handoff 114211
 LES-20260725-011 [active] security: validate lexical JSON before general Jackson conversion → PR #40
-LES-20260725-012 [active] ci: repository branch gates override harness default prefixes → PR #43
+LES-20260725-012 [active] ci: owner-approved branch prefixes can drift from repository gates → PR #43
 ```
 
 ## Records
 
-## LES-20260725-012 — Repository branch gates override harness defaults
+## LES-20260725-012 — Owner-approved branch prefixes can drift from repository gates
 
-`LES-20260725-012 [active] ci: repository branch gates override harness default prefixes → PR #43`
+`LES-20260725-012 [active] ci: owner-approved branch prefixes can drift from repository gates → PR #43`
 
 - **Date:** 2026-07-25
-- **Lesson:** inspect the repository's live branch-name gate before applying a
-  harness-default prefix. Codex Desktop's default `codex/` prefix produced an
-  immediate Repository policy failure because this repository accepts only
-  its canonical task and fix branch families.
+- **Lesson:** distinguish the owner's branch policy from its current CI
+  enforcement before classifying a branch name as prohibited. The
+  owner-approved `codex/` prefix produced an immediate Repository policy
+  failure because the live gate had not been aligned with that decision.
 - **Evidence:** rejected Draft
   [PR #43](https://github.com/devDaniilNovikov/AndrewWebSite/pull/43) and its
-  [Repository policy run](https://github.com/devDaniilNovikov/AndrewWebSite/actions/runs/30169235381).
+  [Repository policy run](https://github.com/devDaniilNovikov/AndrewWebSite/actions/runs/30169235381);
+  the owner-directed correction is recorded in successor
+  [PR #44](https://github.com/devDaniilNovikov/AndrewWebSite/pull/44).
 - **Applicability:** every new branch created through a harness whose default
-  naming convention may differ from repository policy.
-- **Review-by:** any change to the repository branch-name gate or Codex branch
-  prefix configuration.
+  naming convention may differ from the repository's CI enforcement.
+- **Review-by:** alignment of the repository branch-name gate with the
+  owner-approved prefixes, or any later branch-policy decision.
 
 ## LES-20260725-011 — General-purpose conversion can widen a strict JSON boundary
 
