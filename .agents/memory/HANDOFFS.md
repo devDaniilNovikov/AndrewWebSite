@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-leads-unicode-boundary` | 1: `2026-07-25-071808-fix-leads-unicode-boundary-handoff.md` | In progress; RED regressions pending | backend, security, tracker |
+| `fix-leads-unicode-boundary` | 1: `2026-07-25-071808-fix-leads-unicode-boundary-handoff.md` → 2: `2026-07-25-073543-fix-leads-unicode-boundary-draft-handoff.md` | Draft PR #41; exact-head CI pending | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
