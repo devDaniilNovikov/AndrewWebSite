@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-telegram-worker` | `2026-07-26-100359-task-telegram-worker-handoff.md` → `2026-07-26-102435-task-telegram-worker-draft-handoff.md` → `2026-07-26-104432-task-telegram-worker-ready-handoff.md` → `2026-07-26-105604-task-telegram-worker-rebased-ready-handoff.md` | `ready`; exact rebased-head checks pending | backend, security, tracker |
+| `task-telegram-worker` | `2026-07-26-100359-task-telegram-worker-handoff.md` → `2026-07-26-102435-task-telegram-worker-draft-handoff.md` → `2026-07-26-104432-task-telegram-worker-ready-handoff.md` → `2026-07-26-105604-task-telegram-worker-rebased-ready-handoff.md` → `2026-07-26-113056-task-telegram-worker-review-fix-handoff.md` | `ready`; runtime verified; publication, CI, and merge state require live checks | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
