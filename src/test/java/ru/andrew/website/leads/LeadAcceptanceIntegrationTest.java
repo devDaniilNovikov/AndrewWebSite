@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.andrew.website.privacy.RetentionService;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
 @Tag("database")
@@ -43,6 +45,12 @@ class LeadAcceptanceIntegrationTest {
 
     @Autowired
     DataSource dataSource;
+
+    @Autowired
+    RetentionService retention;
+
+    @Autowired
+    Clock clock;
 
     @BeforeEach
     void cleanTables() {
@@ -106,15 +114,17 @@ class LeadAcceptanceIntegrationTest {
         assertThat(submit(requestId, "Другое описание")).isEqualTo(409);
         jdbc.sql("""
                         update leads
-                        set payload_fingerprint = null,
-                            name = null,
-                            phone = null,
-                            comment = null,
-                            anonymized_at = now()
+                        set created_at = :retentionBoundary
                         where request_id = :requestId
                         """)
                 .param("requestId", requestId)
+                .param(
+                        "retentionBoundary",
+                        clock.instant()
+                                .minus(Duration.ofDays(29))
+                                .atOffset(java.time.ZoneOffset.UTC))
                 .update();
+        retention.runOnce();
         assertThat(submit(requestId, "Изменено после хранения")).isEqualTo(202);
 
         assertCounts(1, 1);
