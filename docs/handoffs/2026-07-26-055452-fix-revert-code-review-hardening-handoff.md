@@ -29,9 +29,9 @@ Signature: HND fix-revert-code-review-hardening [in_progress] topics: backend, d
   passed 447/447 tests with PostgreSQL 18.4, Flyway, and JaCoCo.
 - TruffleHog found zero secrets, Semgrep found zero findings across 171 rules,
   and `git diff --check` passed for the pre-correction commit.
-- The branch has not been pushed and no rollback PR exists at this snapshot.
-  Fresh exact-head checks and independent review are still required after the
-  append-only metadata correction.
+- Runtime/revert head `bbd23640ab13b3f5a9af6636c691edae6d745ef7`
+  was pushed to the retained branch and opened as Draft
+  [PR #48](https://github.com/devDaniilNovikov/AndrewWorkWebSite/pull/48).
 - The first full canonical-process review scored 8.0/10.0 after finding that
   merged Telegram PR #47 still appeared as `ready` in the tracker and Active
   handoffs. The accepted finding is reconciled by the merged Telegram
@@ -40,15 +40,15 @@ Signature: HND fix-revert-code-review-hardening [in_progress] topics: backend, d
   focused correction to its predecessor were committed together. The accepted
   finding restores the predecessor byte-for-byte and keeps all correction
   facts in this successor, the tracker, and LES-20260726-014.
+- The final exact-head reviewer scored `bbd2364` 10.0/10.0 with no actionable
+  findings. GitHub CI for the Draft PR is pending.
 
 ## Next steps — conditional on live evidence
 
-1. Amend the unpublished revert commit with the corrected tracker and
-   append-only memory records, then repeat exact-head verification.
-2. Require a fresh independent reviewer to report 10.0/10.0 with no
-   actionable findings before publication.
-3. Push, open a Draft PR, pass GitHub CI, mark Ready, and squash-merge only
-   under the user's current explicit authorization. Preserve the branch and
-   do not deploy.
-4. Start the corrected replacement only from the resulting fresh
+1. Verify the metadata head on Draft PR #48 and wait for every required
+   GitHub check to succeed.
+2. Mark Ready only with green required checks and no unresolved review
+   findings, then squash-merge under the user's current explicit
+   authorization. Preserve the branch and do not deploy.
+3. Start the corrected replacement only from the resulting fresh
    `origin/main`.
