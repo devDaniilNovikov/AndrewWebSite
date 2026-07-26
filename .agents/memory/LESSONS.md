@@ -20,9 +20,32 @@ LES-20260725-012 [active] ci: owner-approved branch prefixes can drift from repo
 LES-20260725-013 [active] process: separate current defects from unstarted roadmap contracts → handoff 205559
 LES-20260726-014 [active] process: reconcile squash attribution and tracker state after merge → merge 0b0a62a
 LES-20260726-015 [active] deploy: mount PostgreSQL 18 container data at its parent directory → replacement smoke 3e3eb33
+LES-20260726-016 [active] process: close reconciliation once instead of recursively tracking its transport → PR #50
 ```
 
 ## Records
+
+## LES-20260726-016 — Post-merge reconciliation needs a terminal closure
+
+`LES-20260726-016 [active] process: close reconciliation once instead of recursively tracking its transport → PR #50`
+
+- **Date:** 2026-07-26
+- **Lesson:** a reconciliation branch can record the preceding squash merge,
+  but its own future squash SHA does not exist while that branch is reviewable.
+  Requiring every reconciliation transport to record its own merge creates an
+  infinite chain with no fixed point. Record the implementation merge, one
+  post-merge reconciliation, and a terminal closure backed by live evidence;
+  transporting that closure does not reopen the completed task or create
+  another tracker row.
+- **Evidence:** implementation
+  [PR #49](https://github.com/devDaniilNovikov/AndrewWebSite/pull/49),
+  reconciliation
+  [PR #50](https://github.com/devDaniilNovikov/AndrewWebSite/pull/50), and the
+  [terminal closure handoff](../../docs/handoffs/2026-07-26-082717-fix-code-review-hardening-replacement-final-closure-handoff.md).
+- **Applicability:** post-merge metadata that records facts unavailable before
+  a squash commit exists.
+- **Review-by:** any workflow that can atomically publish final merge facts
+  without requiring a follow-up commit.
 
 ## LES-20260726-015 — PostgreSQL 18 container data mounts target the parent directory
 
