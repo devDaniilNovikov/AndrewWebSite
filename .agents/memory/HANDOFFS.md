@@ -8,8 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-code-review-hardening` | `2026-07-25-205559-fix-code-review-hardening-handoff.md` | local implementation and review complete; publication not authorized | backend, deploy, tracker, process |
-| `task-telegram-client` | `2026-07-25-193657-task-telegram-client-handoff.md` → `2026-07-25-202007-task-telegram-client-handoff.md` → `2026-07-25-210328-task-telegram-client-handoff.md` → `2026-07-26-025515-task-telegram-client-handoff.md` → `2026-07-26-045420-task-telegram-client-handoff.md` → `2026-07-26-050545-task-telegram-client-handoff.md` → `2026-07-26-051752-task-telegram-client-ready-handoff.md` | `ready` | backend, security |
+| `fix-revert-code-review-hardening` | `2026-07-25-205559-fix-code-review-hardening-handoff.md` → `2026-07-26-055452-fix-revert-code-review-hardening-handoff.md` | `in_progress` | backend, deploy, tracker, process, incident |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -43,6 +42,7 @@ design.
 | `fix-leads-api-json-boundary-replacement` | 3 | `2026-07-25-045958-fix-leads-api-json-boundary-replacement-ready-handoff.md` | merged as `2f565dd`; retained source branch | backend, security, tracker |
 | `fix-leads-unicode-boundary` | 3 | `2026-07-25-074000-fix-leads-unicode-boundary-ready-handoff.md` | merged as `4da6448`; retained source branch | backend, security, tracker |
 | `fix-production-http-invariants` | 5 | `2026-07-25-180844-fix-production-http-invariants-merged-handoff.md` | merged as `d29e788`; retained source branch | backend, security, deploy, tracker |
+| `task-telegram-client` | 8 | `2026-07-26-060315-task-telegram-client-merged-handoff.md` | merged as `3f35c1d`; retained source branch | backend, security, tracker |
 
 ## Rules
 

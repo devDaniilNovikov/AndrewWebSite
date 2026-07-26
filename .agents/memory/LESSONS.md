@@ -18,9 +18,30 @@ LES-20260721-010 [active] security: inspect servlet filters before changing Secu
 LES-20260725-011 [active] security: validate lexical JSON before general Jackson conversion → PR #40
 LES-20260725-012 [active] ci: owner-approved branch prefixes can drift from repository gates → PR #43
 LES-20260725-013 [active] process: separate current defects from unstarted roadmap contracts → handoff 205559
+LES-20260726-014 [active] process: reconcile squash attribution and tracker state after merge → merge 0b0a62a
 ```
 
 ## Records
+
+## LES-20260726-014 — Reconcile squash attribution and tracker state after merge
+
+`LES-20260726-014 [active] process: reconcile squash attribution and tracker state after merge → merge 0b0a62a`
+
+- **Date:** 2026-07-26
+- **Lesson:** a green pre-merge branch cannot contain the final squash SHA or
+  prove the final merge message. Merge `0b0a62a` therefore left the tracker
+  and active handoff at their pre-publication state, while an overridden
+  squash body dropped the required Codex attribution. Prepare the exact merge
+  footer before the merge action, then use a fresh post-merge reconciliation
+  task for facts that only exist after GitHub creates the squash commit.
+- **Evidence:** merged
+  [PR #45](https://github.com/devDaniilNovikov/AndrewWebSite/pull/45),
+  squash commit `0b0a62acfce09857807c4eb11e92795af3c20576`, and the
+  [rollback handoff](../../docs/handoffs/2026-07-26-055452-fix-revert-code-review-hardening-handoff.md).
+- **Applicability:** every squash merge whose tracker or handoff records the
+  final PR state, merge SHA, checks, or agent attribution.
+- **Review-by:** any change to the squash-merge, attribution, tracker, or
+  post-merge reconciliation protocol.
 
 ## LES-20260725-013 — Current defects are distinct from unstarted roadmap contracts
 
