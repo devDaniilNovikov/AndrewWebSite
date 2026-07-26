@@ -30,7 +30,8 @@ Signature: HND task-antigravity-frontend-role [draft_pr] topics: frontend, track
   `8fef0d3376bdae10bb553c44ed2cdfe191859a04`; all applicable checks on that
   head passed with expected event-specific skips.
 - Local model-context commit:
-  `1d8a80f7ed8bebc64452f5a706f24cb02c1d8039`.
+  `1d8a80f7ed8bebc64452f5a706f24cb02c1d8039`; local metadata head:
+  `0bfeed480db7afbbc3dd496b2076f2d17a7c7cd3`.
 - Branch and worktree: `task-antigravity-frontend-role` at
   `/Users/daniilnovikov/.codex/worktrees/antigravity-frontend-role/AndrewWorkWebSite`.
 - Role length is 96 lines; shared `AGENTS.md` remains 59 lines. Context-link,
@@ -39,9 +40,7 @@ Signature: HND task-antigravity-frontend-role [draft_pr] topics: frontend, track
 
 ## Next steps — conditional on live evidence
 
-1. Commit only DEC-20260726-010, tracker/index reconciliation, and this
-   handoff.
-2. Run fresh exact-head Maven, link/route/memory/diff/secret checks and
+1. Run fresh exact-head Maven, link/route/memory/diff/secret checks and
    independent review.
-3. Update the existing Draft PR body, push the final head, and wait for its
+2. Update the existing Draft PR body, push the final head, and wait for its
    remote checks. Keep the PR Draft; do not mark Ready, merge, or deploy.
