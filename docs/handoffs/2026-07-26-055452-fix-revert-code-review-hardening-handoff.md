@@ -1,6 +1,6 @@
 # fix-revert-code-review-hardening handoff
 
-Signature: HND fix-revert-code-review-hardening [draft_pr] topics: backend, deploy, tracker, process, incident → predecessor: 2026-07-25-205559-fix-code-review-hardening-handoff.md
+Signature: HND fix-revert-code-review-hardening [in_progress] topics: backend, deploy, tracker, process, incident → predecessor: 2026-07-25-205559-fix-code-review-hardening-handoff.md
 
 ## Durable — safe to cite later
 
@@ -29,30 +29,17 @@ Signature: HND fix-revert-code-review-hardening [draft_pr] topics: backend, depl
   passed 447/447 tests with PostgreSQL 18.4, Flyway, and JaCoCo.
 - TruffleHog found zero secrets, Semgrep found zero findings across 171 rules,
   and `git diff --check` passed for the pre-correction commit.
-- Runtime/revert head `bbd23640ab13b3f5a9af6636c691edae6d745ef7`
-  was pushed to the retained branch and opened as Draft
-  [PR #48](https://github.com/devDaniilNovikov/AndrewWorkWebSite/pull/48).
-- The first full canonical-process review scored 8.0/10.0 after finding that
-  merged Telegram PR #47 still appeared as `ready` in the tracker and Active
-  handoffs. The accepted finding is reconciled by the merged Telegram
-  successor handoff; another exact-head review is required.
-- The next review scored 8.5/10.0 after finding that the new successor and a
-  focused correction to its predecessor were committed together. The accepted
-  finding restores the predecessor byte-for-byte and keeps all correction
-  facts in this successor, the tracker, and LES-20260726-014.
-- The final runtime-head reviewer scored `bbd2364` 10.0/10.0 with no
-  actionable findings.
-- Published metadata head `fc378d1` passed GitHub CI but scored 8.0/10.0 in
-  exact-head review: PR #45 was missing from Closed chains, and the tracker
-  described the `bbd2364` score as if it covered later metadata. Both findings
-  are accepted; current-head CI and review must be repeated after correction.
+- The branch has not been pushed and no rollback PR exists at this snapshot.
+  Fresh exact-head checks and independent review are still required after the
+  append-only metadata correction.
 
 ## Next steps — conditional on live evidence
 
-1. Verify the metadata head on Draft PR #48 and wait for every required
-   GitHub check to succeed.
-2. Mark Ready only with green required checks and no unresolved review
-   findings, then squash-merge under the user's current explicit
-   authorization. Preserve the branch and do not deploy.
-3. Start the corrected replacement only from the resulting fresh
+1. Amend the unpublished revert with the corrected tracker and append-only
+   memory, then repeat the exact local checks.
+2. Obtain a fresh 10.0/10.0 independent review of the exact head.
+3. Push, open a Draft PR, wait for CI, mark Ready, and squash-merge only under
+   the user's current explicit authorization. Preserve the branch and do not
+   deploy.
+4. Start the corrected replacement only from the resulting fresh
    `origin/main`.
