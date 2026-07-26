@@ -40,8 +40,12 @@ Signature: HND fix-revert-code-review-hardening [draft_pr] topics: backend, depl
   focused correction to its predecessor were committed together. The accepted
   finding restores the predecessor byte-for-byte and keeps all correction
   facts in this successor, the tracker, and LES-20260726-014.
-- The final exact-head reviewer scored `bbd2364` 10.0/10.0 with no actionable
-  findings. GitHub CI for the Draft PR is pending.
+- The final runtime-head reviewer scored `bbd2364` 10.0/10.0 with no
+  actionable findings.
+- Published metadata head `fc378d1` passed GitHub CI but scored 8.0/10.0 in
+  exact-head review: PR #45 was missing from Closed chains, and the tracker
+  described the `bbd2364` score as if it covered later metadata. Both findings
+  are accepted; current-head CI and review must be repeated after correction.
 
 ## Next steps — conditional on live evidence
 
