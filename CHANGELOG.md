@@ -7,6 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- Added a scheduled Telegram outbox worker with bounded PostgreSQL lease
+  recovery, deterministic `FOR UPDATE SKIP LOCKED` claims, per-row lease
+  tokens, privacy revalidation, capped retries, and bounded Micrometer
+  telemetry ([PR #52](https://github.com/devDaniilNovikov/AndrewWorkWebSite/pull/52)).
+
 ### Security
 
 - Added fail-closed startup validation for production runtime profiles,
@@ -23,6 +30,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Added early-startup guard tests, embedded-server HTTP boundary regressions,
   container contract checks, and production PostgreSQL/Flyway smoke coverage.
+- Added PostgreSQL 18 worker coverage for concurrent claims, lease recovery,
+  stale-token rejection, privacy boundaries, durable delivery outcomes, and
+  the accepted at-least-once duplicate window.
 
 ### References
 

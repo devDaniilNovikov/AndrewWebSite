@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-antigravity-frontend-role` | `2026-07-26-032938-task-antigravity-frontend-role-handoff.md` → `2026-07-26-040219-task-antigravity-frontend-role-draft-handoff.md` → `2026-07-26-052732-task-antigravity-frontend-role-model-context-handoff.md` → `2026-07-26-102117-task-antigravity-frontend-role-reconciled-handoff.md` → `2026-07-26-104346-task-antigravity-frontend-role-ready-handoff.md` | Ready evidence recorded for PR #46; Ready and squash merge remain sequential explicit gates; no deploy | frontend, tracker, memory, process |
+| `task-telegram-worker` | `2026-07-26-100359-task-telegram-worker-handoff.md` → `2026-07-26-102435-task-telegram-worker-draft-handoff.md` → `2026-07-26-104432-task-telegram-worker-ready-handoff.md` → `2026-07-26-105604-task-telegram-worker-rebased-ready-handoff.md` → `2026-07-26-113056-task-telegram-worker-review-fix-handoff.md` | `ready`; runtime verified; publication, CI, and merge state require live checks | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -46,6 +46,7 @@ design.
 | `task-telegram-client` | 8 | `2026-07-26-060315-task-telegram-client-merged-handoff.md` | merged as `3f35c1d`; retained source branch | backend, security, tracker |
 | `fix-revert-code-review-hardening` | 5 | `2026-07-26-072227-fix-revert-code-review-hardening-merged-handoff.md` | merged as `848e94f`; retained source branch; corrected replacement merged as `b822770` | backend, deploy, tracker, process, incident |
 | `fix-code-review-hardening-replacement` | 6 | `2026-07-26-082717-fix-code-review-hardening-replacement-final-closure-handoff.md` | merged as `b822770`; reconciled by PR #50 as `f515c59`; retained source branches | backend, deploy, tracker, process, incident |
+| `task-antigravity-frontend-role` | 5 | `2026-07-26-104346-task-antigravity-frontend-role-ready-handoff.md` | merged as `ba2ad48`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | frontend, tracker, memory, process |
 
 ## Rules
 
