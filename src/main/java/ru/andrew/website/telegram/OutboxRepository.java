@@ -13,10 +13,22 @@ public interface OutboxRepository {
             int limit,
             Duration lease);
 
+    ClaimBatch recoverExpiredAndClaimDueWithStats(
+            Instant now,
+            Instant privacyCutoff,
+            int limit,
+            Duration lease);
+
     Optional<TelegramLeadMessage> reloadDeliverable(
             long outboxId,
             UUID leaseToken,
             Instant privacyCutoff);
+
+    boolean resolvePrivacyInvalidation(
+            long outboxId,
+            UUID leaseToken,
+            Instant privacyCutoff,
+            Instant now);
 
     boolean markDelivered(
             long outboxId,

@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-@Component
 public class JdbcOutboxRepository implements OutboxRepository {
     static final int MAX_CLAIM_SIZE = 10;
+    private static final Duration PRIVACY_THRESHOLD =
+            Duration.ofDays(29);
 
     private final JdbcClient jdbc;
 
@@ -29,13 +29,26 @@ public class JdbcOutboxRepository implements OutboxRepository {
             Instant privacyCutoff,
             int limit,
             Duration lease) {
+        return recoverExpiredAndClaimDueWithStats(
+                        now, privacyCutoff, limit, lease)
+                .deliveries();
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public ClaimBatch recoverExpiredAndClaimDueWithStats(
+            Instant now,
+            Instant privacyCutoff,
+            int limit,
+            Duration lease) {
         requireClaimArguments(now, privacyCutoff, limit, lease);
-        recoverExpired(now);
+        int recoveredLeaseCount = recoverExpired(now, limit);
         Instant leaseUntil = now.plus(lease);
         List<DueDelivery> due = lockDue(now, privacyCutoff, limit);
-        return due.stream()
+        List<ClaimedDelivery> deliveries = due.stream()
                 .map(delivery -> claim(delivery, now, leaseUntil))
                 .toList();
+        return new ClaimBatch(deliveries, recoveredLeaseCount);
     }
 
     @Override
@@ -58,11 +71,16 @@ public class JdbcOutboxRepository implements OutboxRepository {
                         where o.id = :outboxId
                           and o.state = 'processing'
                           and o.lease_token = :leaseToken
+                          and o.lease_until > :now
                           and l.anonymized_at is null
                           and l.created_at > :privacyCutoff
                         """)
                 .param("outboxId", outboxId)
                 .param("leaseToken", leaseToken)
+                .param(
+                        "now",
+                        asUtcTimestamp(
+                                privacyCutoff.plus(PRIVACY_THRESHOLD)))
                 .param("privacyCutoff", asUtcTimestamp(privacyCutoff))
                 .query((result, rowNumber) -> message(
                         result.getLong("id"),
@@ -75,6 +93,53 @@ public class JdbcOutboxRepository implements OutboxRepository {
                         result.getObject("created_at", OffsetDateTime.class)
                                 .toInstant()))
                 .optional();
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public boolean resolvePrivacyInvalidation(
+            long outboxId,
+            UUID leaseToken,
+            Instant privacyCutoff,
+            Instant now) {
+        int updated = jdbc.sql("""
+                        update telegram_outbox o
+                        set state = 'blocked',
+                            lease_token = null,
+                            lease_until = null,
+                            last_error_code = 'privacy_expired',
+                            updated_at = :now
+                        from leads l
+                        where o.id = :outboxId
+                          and l.id = o.lead_id
+                          and o.state = 'processing'
+                          and o.lease_token = :leaseToken
+                          and o.lease_until > :now
+                          and (
+                              l.anonymized_at is not null
+                              or l.created_at <= :privacyCutoff
+                          )
+                        """)
+                .param("outboxId", outboxId)
+                .param("leaseToken", leaseToken)
+                .param("privacyCutoff", asUtcTimestamp(privacyCutoff))
+                .param("now", asUtcTimestamp(now))
+                .update();
+        if (updated == 1) {
+            return true;
+        }
+        return jdbc.sql("""
+                        select exists (
+                            select 1
+                            from telegram_outbox
+                            where id = :outboxId
+                              and state = 'blocked'
+                              and last_error_code = 'privacy_expired'
+                        )
+                        """)
+                .param("outboxId", outboxId)
+                .query(Boolean.class)
+                .single();
     }
 
     @Override
@@ -93,6 +158,7 @@ public class JdbcOutboxRepository implements OutboxRepository {
                         where id = :outboxId
                           and state = 'processing'
                           and lease_token = :leaseToken
+                          and lease_until > :now
                         """)
                 .param("outboxId", outboxId)
                 .param("leaseToken", leaseToken)
@@ -118,6 +184,7 @@ public class JdbcOutboxRepository implements OutboxRepository {
                         where id = :outboxId
                           and state = 'processing'
                           and lease_token = :leaseToken
+                          and lease_until > :now
                         """)
                 .param("outboxId", outboxId)
                 .param("leaseToken", leaseToken)
@@ -143,6 +210,7 @@ public class JdbcOutboxRepository implements OutboxRepository {
                         where id = :outboxId
                           and state = 'processing'
                           and lease_token = :leaseToken
+                          and lease_until > :now
                         """)
                 .param("outboxId", outboxId)
                 .param("leaseToken", leaseToken)
@@ -163,19 +231,29 @@ public class JdbcOutboxRepository implements OutboxRepository {
                 .single();
     }
 
-    private void recoverExpired(Instant now) {
-        jdbc.sql("""
-                        update telegram_outbox
+    private int recoverExpired(Instant now, int limit) {
+        return jdbc.sql("""
+                        with expired as (
+                            select id
+                            from telegram_outbox
+                            where state = 'processing'
+                              and lease_until <= :now
+                            order by lease_until, id
+                            limit :limit
+                            for update skip locked
+                        )
+                        update telegram_outbox o
                         set state = 'retry',
                             lease_token = null,
                             lease_until = null,
                             next_attempt_at = :now,
                             last_error_code = 'lease_expired',
                             updated_at = :now
-                        where state = 'processing'
-                          and lease_until <= :now
+                        from expired
+                        where o.id = expired.id
                         """)
                 .param("now", asUtcTimestamp(now))
+                .param("limit", limit)
                 .update();
     }
 
@@ -313,7 +391,7 @@ public class JdbcOutboxRepository implements OutboxRepository {
         return instant.atOffset(ZoneOffset.UTC);
     }
 
-    private record DueDelivery(
+    record DueDelivery(
             long outboxId,
             long leadId,
             int attemptCount,

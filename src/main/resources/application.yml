@@ -37,6 +37,13 @@ spring:
     mapper:
       allow-coercion-of-scalars: false
 app:
+  telegram:
+    worker:
+      poll-interval: 15s
+      batch-size: 10
+      lease: 2m
+      retry-initial: 30s
+      retry-maximum: 6h
   web:
     max-request-bytes: 16384
     rate-limit:

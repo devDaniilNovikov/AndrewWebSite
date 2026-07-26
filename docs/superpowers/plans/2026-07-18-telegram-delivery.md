@@ -328,7 +328,10 @@ public final class TelegramRestClientGateway implements TelegramGateway {
         if (status >= 400 && status < 500) {
             return new TelegramDeliveryResult.PermanentFailure("telegram_permanent_" + status);
         }
-        return new TelegramDeliveryResult.Retryable("telegram_5xx", null);
+        if (status >= 500 && status < 600) {
+            return new TelegramDeliveryResult.Retryable("telegram_5xx", null);
+        }
+        return new TelegramDeliveryResult.Retryable("telegram_unexpected", null);
     }
 
     private Duration parseRetryAfter(String body) {
@@ -730,7 +733,7 @@ class TelegramMetricsTest {
 
 `TelegramMetrics` has exact method `void delivery(String outcome, String reason)`
 and immutable allowlists `delivered|retry|blocked` and
-`success|network|telegram_429|telegram_4xx|telegram_5xx|lease_expired|privacy_expired`;
+`success|network|telegram_429|telegram_4xx|telegram_5xx|telegram_unexpected|lease_expired|privacy_expired`;
 it throws `IllegalArgumentException("Unsupported Telegram metric tag")` before
 calling the registry for any other value.
 The worker persists the bounded detailed code `telegram_permanent_<status>` in
@@ -747,6 +750,7 @@ Its parameterized `successAndEveryGatewayFailurePersistExpectedState` uses
 `Delivered -> delivered/null`, `Retryable("telegram_429", 120s) -> retry/telegram_429`,
 `Retryable("telegram_5xx", null) -> retry/telegram_5xx`,
 `Retryable("network", null) -> retry/network`, and
+`Retryable("telegram_unexpected", null) -> retry/telegram_unexpected`, and
 `PermanentFailure("telegram_permanent_403") -> blocked/telegram_permanent_403`.
 For every tuple, query by outbox ID and assert exact state/error, cleared lease,
 attempt count `1`, and `next_attempt_at` from `RetryPolicy`; assert the captured
@@ -787,6 +791,19 @@ public record ClaimedDelivery(
 ```java
 package ru.andrew.website.telegram;
 
+import java.util.List;
+
+public record ClaimBatch(
+        List<ClaimedDelivery> deliveries, int recoveredLeaseCount) {
+    public ClaimBatch {
+        deliveries = List.copyOf(deliveries);
+    }
+}
+```
+
+```java
+package ru.andrew.website.telegram;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -796,22 +813,32 @@ import java.util.UUID;
 public interface OutboxRepository {
     List<ClaimedDelivery> recoverExpiredAndClaimDue(
             Instant now, Instant privacyCutoff, int limit, Duration lease);
+    ClaimBatch recoverExpiredAndClaimDueWithStats(
+            Instant now, Instant privacyCutoff, int limit, Duration lease);
     Optional<TelegramLeadMessage> reloadDeliverable(long outboxId, UUID leaseToken, Instant privacyCutoff);
+    boolean resolvePrivacyInvalidation(
+            long outboxId, UUID leaseToken, Instant privacyCutoff, Instant now);
     boolean markDelivered(long outboxId, UUID leaseToken, Instant now);
     boolean markRetry(long outboxId, UUID leaseToken, String code, Instant nextAttemptAt, Instant now);
     boolean markBlocked(long outboxId, UUID leaseToken, String code, Instant now);
+    long countByState(OutboxState state);
 }
 ```
 
-`JdbcOutboxRepository.recoverExpiredAndClaimDue` is `@Transactional`. In that
-single transaction it first changes expired processing rows to due retry with
-`lease_expired`, then selects `pending` and due `retry` rows joined to
+The approved list-returning `recoverExpiredAndClaimDue` remains available.
+`recoverExpiredAndClaimDueWithStats` returns the same immutable deliveries plus
+the bounded recovery count used for post-commit telemetry. Both JDBC entry
+points are `@Transactional`. In that single transaction the implementation
+first changes at most `limit` expired processing rows to due retry with
+`lease_expired` through an ordered `FOR UPDATE SKIP LOCKED` CTE, then selects
+`pending` and due `retry` rows joined to
 non-anonymized leads with `created_at > :privacyCutoff`, orders
 `o.next_attempt_at, o.id`, limits 10, and uses `FOR UPDATE OF o SKIP LOCKED`.
 It assigns a different random UUID token per claimed row, increments
 `attempt_count`, sets `processing`, lease expiry, and `updated_at`, then returns
 the lead projections. Mark methods update only
-`where id=:id and state='processing' and lease_token=:leaseToken`.
+`where id=:id and state='processing' and lease_token=:leaseToken and
+lease_until>:now`.
 
 `WorkerHeartbeat` exposes `void success(Instant instant)`, `Optional<Instant> lastSuccess()`, and `Instant startedAt()` using atomic immutable `Instant` values. `TelegramSchedulingConfiguration` is `@Configuration`, `@EnableScheduling`, and `@Profile("!test")`; focused tests invoke `poll()` directly with a supplied clock.
 
@@ -831,7 +858,11 @@ limit :limit
 for update of o skip locked
 ```
 
-`reloadDeliverable` repeats the lease/state/anonymized/privacy predicates immediately before send and returns no message after a retention block.
+`reloadDeliverable` repeats the unexpired-lease/state/token/anonymized/privacy
+predicates immediately before send. An empty result is never sent.
+`resolvePrivacyInvalidation` atomically records `blocked/privacy_expired` only
+for the current unexpired lease, or confirms an already completed retention
+block. Any other empty reload is stale ownership and aborts the poll.
 
 - [ ] **Step 3: GREEN — implement scheduler, result application, and bounded meters**
 
@@ -851,23 +882,29 @@ public final class TelegramWorker {
     private final TelegramGateway gateway;
     private final RetryPolicy retryPolicy;
     private final WorkerHeartbeat heartbeat;
+    private final TelegramMetrics metrics;
     private final Clock clock;
 
     public TelegramWorker(OutboxRepository outbox, TelegramGateway gateway,
-            RetryPolicy retryPolicy, WorkerHeartbeat heartbeat, Clock clock) {
+            RetryPolicy retryPolicy, WorkerHeartbeat heartbeat,
+            TelegramMetrics metrics, Clock clock) {
         this.outbox = outbox;
         this.gateway = gateway;
         this.retryPolicy = retryPolicy;
         this.heartbeat = heartbeat;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
     @Scheduled(fixedDelayString = "${app.telegram.worker.poll-interval:15s}")
     public void poll() {
         Instant now = clock.instant();
-        var claims = outbox.recoverExpiredAndClaimDue(
+        var batch = outbox.recoverExpiredAndClaimDueWithStats(
                 now, now.minus(PRIVACY_THRESHOLD), 10, Duration.ofMinutes(2));
-        for (ClaimedDelivery claim : claims) {
+        for (int index = 0; index < batch.recoveredLeaseCount(); index++) {
+            metrics.delivery("retry", "lease_expired");
+        }
+        for (ClaimedDelivery claim : batch.deliveries()) {
             deliver(claim);
         }
         heartbeat.success(clock.instant());
@@ -875,8 +912,19 @@ public final class TelegramWorker {
 
     private void deliver(ClaimedDelivery claim) {
         Instant now = clock.instant();
-        outbox.reloadDeliverable(claim.outboxId(), claim.leaseToken(), now.minus(PRIVACY_THRESHOLD))
-                .ifPresent(message -> apply(claim, gateway.send(message), clock.instant()));
+        if (!now.isBefore(claim.leaseUntil())) {
+            throw new IllegalStateException("Outbox lease expired before delivery");
+        }
+        Instant privacyCutoff = now.minus(PRIVACY_THRESHOLD);
+        var message = outbox.reloadDeliverable(
+                claim.outboxId(), claim.leaseToken(), privacyCutoff);
+        if (message.isEmpty()) {
+            requirePersisted(outbox.resolvePrivacyInvalidation(
+                    claim.outboxId(), claim.leaseToken(), privacyCutoff, now));
+            metrics.delivery("blocked", "privacy_expired");
+            return;
+        }
+        apply(claim, gateway.send(message.get()), clock.instant());
     }
 
     private void apply(ClaimedDelivery claim, TelegramDeliveryResult result, Instant now) {
@@ -899,9 +947,9 @@ public final class TelegramWorker {
 }
 ```
 
-`heartbeat.success` is deliberately the final line of a successful `poll()`. Expected Telegram outcomes are not poll failures when their state transition returns true. An exception from recovery, claim, reload, gateway send, or state persistence propagates to the scheduler boundary; a false compare-and-set state update becomes the fixed PII-free exception shown above. Neither case reaches the heartbeat.
+`heartbeat.success` is deliberately the final line of a successful `poll()`. Expected Telegram outcomes are not poll failures when their state transition returns true. A claimed lease that expires before delivery, an exception from recovery, claim, reload, gateway send, or state persistence, an unconfirmed empty reload, or a false compare-and-set state update propagates to the scheduler boundary. None reaches the heartbeat. Recovering expired leases at the start of a new otherwise successful poll is a committed expected transition and does not itself suppress that poll's heartbeat.
 
-Record counters through a `TelegramMetrics` wrapper with meter `andrew.telegram.delivery`, tag `outcome=delivered|retry|blocked`, and bounded `reason=success|network|telegram_429|telegram_4xx|telegram_5xx|lease_expired|privacy_expired`. Queue depth uses only the five state values. Do not tag path, request ID, raw status text, exception, or message.
+Record counters through a `TelegramMetrics` wrapper with meter `andrew.telegram.delivery`, tag `outcome=delivered|retry|blocked`, and bounded `reason=success|network|telegram_429|telegram_4xx|telegram_5xx|telegram_unexpected|lease_expired|privacy_expired`. Emit `retry/lease_expired` only from the committed bounded recovery count and `blocked/privacy_expired` only after the terminal privacy transition is recorded or confirmed. Queue depth uses only the five state values. Do not tag path, request ID, raw status text, exception, or message.
 
 Run: `./mvnw -B -Dtest=RetryPolicyTest,TelegramWorkerHeartbeatTest,TelegramWorkerIntegrationTest,TwoWorkerClaimIntegrationTest,TelegramMetricsTest test`
 

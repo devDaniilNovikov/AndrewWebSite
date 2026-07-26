@@ -18,6 +18,9 @@ class RetryPolicyTest {
         assertThat(policy.delay(20, null)).isEqualTo(Duration.ofHours(6));
         assertThat(policy.delay(Integer.MAX_VALUE, null))
                 .isEqualTo(Duration.ofHours(6));
+        assertThat(new RetryPolicy(Duration.ofHours(6), Duration.ofHours(6))
+                        .delay(2, null))
+                .isEqualTo(Duration.ofHours(6));
     }
 
     @Test
@@ -39,6 +42,9 @@ class RetryPolicyTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("retryAfter must be positive");
         assertThatThrownBy(() -> new RetryPolicy(Duration.ZERO, Duration.ofHours(6)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RetryPolicy(
+                        Duration.ofSeconds(-1), Duration.ofHours(6)))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new RetryPolicy(
                         Duration.ofHours(7), Duration.ofHours(6)))

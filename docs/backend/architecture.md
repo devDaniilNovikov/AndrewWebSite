@@ -150,9 +150,9 @@ The outbox stores no name, phone, comment, message JSON, or other duplicate PII.
 
 ## Queue transactions and state machine
 
-Polling occurs every 15 seconds. A claim transaction first recovers expired `processing` rows to `retry`, clears their lease, assigns `next_attempt_at = now()`, and records `last_error_code = 'lease_expired'`. It then selects at most 10 due `pending`/`retry` rows whose joined lead is non-anonymized and younger than the 29-day operational privacy threshold, ordered by `next_attempt_at, id`, using `FOR UPDATE OF telegram_outbox SKIP LOCKED`. It changes each to `processing`, increments `attempt_count`, assigns a random `lease_token`, and sets `lease_until = now() + interval '2 minutes'`. The transaction returns immutable `ClaimedDelivery` values and commits before any Telegram HTTP call. Immediately before send, the worker reloads the lead using the processing state, lease token, non-anonymized flag, and the same privacy-age predicate; an absent projection is not sent.
+Polling occurs every 15 seconds. A claim transaction first recovers at most 10 expired `processing` rows to `retry` through an ordered `FOR UPDATE SKIP LOCKED` CTE, clears their lease, assigns `next_attempt_at = now()`, and records `last_error_code = 'lease_expired'`. It then selects at most 10 due `pending`/`retry` rows whose joined lead is non-anonymized and younger than the 29-day operational privacy threshold, ordered by `next_attempt_at, id`, using `FOR UPDATE OF telegram_outbox SKIP LOCKED`. It changes each to `processing`, increments `attempt_count`, assigns a random `lease_token`, and sets `lease_until = now() + interval '2 minutes'`. The transaction returns immutable `ClaimedDelivery` values plus the bounded recovery count and commits before any Telegram HTTP call; each committed recovery increments the fixed `retry/lease_expired` delivery counter.
 
-Every completion update matches `id`, `state = 'processing'`, and `lease_token`; a stale worker therefore cannot overwrite a recovery or privacy decision.
+Immediately before send, the worker rejects an expired in-memory lease and reloads the lead using the processing state, lease token, unexpired database lease, non-anonymized flag, and the same privacy-age predicate. An absent projection is never sent. If the current lease still owns a now-ineligible lead, the worker atomically changes it to `blocked/privacy_expired`; an already completed retention block is accepted as a safe skip, while any other stale or missing ownership aborts the poll. Every delivery completion update matches `id`, `state = 'processing'`, `lease_token`, and `lease_until > now`; a stale worker therefore cannot overwrite a recovery or privacy decision.
 
 | From | Event | To | Atomic effects |
 | --- | --- | --- | --- |
@@ -193,7 +193,8 @@ Micrometer names are bounded and use only enumerated tags:
 - `andrew.leads.accepted` with `outcome=created|duplicate|retained|honeypot`;
 - `andrew.leads.rejected` with `reason=validation|conflict|payload|media_type|rate_limit|unavailable`;
 - `andrew.telegram.client` with `method=POST`, the static token-free route, and `outcome=delivered|retryable|permanent_failure`;
-- `andrew.telegram.delivery` with `outcome=delivered|retry|blocked` and bounded `reason`;
+- `andrew.telegram.delivery` with `outcome=delivered|retry|blocked` and fixed
+  `reason=success|network|telegram_429|telegram_4xx|telegram_5xx|telegram_unexpected|lease_expired|privacy_expired`;
 - `andrew.telegram.queue.depth` with `state` from `OutboxState`;
 - `andrew.telegram.worker.last_success.age`;
 - `andrew.privacy.anonymized`, `andrew.privacy.deleted`, and `andrew.privacy.last_success.age`.
