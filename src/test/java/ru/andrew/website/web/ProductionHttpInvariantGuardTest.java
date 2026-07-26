@@ -4,10 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -17,10 +23,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.actuate.endpoint.Show;
 import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
 import org.springframework.boot.context.event.ApplicationContextInitializedEvent;
+import org.springframework.boot.health.autoconfigure.actuate.endpoint.HealthEndpointProperties;
+import org.springframework.boot.health.autoconfigure.actuate.endpoint.HealthEndpointProperties.Group;
 import org.springframework.context.ApplicationContextException;
 import org.springframework.context.ApplicationListener;
+import org.springframework.core.env.Environment;
 import org.springframework.mock.env.MockEnvironment;
 import ru.andrew.website.AndrewWebsiteApplication;
 
@@ -55,6 +65,15 @@ class ProductionHttpInvariantGuardTest {
         MockEnvironment environment = safeProductionEnvironment()
                 .withProperty("management.endpoints.web.exposure.include", "he-alth")
                 .withProperty("management.endpoints.web.path-mapping.he-alth", "");
+
+        assertThatCode(() -> validate(environment, servletApplication()))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void acceptsAPathMappingForANonPublicEndpoint() {
+        MockEnvironment environment = safeProductionEnvironment()
+                .withProperty("management.endpoints.web.path-mapping.env", "environment");
 
         assertThatCode(() -> validate(environment, servletApplication()))
                 .doesNotThrowAnyException();
@@ -130,6 +149,122 @@ class ProductionHttpInvariantGuardTest {
     void runsAfterProfileAndFingerprintGuards() {
         assertThat(guard.getOrder())
                 .isEqualTo(ConfigDataEnvironmentPostProcessor.ORDER + 3);
+    }
+
+    @Test
+    void privateBoundaryHelpersRemainDefensiveForOtherwiseUnbindableInputs() {
+        assertThat(invokePrivate("isWildcard", new Class<?>[] {String.class}, (Object) null))
+                .isEqualTo(false);
+        assertThat(invokePrivate("isRootServletPath", new Class<?>[] {String.class}, ""))
+                .isEqualTo(true);
+        assertThat(invokePrivate("isPublic", new Class<?>[] {Show.class}, Show.NEVER))
+                .isEqualTo(false);
+    }
+
+    @Test
+    void blankEndpointIdIsRejectedBeforeSpringEndpointParsing() {
+        assertThatThrownBy(() ->
+                        invokePrivate("endpointId", new Class<?>[] {String.class}, " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid endpoint id");
+    }
+
+    @Test
+    void malformedHealthCacheDurationFailsClosed() {
+        MockEnvironment environment = new MockEnvironment()
+                .withProperty(
+                        "management.endpoint.health.cache.time-to-live",
+                        "not-a-duration");
+
+        assertThat(invokePrivate(
+                        "hasUnsafeHealthCache",
+                        new Class<?>[] {Environment.class},
+                        environment))
+                .isEqualTo(true);
+    }
+
+    @Test
+    void healthCacheIsSafeOnlyWhenItsTimeToLiveIsZero() {
+        MockEnvironment uncached = new MockEnvironment();
+        Environment cached = mock(Environment.class);
+        when(cached.getProperty(
+                        "management.endpoint.health.cache.time-to-live",
+                        Duration.class,
+                        Duration.ZERO))
+                .thenReturn(Duration.ofSeconds(1));
+
+        assertThat(invokePrivate(
+                        "hasUnsafeHealthCache",
+                        new Class<?>[] {Environment.class},
+                        uncached))
+                .isEqualTo(false);
+        assertThat(invokePrivate(
+                        "hasUnsafeHealthCache",
+                        new Class<?>[] {Environment.class},
+                        cached))
+                .isEqualTo(true);
+    }
+
+    @Test
+    void canonicalGroupAcceptsAnAbsentExcludeSet() {
+        HealthEndpointProperties health = new HealthEndpointProperties();
+        Group liveness = new Group();
+        liveness.setInclude(Set.of("livenessState"));
+        liveness.setExclude(null);
+        health.getGroup().put("liveness", liveness);
+
+        assertThat(invokePrivate(
+                        "isCanonicalPublicGroup",
+                        new Class<?>[] {
+                                HealthEndpointProperties.class, String.class, Set.class
+                        },
+                        health,
+                        "liveness",
+                        Set.of("livenessState")))
+                .isEqualTo(true);
+    }
+
+    @Test
+    void canonicalGroupAcceptsAnEmptyExcludeSetAndRejectsMembersInIt() {
+        HealthEndpointProperties health = new HealthEndpointProperties();
+        Group liveness = new Group();
+        liveness.setInclude(Set.of("livenessState"));
+        liveness.setExclude(Set.of());
+        health.getGroup().put("liveness", liveness);
+
+        assertThat(invokePrivate(
+                        "isCanonicalPublicGroup",
+                        new Class<?>[] {
+                                HealthEndpointProperties.class, String.class, Set.class
+                        },
+                        health,
+                        "liveness",
+                        Set.of("livenessState")))
+                .isEqualTo(true);
+
+        liveness.setExclude(Set.of("livenessState"));
+        assertThat(invokePrivate(
+                        "isCanonicalPublicGroup",
+                        new Class<?>[] {
+                                HealthEndpointProperties.class, String.class, Set.class
+                        },
+                        health,
+                        "liveness",
+                        Set.of("livenessState")))
+                .isEqualTo(false);
+    }
+
+    @Test
+    void missingHealthGroupIsNotCanonical() {
+        assertThat(invokePrivate(
+                        "isCanonicalPublicGroup",
+                        new Class<?>[] {
+                                HealthEndpointProperties.class, String.class, Set.class
+                        },
+                        new HealthEndpointProperties(),
+                        "liveness",
+                        Set.of("livenessState")))
+                .isEqualTo(false);
     }
 
     @Test
@@ -396,5 +531,22 @@ class ProductionHttpInvariantGuardTest {
         assertThat(root)
                 .isInstanceOf(ApplicationContextException.class)
                 .hasMessage(ProductionHttpInvariantGuard.MESSAGE);
+    }
+
+    private static Object invokePrivate(
+            String methodName, Class<?>[] parameterTypes, Object... arguments) {
+        try {
+            Method method =
+                    ProductionHttpInvariantGuard.class.getDeclaredMethod(methodName, parameterTypes);
+            method.setAccessible(true);
+            return method.invoke(null, arguments);
+        } catch (NoSuchMethodException | IllegalAccessException exception) {
+            throw new AssertionError(exception);
+        } catch (InvocationTargetException exception) {
+            if (exception.getCause() instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new AssertionError(exception.getCause());
+        }
     }
 }

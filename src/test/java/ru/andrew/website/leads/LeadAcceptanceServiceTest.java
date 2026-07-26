@@ -1,6 +1,7 @@
 package ru.andrew.website.leads;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -9,6 +10,21 @@ import java.time.Clock;
 import org.junit.jupiter.api.Test;
 
 class LeadAcceptanceServiceTest {
+    @Test
+    void nullRequestIsRejectedBeforeAnyCollaboratorIsUsed() {
+        Validator validator = mock(Validator.class);
+        LeadNormalizer normalizer = mock(LeadNormalizer.class);
+        LeadFingerprintService fingerprints = mock(LeadFingerprintService.class);
+        LeadAcceptanceTransaction transaction = mock(LeadAcceptanceTransaction.class);
+        Clock clock = mock(Clock.class);
+        var service = new LeadAcceptanceService(
+                validator, normalizer, fingerprints, transaction, clock);
+
+        assertThatThrownBy(() -> service.accept(null))
+                .isInstanceOf(InvalidLeadRequestException.class);
+        verifyNoInteractions(validator, normalizer, fingerprints, transaction, clock);
+    }
+
     @Test
     void honeypotClassificationPrecedesValidationNormalizationFingerprintAndTransaction() {
         Validator validator = mock(Validator.class);

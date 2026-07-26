@@ -106,6 +106,10 @@ class TelegramRestClientGatewayTest {
                         new TelegramDeliveryResult.PermanentFailure(
                                 "telegram_permanent_403")),
                 Arguments.of(
+                        HttpStatus.NOT_FOUND,
+                        new TelegramDeliveryResult.PermanentFailure(
+                                "telegram_permanent_404")),
+                Arguments.of(
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         new TelegramDeliveryResult.Retryable("telegram_5xx", null)),
                 Arguments.of(

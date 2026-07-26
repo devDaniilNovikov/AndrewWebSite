@@ -1,11 +1,14 @@
 package ru.andrew.website;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mockStatic;
 import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.http.client.HttpRedirects;
 import org.springframework.boot.http.client.autoconfigure.HttpClientsProperties;
@@ -28,6 +31,18 @@ class AndrewWebsiteApplicationTest {
 
     @Test
     void contextLoads() {
+    }
+
+    @Test
+    void mainDelegatesToSpringApplicationWithUnchangedArguments() {
+        String[] arguments = {"--spring.profiles.active=test"};
+
+        try (MockedStatic<SpringApplication> springApplication = mockStatic(SpringApplication.class)) {
+            AndrewWebsiteApplication.main(arguments);
+
+            springApplication.verify(() ->
+                    SpringApplication.run(AndrewWebsiteApplication.class, arguments));
+        }
     }
 
     @Test

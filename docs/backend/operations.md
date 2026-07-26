@@ -179,12 +179,12 @@ Application rollback selects a previously verified image only when its code is c
 
 ## Verification and release gates
 
-For each implementation PR, run only commands introduced by its committed manifests. Once the skeleton owns the wrapper, the host/CI backend gate is `./mvnw -B verify`; JaCoCo must fail `verify` below 80%. Database changes run both `@Tag("database")` PostgreSQL 18 Testcontainers suites, `LeadOutboxMigrationTest` and `LeadOutboxConstraintTest`, with Docker available. The containerized `backend-build` runs `./mvnw -B -DexcludedGroups=database verify` because it cannot start a sibling Testcontainers database; this excludes only the database group, must not use `-DskipTests` or `maven.test.skip`, and still runs all other tests. Container tasks build and smoke-test the exact image. The final integration verifies home page, hashed asset, real 404, lead API, liveness, and readiness.
+For each implementation PR, run only commands introduced by its committed manifests. Once the skeleton owns the wrapper, the host/CI backend gate is `./mvnw -B verify`; JaCoCo must fail `verify` unless both bundle line and branch coverage are 100%. Database changes run both `@Tag("database")` PostgreSQL 18 Testcontainers suites, `LeadOutboxMigrationTest` and `LeadOutboxConstraintTest`, with Docker available. The containerized `backend-build` runs `./mvnw -B -DexcludedGroups=database verify` because it cannot start a sibling Testcontainers database; this excludes only the database group, must not use `-DskipTests` or `maven.test.skip`, and still runs all other tests. Container tasks build and smoke-test the exact image. The final integration verifies home page, hashed asset, real 404, lead API, liveness, and readiness.
 
 Before production release, confirm all of the following with fresh evidence:
 
 - Java 25, Spring Boot 4.1.0, Maven Wrapper, one root module, and one final Java container;
-- complete unit, integration, MockMvc, concurrency, migration, privacy, telemetry, dependency-security, and container gates described by the [canonical architecture](architecture.md), with at least 80% JaCoCo coverage;
+- complete unit, integration, MockMvc, concurrency, migration, privacy, telemetry, dependency-security, and container gates described by the [canonical architecture](architecture.md), with 100% JaCoCo line and branch coverage;
 - exact OpenAPI behaviors for `202`, `400`, `409`, `413`, `415`, `429`, and `503`;
 - first acceptance commits lead and outbox atomically; rollback never returns `202`;
 - equal duplicates, conflicting payloads, website-only synthetic acceptance with no rows, and post-fingerprint replay match the contract;

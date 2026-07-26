@@ -272,7 +272,12 @@ production profile accepts the exact fixed URI and rejects a different host,
 HTTP, user info, explicit port, path, query, and fragment before any request can
 carry the bot token or lead PII.
 
-`TelegramMessageFormatter.format(TelegramLeadMessage)` returns deterministic Russian labels in this exact order: request ID, UTC time, intent, source, name, phone, optional comment. It escapes Telegram HTML special characters and the gateway sends `parse_mode=HTML`; it never logs input or output.
+`TelegramMessageFormatter.format(TelegramLeadMessage)` returns deterministic
+Russian labels in this exact order: request ID, UTC time, intent, source, name,
+phone, optional comment. The approved implementation clarification sends plain
+text without `parse_mode`; it neutralizes every user-controlled Java line-break
+sequence so only formatter-owned newlines define fields, and it never logs
+input or output.
 
 - [ ] **Step 3: GREEN — implement explicit exchange status handling**
 
@@ -308,8 +313,9 @@ public final class TelegramRestClientGateway implements TelegramGateway {
             return client.post()
                     .uri("/bot{token}/sendMessage", properties.botToken())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of("chat_id", properties.chatId(), "text", formatter.format(message),
-                            "parse_mode", "HTML"))
+                    .body(Map.of(
+                            "chat_id", properties.chatId(),
+                            "text", formatter.format(message)))
                     .exchange((request, response) -> classify(response.getStatusCode().value(), response.bodyTo(String.class)));
         } catch (RestClientException exception) {
             return new TelegramDeliveryResult.Retryable("network", null);
