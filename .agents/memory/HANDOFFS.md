@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-revert-code-review-hardening` | `2026-07-25-205559-fix-code-review-hardening-handoff.md` → `2026-07-26-055452-fix-revert-code-review-hardening-handoff.md` → `2026-07-26-070429-fix-revert-code-review-hardening-handoff.md` | `draft_pr` | backend, deploy, tracker, process, incident |
+| `fix-revert-code-review-hardening` | `2026-07-25-205559-fix-code-review-hardening-handoff.md` → `2026-07-26-055452-fix-revert-code-review-hardening-handoff.md` → `2026-07-26-070429-fix-revert-code-review-hardening-handoff.md` → `2026-07-26-071310-fix-revert-code-review-hardening-handoff.md` | `ready` | backend, deploy, tracker, process, incident |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
