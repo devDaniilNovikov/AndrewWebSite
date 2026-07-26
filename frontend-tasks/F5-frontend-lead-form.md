@@ -8,11 +8,14 @@ fallbacks.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Google Antigravity.
 - **Prerequisite:** F2 and `task-leads-api` merged; start from their resulting
   fresh `origin/main`.
-- **Owned paths:** `frontend/**` and the task-specific handoff. Backend and
-  OpenAPI changes require a separate Codex-owned task.
+- **Owned paths:** `frontend/**` and the task-specific handoff. After
+  Antigravity commits that handoff and stops, this task delegates sequential
+  control of the same worktree to Codex only for tracker/index reconciliation
+  and final review; concurrent editing is forbidden. Backend and OpenAPI
+  changes require a separate Codex-owned task.
 - **Sources:** [OpenAPI](../docs/backend/openapi.yaml),
   [architecture](../docs/backend/architecture.md),
   [product brief](../docs/product/technical-brief.ru.md), and

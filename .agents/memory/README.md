@@ -1,11 +1,11 @@
 # Shared agent memory
 
-File-first shared memory for Codex, Claude Code, and Jules. It records
-durable context and evidence. It is navigation and evidence — never a
-substitute for live Git/GitHub state, `TASKS.md`, canonical contracts,
-process rules, or the assigned plan. Priority on conflict follows the
-context stack defined in the role files; an explicit current user decision
-outranks any older text.
+File-first shared memory for all active project agents. It records durable
+context and evidence. It is navigation and evidence — never a substitute for
+live Git/GitHub state, `TASKS.md`, canonical contracts, process rules, or the
+assigned plan. The current roster lives in the role router, not here.
+Priority on conflict follows the context stack defined in the role files; an
+explicit current user decision outranks any older text.
 
 ## Hot layer — what a task start actually reads
 
@@ -81,11 +81,16 @@ review.
 
 Filenames `YYYY-MM-DD-HHMMSS-<task>-handoff.md` in
 [`../../docs/handoffs/`](../../docs/handoffs/), `HHMMSS` in **UTC** so
-filename order equals chronology. Created, with an index update, in the same
-task branch on every pause, transfer, or completion. The current handoff may
-receive focused corrections only until a successor links to it; then it is
-historical and immutable. Handoffs are never deleted or archived. When a
-task's PR merges, its chain collapses to one line in `## Closed chains`.
+filename order equals chronology. Create the delegated task handoff in the
+same task branch on every pause, transfer, or completion. An implementer
+without shared-memory ownership writes only that handoff and reports its
+path. When the task brief delegates a sequential transfer, the implementer
+stops after its handoff; Codex accepts and records control before any
+repository edit in that worktree, then adds the index row before publication
+or onward transfer. The current handoff may receive focused corrections only
+until a successor links to it; then it is historical and immutable. Handoffs
+are never deleted or archived. When a task's PR merges, its chain collapses to
+one line in `## Closed chains`.
 
 Handoff body template — staleness is confined to the timestamped section:
 

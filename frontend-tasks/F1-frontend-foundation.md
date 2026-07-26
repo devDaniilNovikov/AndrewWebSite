@@ -8,11 +8,14 @@ contracts.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
-- **Prerequisite:** T5 merged; start from fresh `origin/main` in a dedicated
-  `task-frontend-foundation` worktree and non-stacked PR.
-- **Owned paths:** `frontend/**` and the task-specific handoff. Coordinate
-  tracker and shared-memory changes with Codex.
+- **Owner:** Google Antigravity.
+- **Prerequisite:** `fix-frontend-track-gaps` and
+  `task-antigravity-frontend-role` merged; start from fresh `origin/main` in
+  a dedicated `task-frontend-foundation` worktree and non-stacked PR.
+- **Owned paths:** `frontend/**` and the task-specific handoff. After
+  Antigravity commits that handoff and stops, this task delegates sequential
+  control of the same worktree to Codex only for tracker/index reconciliation
+  and final review; concurrent editing is forbidden.
 - **Sources:** [SPEC](../docs/SPEC.md),
   [architecture](../docs/backend/architecture.md), and
   [Git Flow](../.agents/workflows/GIT_FLOW.md).
@@ -21,7 +24,13 @@ contracts.
 
 1. Scaffold the architecture-approved frontend stack under `frontend/` with
    its manifest, lockfile, strict type checking, styling configuration, and
-   static-export command. Do not add unapproved frameworks or dependencies.
+   static-export command. This task explicitly delegates selection of one
+   Node 24/Corepack-compatible package manager and the smallest maintained
+   development-only format, lint, type, unit/component, accessibility, and
+   E2E toolchain needed by the acceptance gates. Commit its exact lockfile
+   and record the selection rationale in the task handoff. Any runtime or
+   product dependency outside the architecture-approved stack still requires
+   explicit Codex approval.
 2. Add the minimum design-token, global-style, root-layout, test, and
    accessibility-test foundations required by later tasks. Keep all business
    content explicitly placeholder-free or clearly marked as non-production.

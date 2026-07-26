@@ -7,10 +7,13 @@ static-export contract consumed later by backend JAR integration.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Google Antigravity.
 - **Prerequisite:** F3, F4, and F5 merged into fresh `origin/main`.
-- **Owned paths:** `frontend/**` and the task-specific handoff. Backend,
-  container, deployment, API, and CI architecture remain outside scope.
+- **Owned paths:** `frontend/**` and the task-specific handoff. After
+  Antigravity commits that handoff and stops, this task delegates sequential
+  control of the same worktree to Codex only for tracker/index reconciliation
+  and final review; concurrent editing is forbidden. Backend, container,
+  deployment, API, and CI architecture remain outside scope.
 - **Sources:** [SPEC](../docs/SPEC.md),
   [product brief](../docs/product/technical-brief.ru.md),
   [architecture](../docs/backend/architecture.md), and

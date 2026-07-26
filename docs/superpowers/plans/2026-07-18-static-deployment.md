@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 18.
-- Do not start until refreshed Claude instructions and the Claude-owned frontend scaffold, package-manager declaration, lockfile, static-export command, output path, and frontend tests are merged into fresh `origin/main`.
+- Do not start until the Google Antigravity instructions and Antigravity-owned frontend scaffold, package-manager declaration, lockfile, static-export command, output path, and frontend tests are merged into fresh `origin/main`.
 - Frontend remains under `frontend/`; use its one committed package manager and lockfile without conversion or mixing; Next.js is exactly 16.2.9 with `output: 'export'`; the build artifact is `frontend/out/`.
 - Node 24 is build-time only. Use a writable `COREPACK_HOME` and direct `corepack <manager>` execution for the exact manifest declaration; never run `corepack enable` or install global shims. The final artifact and container contain one Spring Boot executable JAR on Java 25 and no Node executable, package-manager cache, frontend source, or build credential.
 - Preserve backend ownership of `/api/**` and `/actuator/**`; no static fallback on those prefixes. Missing static routes are real 404 responses, never home-page fallbacks.
@@ -24,7 +24,7 @@
 - Final smoke coverage includes home, an exported nested page, a hashed asset, real 404, `POST /api/leads`, liveness, and readiness.
 - Production image is non-root, health-checks liveness, embeds no secrets, and does not mutate Timeweb or any production resource.
 - PostgreSQL backup retention and Telegram auto-delete are each verified at no more than 30 days before release; proxy trust and OTLP gates remain in force.
-- Follow the [canonical Git Flow](../../../.agents/workflows/GIT_FLOW.md): after all backend and frontend prerequisites reach `main`, this approved product task uses one dedicated external worktree and one lowercase `task-*` branch from the latest `origin/main`, followed by one Draft PR; direct pushes to `main`, stacked PRs, reused worktrees, non-squash merges, and auto-merge are forbidden. Mark Ready only after required CI is green and Codex review is complete; squash-merge only after explicit user authorization; then confirm `main`, close the issue, allow automatic remote-branch deletion, remove only a worktree with no tracked or untracked work to preserve, and run `git fetch --prune`. Preserve strict RED → GREEN → REFACTOR.
+- Follow the [canonical Git Flow](../../../.agents/workflows/GIT_FLOW.md): after all backend and frontend prerequisites reach `main`, this approved product task uses one dedicated external worktree and one lowercase `task-*` branch from the latest `origin/main`; direct pushes to `main`, stacked PRs, reused worktrees, non-squash merges, and auto-merge are forbidden. Open the Draft PR only after separate explicit current user publication authorization. Mark Ready only after another explicit current user authorization plus green required CI and complete Codex review; squash-merge only after explicit user authorization. Then confirm `main`, close the issue, preserve the remote source branch, verify automatic head-branch deletion remains disabled, remove only a worktree with no tracked or untracked work to preserve, and run `git fetch --prune`. Preserve strict RED → GREEN → REFACTOR.
 - Every AI-authored commit adds the executing agent's own `Co-Authored-By` attribution footer and never attributes a human identity.
 
 ---
@@ -47,7 +47,7 @@
 
 - [ ] **Step 1: Gate execution on the merged prerequisite without changing frontend ownership**
 
-From the dedicated `task-static-jar-integration` worktree and branch created from the latest `origin/main`, verify all backend task PRs and the frontend prerequisite are merged, then inspect the merged frontend manifest. Require `next` exactly `16.2.9`, React `19.2.x`, strict TypeScript, Tailwind CSS 4, Motion, `output: 'export'`, output `out/`, a package-manager declaration with exactly one matching lockfile, a static-safe build script, and passing frontend tests. Stop and return to the frontend owner if any fact is absent or contradictory; do not choose a package manager or output convention on their behalf.
+From the dedicated `task-static-jar-integration` worktree and branch created from the latest `origin/main`, verify all backend task PRs and the frontend prerequisite are merged, then inspect the merged frontend manifest. Require `next` exactly `16.2.9`, React `19.2.x`, strict TypeScript, Tailwind CSS 4, Motion, `output: 'export'`, output `out/`, a package-manager declaration with exactly one matching lockfile, a static-safe build script, and passing frontend tests. Stop and return to Google Antigravity if any fact is absent or contradictory; do not choose a package manager or output convention on its behalf.
 
 - [ ] **Step 2: RED — write the JAR-content integration test before build integration**
 

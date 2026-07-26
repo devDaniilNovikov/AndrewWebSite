@@ -8,11 +8,13 @@ primitives.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Google Antigravity.
 - **Prerequisite:** F1 merged; verified company name, navigation labels, phone,
   and contact facts available in canonical product sources.
-- **Owned paths:** `frontend/**` and the task-specific handoff. Coordinate
-  tracker and shared-memory changes with Codex.
+- **Owned paths:** `frontend/**` and the task-specific handoff. After
+  Antigravity commits that handoff and stops, this task delegates sequential
+  control of the same worktree to Codex only for tracker/index reconciliation
+  and final review; concurrent editing is forbidden.
 - **Sources:** [product brief](../docs/product/technical-brief.ru.md),
   [SPEC](../docs/SPEC.md), and [Git Flow](../.agents/workflows/GIT_FLOW.md).
 
