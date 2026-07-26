@@ -17,7 +17,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   [canonical privacy lifecycle](docs/backend/architecture.md#privacy-lifecycle)
   with bounded deterministic locking, atomic queue terminalization and PII
   cleanup, calendar-based technical-row deletion, a complete-pass heartbeat,
-  and tagless aggregate metrics.
+  and tagless aggregate metrics
+  ([PR #53](https://github.com/devDaniilNovikov/AndrewWorkWebSite/pull/53)).
 
 ### Security
 

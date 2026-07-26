@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-lead-retention` | `2026-07-26-122622-task-lead-retention-verified-handoff.md` | `in_progress`; local implementation and review gates are complete; publication state requires live checks | backend, privacy, security, tracker |
+| `task-lead-retention` | `2026-07-26-122622-task-lead-retention-verified-handoff.md` → `2026-07-26-123205-task-lead-retention-draft-handoff.md` | `draft_pr`; local implementation and review gates are complete; exact-head remote checks pending | backend, privacy, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
