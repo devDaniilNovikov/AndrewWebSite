@@ -28,6 +28,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
+import ru.andrew.website.common.ProductionStartupFailureReporter;
 
 public final class ProductionHttpInvariantGuard implements EnvironmentPostProcessor, Ordered {
     public static final String MESSAGE =
@@ -36,7 +37,8 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
     private static final EndpointId HEALTH_ENDPOINT = HealthEndpoint.ID;
     private static final Set<EndpointId> PUBLIC_ENDPOINTS = Set.of(HEALTH_ENDPOINT);
     private static final Set<String> LIVENESS_MEMBERS = Set.of("livenessState");
-    private static final Set<String> READINESS_MEMBERS = Set.of("readinessState");
+    private static final Set<String> READINESS_MEMBERS = Set.of(
+            "readinessState", "dbReadiness", "telegramWorkerReadiness");
     private static final int CONTAINER_SERVER_PORT = 8080;
     private static final int ORDER = ConfigDataEnvironmentPostProcessor.ORDER + 3;
 
@@ -46,6 +48,8 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
         if (!environment.matchesProfiles("prod")) {
             return;
         }
+        ProductionStartupFailureReporter
+                .prepareEarlyFailure(application);
 
         Binder binder = Binder.get(environment);
         ServerProperties server = bind(binder, "server", ServerProperties.class);

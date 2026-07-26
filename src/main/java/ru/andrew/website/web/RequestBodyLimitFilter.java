@@ -18,16 +18,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
+import ru.andrew.website.leads.LeadMetrics;
+import ru.andrew.website.leads.LeadRejectionReason;
 
 final class RequestBodyLimitFilter extends OncePerRequestFilter {
     private static final String LEAD_PATH = "/api/leads";
 
     private final int maxRequestBytes;
     private final ProblemResponseWriter problems;
+    private final LeadMetrics metrics;
 
-    RequestBodyLimitFilter(WebProperties properties, ProblemResponseWriter problems) {
+    RequestBodyLimitFilter(
+            WebProperties properties,
+            ProblemResponseWriter problems,
+            LeadMetrics metrics) {
         this.maxRequestBytes = properties.maxRequestBytes();
         this.problems = problems;
+        this.metrics = metrics;
     }
 
     @Override
@@ -69,6 +76,7 @@ final class RequestBodyLimitFilter extends OncePerRequestFilter {
     }
 
     private void writePayloadTooLarge(HttpServletResponse response, String instance) throws IOException {
+        metrics.rejected(LeadRejectionReason.PAYLOAD);
         problems.write(response, problems.problem(
                 HttpStatus.CONTENT_TOO_LARGE,
                 "urn:andrew:problem:payload-too-large",
@@ -78,6 +86,7 @@ final class RequestBodyLimitFilter extends OncePerRequestFilter {
     }
 
     private void writeUnsupportedMediaType(HttpServletResponse response, String instance) throws IOException {
+        metrics.rejected(LeadRejectionReason.MEDIA_TYPE);
         problems.write(response, problems.problem(
                 HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                 "urn:andrew:problem:unsupported-media-type",

@@ -12,10 +12,12 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import ru.andrew.website.leads.LeadMetrics;
 import tools.jackson.databind.json.JsonMapper;
 
 class RequestBodyLimitFilterTest {
@@ -24,7 +26,10 @@ class RequestBodyLimitFilterTest {
     private final ProblemResponseWriter problems =
             new ProblemResponseWriter(JsonMapper.builder().build());
     private final RequestBodyLimitFilter filter =
-            new RequestBodyLimitFilter(properties(), problems);
+            new RequestBodyLimitFilter(
+                    properties(),
+                    problems,
+                    new LeadMetrics(new SimpleMeterRegistry()));
 
     @Test
     void postOutsideTheLeadEndpointBypassesBodyInspection() throws Exception {

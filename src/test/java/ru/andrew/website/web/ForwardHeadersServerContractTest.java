@@ -47,15 +47,19 @@ class ForwardHeadersServerContractTest {
     @Test
     void configuredHealthEndpointsRemainAvailableAndMinimal() throws Exception {
         try (HttpClient client = HttpClient.newHttpClient()) {
-            for (String path :
-                    new String[] {"/actuator/health/liveness", "/actuator/health/readiness"}) {
-                HttpResponse<String> response = get(client, path);
+            HttpResponse<String> liveness =
+                    get(client, "/actuator/health/liveness");
+            assertThat(liveness.statusCode()).isEqualTo(200);
+            assertThat(liveness.headers().firstValue(HttpHeaders.CACHE_CONTROL))
+                    .contains("no-store");
+            assertThat(liveness.body()).isEqualTo("{\"status\":\"UP\"}");
 
-                assertThat(response.statusCode()).isEqualTo(200);
-                assertThat(response.headers().firstValue(HttpHeaders.CACHE_CONTROL))
-                        .contains("no-store");
-                assertThat(response.body()).isEqualTo("{\"status\":\"UP\"}");
-            }
+            HttpResponse<String> readiness =
+                    get(client, "/actuator/health/readiness");
+            assertThat(readiness.statusCode()).isEqualTo(503);
+            assertThat(readiness.headers().firstValue(HttpHeaders.CACHE_CONTROL))
+                    .contains("no-store");
+            assertThat(readiness.body()).isEqualTo("{\"status\":\"DOWN\"}");
         }
     }
 

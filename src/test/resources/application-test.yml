@@ -2,6 +2,11 @@ spring:
   config:
     activate:
       on-profile: test
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: false
 app:
   leads:
     fingerprint-key: test-only-key-material-not-for-production-0001
