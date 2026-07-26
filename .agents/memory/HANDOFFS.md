@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-revert-code-review-hardening` | `2026-07-25-205559-fix-code-review-hardening-handoff.md` → `2026-07-26-055452-fix-revert-code-review-hardening-handoff.md` → `2026-07-26-070429-fix-revert-code-review-hardening-handoff.md` → `2026-07-26-071310-fix-revert-code-review-hardening-handoff.md` | `ready` | backend, deploy, tracker, process, incident |
+| `fix-code-review-hardening-replacement` | `2026-07-26-072227-fix-code-review-hardening-replacement-handoff.md` → `2026-07-26-073921-fix-code-review-hardening-replacement-handoff.md` → `2026-07-26-075852-fix-code-review-hardening-replacement-handoff.md` → `2026-07-26-080325-fix-code-review-hardening-replacement-ready-handoff.md` | `ready` | backend, deploy, tracker, process |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -42,8 +42,9 @@ design.
 | `fix-leads-api-json-boundary-replacement` | 3 | `2026-07-25-045958-fix-leads-api-json-boundary-replacement-ready-handoff.md` | merged as `2f565dd`; retained source branch | backend, security, tracker |
 | `fix-leads-unicode-boundary` | 3 | `2026-07-25-074000-fix-leads-unicode-boundary-ready-handoff.md` | merged as `4da6448`; retained source branch | backend, security, tracker |
 | `fix-production-http-invariants` | 5 | `2026-07-25-180844-fix-production-http-invariants-merged-handoff.md` | merged as `d29e788`; retained source branch | backend, security, deploy, tracker |
-| `fix-code-review-hardening` | 1 | `2026-07-25-205559-fix-code-review-hardening-handoff.md` | merged as `0b0a62a`; retained source branch; corrective rollback active | backend, deploy, tracker, process, incident |
+| `fix-code-review-hardening` | 1 | `2026-07-25-205559-fix-code-review-hardening-handoff.md` | merged as `0b0a62a`; retained source branch; corrective rollback merged as `848e94f`; corrected replacement active | backend, deploy, tracker, process, incident |
 | `task-telegram-client` | 8 | `2026-07-26-060315-task-telegram-client-merged-handoff.md` | merged as `3f35c1d`; retained source branch | backend, security, tracker |
+| `fix-revert-code-review-hardening` | 5 | `2026-07-26-072227-fix-revert-code-review-hardening-merged-handoff.md` | merged as `848e94f`; retained source branch; corrected replacement active | backend, deploy, tracker, process, incident |
 
 ## Rules
 
