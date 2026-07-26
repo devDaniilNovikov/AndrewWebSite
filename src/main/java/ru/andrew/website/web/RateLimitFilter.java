@@ -10,6 +10,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
+import ru.andrew.website.leads.LeadMetrics;
+import ru.andrew.website.leads.LeadRejectionReason;
 
 final class RateLimitFilter extends OncePerRequestFilter {
     private static final String LEAD_PATH = "/api/leads";
@@ -18,12 +20,14 @@ final class RateLimitFilter extends OncePerRequestFilter {
     private final boolean enabled;
     private final ClientRateLimiter limiter;
     private final ProblemResponseWriter problems;
+    private final LeadMetrics metrics;
 
     RateLimitFilter(WebProperties properties, ClientRateLimiter limiter,
-            ProblemResponseWriter problems) {
+            ProblemResponseWriter problems, LeadMetrics metrics) {
         this.enabled = properties.rateLimit().enabled();
         this.limiter = limiter;
         this.problems = problems;
+        this.metrics = metrics;
     }
 
     @Override
@@ -44,6 +48,7 @@ final class RateLimitFilter extends OncePerRequestFilter {
         }
 
         response.setHeader(HttpHeaders.RETRY_AFTER, Long.toString(retryAfterSeconds(decision.retryAfter())));
+        metrics.rejected(LeadRejectionReason.RATE_LIMIT);
         problems.write(response, problems.problem(
                 HttpStatus.TOO_MANY_REQUESTS,
                 "urn:andrew:problem:rate-limit-exceeded",

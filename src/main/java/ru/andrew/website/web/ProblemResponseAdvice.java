@@ -18,24 +18,41 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.transaction.TransactionException;
 import ru.andrew.website.leads.IdempotencyConflictException;
 import ru.andrew.website.leads.InvalidLeadRequestException;
+import ru.andrew.website.leads.LeadMetrics;
+import ru.andrew.website.leads.LeadRejectionReason;
 
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 final class ProblemResponseAdvice {
     private final ProblemResponseWriter problems;
+    private final LeadMetrics metrics;
 
-    ProblemResponseAdvice(ProblemResponseWriter problems) {
+    ProblemResponseAdvice(
+            ProblemResponseWriter problems, LeadMetrics metrics) {
         this.problems = problems;
+        this.metrics = metrics;
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ProblemDetail> malformedPayload(
+            HttpServletRequest request) {
+        metrics.rejected(LeadRejectionReason.PAYLOAD);
+        return invalidProblem(request);
     }
 
     @ExceptionHandler({
-            HttpMessageNotReadableException.class,
             MethodArgumentNotValidException.class,
             HandlerMethodValidationException.class,
             ConstraintViolationException.class,
             InvalidLeadRequestException.class
     })
     ResponseEntity<ProblemDetail> invalidRequest(HttpServletRequest request) {
+        metrics.rejected(LeadRejectionReason.VALIDATION);
+        return invalidProblem(request);
+    }
+
+    private ResponseEntity<ProblemDetail> invalidProblem(
+            HttpServletRequest request) {
         ProblemDetail problem = problems.problem(
                 HttpStatus.BAD_REQUEST,
                 "urn:andrew:problem:invalid-request",
@@ -47,6 +64,7 @@ final class ProblemResponseAdvice {
 
     @ExceptionHandler(IdempotencyConflictException.class)
     ResponseEntity<ProblemDetail> idempotencyConflict(HttpServletRequest request) {
+        metrics.rejected(LeadRejectionReason.CONFLICT);
         ProblemDetail problem = problems.problem(
                 HttpStatus.CONFLICT,
                 "urn:andrew:problem:idempotency-conflict",
@@ -58,6 +76,7 @@ final class ProblemResponseAdvice {
 
     @ExceptionHandler({DataAccessException.class, TransactionException.class})
     ResponseEntity<ProblemDetail> serviceUnavailable(HttpServletRequest request) {
+        metrics.rejected(LeadRejectionReason.UNAVAILABLE);
         ProblemDetail problem = problems.problem(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "urn:andrew:problem:service-unavailable",
@@ -69,6 +88,7 @@ final class ProblemResponseAdvice {
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     ResponseEntity<ProblemDetail> unsupportedMediaType(HttpServletRequest request) {
+        metrics.rejected(LeadRejectionReason.MEDIA_TYPE);
         ProblemDetail problem = problems.problem(
                 HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                 "urn:andrew:problem:unsupported-media-type",

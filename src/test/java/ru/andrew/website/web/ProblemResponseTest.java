@@ -9,6 +9,8 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import ru.andrew.website.leads.LeadMetrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import tools.jackson.databind.json.JsonMapper;
 
 class ProblemResponseTest {
@@ -41,7 +43,9 @@ class ProblemResponseTest {
         request.setContextPath("/website");
 
         ResponseEntity<ProblemDetail> response =
-                new ProblemResponseAdvice(writer).unsupportedMediaType(request);
+                new ProblemResponseAdvice(
+                        writer, new LeadMetrics(new SimpleMeterRegistry()))
+                        .unsupportedMediaType(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
         assertThat(response.getHeaders().getContentType())

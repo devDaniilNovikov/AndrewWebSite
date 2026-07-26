@@ -15,6 +15,7 @@ import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATAB
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -30,6 +31,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadMetrics;
 
 @SpringBootTest(properties = {
         "app.web.rate-limit.enabled=false",
@@ -198,7 +200,10 @@ class SecurityContractTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicBoolean chainInvoked = new AtomicBoolean();
 
-        new RequestBodyLimitFilter(properties, problems).doFilter(
+        new RequestBodyLimitFilter(
+                properties,
+                problems,
+                new LeadMetrics(new SimpleMeterRegistry())).doFilter(
                 request, response, (ignoredRequest, ignoredResponse) -> chainInvoked.set(true));
 
         assertThat(chainInvoked).isFalse();
@@ -217,7 +222,10 @@ class SecurityContractTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicReference<byte[]> downstreamBody = new AtomicReference<>();
 
-        new RequestBodyLimitFilter(properties, problems).doFilter(
+        new RequestBodyLimitFilter(
+                properties,
+                problems,
+                new LeadMetrics(new SimpleMeterRegistry())).doFilter(
                 request,
                 response,
                 (wrappedRequest, ignoredResponse) -> downstreamBody.set(

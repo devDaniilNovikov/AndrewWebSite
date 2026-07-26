@@ -8,14 +8,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 final class LeadController {
     private final LeadAcceptanceService acceptance;
+    private final LeadMetrics metrics;
 
-    LeadController(LeadAcceptanceService acceptance) {
+    LeadController(
+            LeadAcceptanceService acceptance, LeadMetrics metrics) {
         this.acceptance = acceptance;
+        this.metrics = metrics;
     }
 
     @PostMapping(path = "/api/leads", consumes = "application/json")
     ResponseEntity<Void> submit(@RequestBody LeadRequest request) {
-        acceptance.accept(request);
+        AcceptanceOutcome outcome = acceptance.accept(request);
+        metrics.accepted(outcome);
         return ResponseEntity.accepted().build();
     }
 }

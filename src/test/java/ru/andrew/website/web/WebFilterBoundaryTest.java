@@ -11,11 +11,13 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import ru.andrew.website.leads.LeadMetrics;
 import tools.jackson.databind.json.JsonMapper;
 
 class WebFilterBoundaryTest {
@@ -27,7 +29,8 @@ class WebFilterBoundaryTest {
         RateLimitFilter filter = new RateLimitFilter(
                 properties(true),
                 ClientRateLimiter.defaults(clock()),
-                problems);
+                problems,
+                new LeadMetrics(new SimpleMeterRegistry()));
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/other");
         AtomicBoolean invoked = new AtomicBoolean();
 
@@ -45,7 +48,8 @@ class WebFilterBoundaryTest {
         RateLimitFilter filter = new RateLimitFilter(
                 properties(true),
                 ClientRateLimiter.defaults(clock()),
-                problems);
+                problems,
+                new LeadMetrics(new SimpleMeterRegistry()));
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/leads") {
             @Override
             public String getRemoteAddr() {

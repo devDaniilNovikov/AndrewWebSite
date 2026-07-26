@@ -15,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfigurationSource;
+import ru.andrew.website.leads.LeadMetrics;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnWebApplication(type = Type.SERVLET)
@@ -35,10 +36,13 @@ class SecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, WebProperties properties,
             ClientRateLimiter limiter, ProblemResponseWriter problems,
+            LeadMetrics metrics,
             @Qualifier("localCorsConfigurationSource")
             ObjectProvider<CorsConfigurationSource> localCorsSource) throws Exception {
-        RequestBodyLimitFilter bodyLimit = new RequestBodyLimitFilter(properties, problems);
-        RateLimitFilter rateLimit = new RateLimitFilter(properties, limiter, problems);
+        RequestBodyLimitFilter bodyLimit =
+                new RequestBodyLimitFilter(properties, problems, metrics);
+        RateLimitFilter rateLimit =
+                new RateLimitFilter(properties, limiter, problems, metrics);
         CorsConfigurationSource localCors = localCorsSource.getIfAvailable();
 
         http.sessionManagement(session ->
