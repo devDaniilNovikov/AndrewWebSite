@@ -8,7 +8,7 @@ primitives.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Google Antigravity.
 - **Prerequisite:** F1 merged; verified company name, navigation labels, phone,
   and contact facts available in canonical product sources.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Coordinate

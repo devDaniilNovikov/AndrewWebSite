@@ -64,8 +64,10 @@ AndrewWebSite — русскоязычный B2B-сайт компании по 
 
 ## Документация агентов
 
-- [Codex: спецификация, контекст и общие правила](.agents/AGENTS.md)
-- [Claude Code: frontend-спецификация](.agents/CLAUDE.md)
+- [Общие правила и маршрутизация ролей](.agents/AGENTS.md)
+- [Codex: координация, backend и финальный review](.agents/CODEX.md)
+- [Google Antigravity: frontend-спецификация](.agents/ANTIGRAVITY.md)
+- [Нативная точка входа Antigravity](GEMINI.md)
 - [Единый Git Flow](.agents/workflows/GIT_FLOW.md)
 - [Общая память агентов: маршрутизация и handoff-индекс](.agents/memory/README.md)
 - [Jules: документация автоматизации](.agents/workflows/JULES_AUTOMATION.md)

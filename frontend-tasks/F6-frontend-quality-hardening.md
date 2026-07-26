@@ -7,7 +7,7 @@ static-export contract consumed later by backend JAR integration.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Google Antigravity.
 - **Prerequisite:** F3, F4, and F5 merged into fresh `origin/main`.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Backend,
   container, deployment, API, and CI architecture remain outside scope.

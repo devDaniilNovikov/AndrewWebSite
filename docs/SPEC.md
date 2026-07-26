@@ -2,10 +2,10 @@
 
 **This file is the routing root for every contract in the project.** A
 numeric or behavioral contract lives in exactly one canonical file linked
-below; role files (`AGENTS.md`, `CLAUDE.md`, the Jules guide) link here and
-never restate values. On conflict, the linked canonical file wins over any
-role file, plan, or memory record; an explicit current user decision wins
-over older planning text.
+below; the shared `AGENTS.md`, role files (`CODEX.md`, `ANTIGRAVITY.md`), and
+the Jules guide link here and never restate values. On conflict, the linked
+canonical file wins over any role file, plan, or memory record; an explicit
+current user decision wins over older planning text.
 
 ## Product
 

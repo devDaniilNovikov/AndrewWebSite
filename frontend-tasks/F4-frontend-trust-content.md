@@ -7,7 +7,7 @@ traceable provenance and safe, performant presentation.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Google Antigravity.
 - **Prerequisite:** F3 merged; real cases, reviews, media usage rights, source
   links, and descriptive copy confirmed by the user.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Coordinate

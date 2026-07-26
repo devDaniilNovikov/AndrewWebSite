@@ -8,7 +8,7 @@ fallbacks.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Google Antigravity.
 - **Prerequisite:** F2 and `task-leads-api` merged; start from their resulting
   fresh `origin/main`.
 - **Owned paths:** `frontend/**` and the task-specific handoff. Backend and

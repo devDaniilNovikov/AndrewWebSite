@@ -6,8 +6,9 @@
   no stacked branches, no long-lived side branches.
 - One approved task = one branch = one dedicated external worktree = one PR.
 - Branch names: `task-<kebab>` or `fix-<kebab>` — CI rejects anything else.
-- Draft → Ready when CI is green and Codex review is resolved. **Ready never
-  grants merge authorization** — only an explicit user command does.
+- Draft publication and the later Ready transition each require their own
+  explicit current user authorization. **Ready never grants merge
+  authorization** — only an explicit user command does.
 - Squash merge; PR title in Conventional Commits becomes the final subject.
 
 ## Work unit and ownership
@@ -32,10 +33,12 @@
 5. Run focused checks, then every applicable quality and security gate.
 6. Review the full diff for secrets, unrelated edits, and missing tests.
 7. Atomic Conventional Commits with the agent's attribution footer.
-8. Push; open a **Draft** PR: what changed, why, checks actually run, risks,
+8. Only after separate explicit current user publication authorization: push;
+   open a **Draft** PR with what changed, why, checks actually ran, risks, and
    linked issues.
 9. Resolve CI and review findings only within declared scope.
-10. Mark **Ready** only with green required checks and resolved Codex review.
+10. Only after separate explicit current user Ready authorization: mark
+    **Ready** with green required checks and resolved Codex review.
 11. Merge only after explicit user authorization; squash only.
 12. Confirm `main`; close the linked issue; apply the retention policy;
     remove the worktree only when clean; `git fetch --prune`.
@@ -66,11 +69,18 @@ Record the decision in `memory/DECISIONS.md`.
 
 A pause, transfer, or completion writes `docs/handoffs/
 YYYY-MM-DD-HHMMSS-<task>-handoff.md` with `HHMMSS` in **UTC** (so filename
-order equals chronology) and updates
-[`memory/HANDOFFS.md`](../memory/HANDOFFS.md) in the same branch. A handoff
-records verified scope and evidence, links its predecessor, and gives
-conditional next steps requiring a live check. Once a successor links to it,
-it is historical and immutable. Handoffs are never deleted or archived.
+order equals chronology). The task controller updates
+[`memory/HANDOFFS.md`](../memory/HANDOFFS.md) in the same branch before
+publication or transfer; an implementer without shared-memory ownership
+writes only the delegated task handoff. A handoff records verified scope and
+evidence, links its predecessor, and gives conditional next steps requiring a
+live check. Once a successor links to it, it is historical and immutable.
+Handoffs are never deleted or archived.
+
+A task brief may delegate a sequential controller transfer: the implementer
+commits its handoff and stops, then Codex records ownership and enters that
+same task worktree only for tracker/index reconciliation and final review.
+This is not branch/worktree reuse; concurrent editing is forbidden.
 
 ## Hotfix and rollback
 

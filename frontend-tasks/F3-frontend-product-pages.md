@@ -8,7 +8,7 @@ approved claims.
 
 ## Ownership and prerequisites
 
-- **Owner:** frontend agent assigned by the user.
+- **Owner:** Google Antigravity.
 - **Prerequisite:** F2 merged; route slugs, page copy, prices, legal text, and
   required assets for the selected pages verified in canonical product
   sources.

@@ -213,7 +213,7 @@ Production gates are: PostgreSQL 18 in the same Moscow region/VPC; secret-store 
 
 ## Ordered product-task dependency chain
 
-The [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md) governs every product task: `main` is the only long-lived branch; one approved task uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch created from the latest `origin/main`; direct pushes to `main`, stacked PRs, reused worktrees, and auto-merge are forbidden. The PR opens as Draft, becomes Ready only after required CI is green and Codex review is complete, and squash-merges only after explicit user authorization. After merge, confirm `main` and the linked issue, allow automatic remote-branch deletion, remove the local worktree only after checking that it has no tracked or untracked work to preserve, and run `git fetch --prune`. The next task waits for its predecessor to reach `main`:
+The [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md) governs every product task: `main` is the only long-lived branch; one approved task uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch created from the latest `origin/main`; direct pushes to `main`, stacked PRs, reused worktrees, and auto-merge are forbidden. The PR opens as Draft only after explicit current user publication authorization, becomes Ready only after a separate current user authorization plus green required CI and complete Codex review, and squash-merges only after explicit user authorization. After merge, confirm `main` and the linked issue, preserve the remote source branch and verify automatic head-branch deletion remains disabled, remove the local worktree only after checking that it has no tracked or untracked work to preserve, and run `git fetch --prune`. The next task waits for its predecessor to reach `main`:
 
 ```text
 task-backend-contract-plans
@@ -227,7 +227,7 @@ task-backend-contract-plans
   -> task-telegram-worker
   -> task-lead-retention
   -> task-backend-observability
-  -> merged Claude frontend prerequisite
+  -> merged frontend prerequisite
   -> task-static-jar-integration
 ```
 
