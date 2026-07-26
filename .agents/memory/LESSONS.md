@@ -19,9 +19,29 @@ LES-20260725-011 [active] security: validate lexical JSON before general Jackson
 LES-20260725-012 [active] ci: owner-approved branch prefixes can drift from repository gates → PR #43
 LES-20260725-013 [active] process: separate current defects from unstarted roadmap contracts → handoff 205559
 LES-20260726-014 [active] process: reconcile squash attribution and tracker state after merge → merge 0b0a62a
+LES-20260726-015 [active] deploy: mount PostgreSQL 18 container data at its parent directory → replacement smoke 3e3eb33
 ```
 
 ## Records
+
+## LES-20260726-015 — PostgreSQL 18 container data mounts target the parent directory
+
+`LES-20260726-015 [active] deploy: mount PostgreSQL 18 container data at its parent directory → replacement smoke 3e3eb33`
+
+- **Date:** 2026-07-26
+- **Lesson:** PostgreSQL 18's official container image creates
+  version-specific data directories below `/var/lib/postgresql` and rejects
+  the older `/var/lib/postgresql/data` mount layout. Disposable smoke and
+  test harnesses for PostgreSQL 18+ mount the parent directory and inspect
+  database startup logs before treating an application health timeout as an
+  application defect.
+- **Evidence:** the failed old-layout startup and successful corrected
+  PostgreSQL 18.4/Flyway smoke for exact image
+  `andrew-website:review-hardening-replacement-3e3eb33` are recorded in the
+  [replacement verification handoff](../../docs/handoffs/2026-07-26-073921-fix-code-review-hardening-replacement-handoff.md).
+- **Applicability:** container smoke tests and disposable integration
+  harnesses using PostgreSQL 18 or newer.
+- **Review-by:** any PostgreSQL image version or official data-layout change.
 
 ## LES-20260726-014 — Reconcile squash attribution and tracker state after merge
 
