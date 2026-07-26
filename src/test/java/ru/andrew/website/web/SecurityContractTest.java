@@ -59,7 +59,7 @@ class SecurityContractTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"));
         mvc.perform(get("/actuator/health/readiness"))
-                .andExpect(status().isOk())
+                .andExpect(status().isServiceUnavailable())
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"));
         mvc.perform(get("/actuator/health")).andExpect(status().isNotFound());
         mvc.perform(get("/actuator/env")).andExpect(status().isNotFound());

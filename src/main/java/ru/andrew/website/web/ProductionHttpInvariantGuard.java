@@ -36,7 +36,8 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
     private static final EndpointId HEALTH_ENDPOINT = HealthEndpoint.ID;
     private static final Set<EndpointId> PUBLIC_ENDPOINTS = Set.of(HEALTH_ENDPOINT);
     private static final Set<String> LIVENESS_MEMBERS = Set.of("livenessState");
-    private static final Set<String> READINESS_MEMBERS = Set.of("readinessState");
+    private static final Set<String> READINESS_MEMBERS = Set.of(
+            "readinessState", "dbReadiness", "telegramWorkerReadiness");
     private static final int CONTAINER_SERVER_PORT = 8080;
     private static final int ORDER = ConfigDataEnvironmentPostProcessor.ORDER + 3;
 

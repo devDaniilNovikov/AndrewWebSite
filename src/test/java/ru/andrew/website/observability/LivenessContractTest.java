@@ -50,10 +50,10 @@ class LivenessContractTest {
     @Test
     void readinessAlsoDisablesCachingExactly() throws Exception {
         mvc.perform(get("/actuator/health/readiness").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
+                .andExpect(status().isServiceUnavailable())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
-                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.status").value("DOWN"))
                 .andExpect(jsonPath("$.components").doesNotExist());
     }
 
@@ -71,7 +71,16 @@ class LivenessContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/actuator", "/actuator/health", "/actuator/metrics", "/actuator/env"})
+    @ValueSource(strings = {
+            "/actuator",
+            "/actuator/health",
+            "/actuator/metrics",
+            "/actuator/prometheus",
+            "/actuator/env",
+            "/actuator/configprops",
+            "/actuator/heapdump",
+            "/actuator/shutdown"
+    })
     void unapprovedActuatorPathsAreNotExternallyAvailable(String path) throws Exception {
         mvc.perform(get(path)).andExpect(status().isNotFound());
     }

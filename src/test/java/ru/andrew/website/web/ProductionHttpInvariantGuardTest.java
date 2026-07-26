@@ -304,7 +304,7 @@ class ProductionHttpInvariantGuardTest {
                         "livenessState")
                 .withProperty(
                         "management.endpoint.health.group.readiness.include",
-                        "readinessState")
+                        "readinessState,dbReadiness,telegramWorkerReadiness")
                 .withProperty("spring.web.error.path", "/error")
                 .withProperty("spring.web.error.include-exception", "false")
                 .withProperty("spring.web.error.include-message", "never")
@@ -480,9 +480,13 @@ class ProductionHttpInvariantGuardTest {
                         "management.endpoint.health.group.liveness.include",
                         "*"),
                 property(
+                        "reduced readiness membership",
+                        "management.endpoint.health.group.readiness.include",
+                        "readinessState"),
+                property(
                         "excluded readiness contributor",
                         "management.endpoint.health.group.readiness.exclude",
-                        "readinessState"),
+                        "dbReadiness"),
                 property(
                         "global health status order",
                         "management.endpoint.health.status.order",

@@ -28,6 +28,10 @@ spring:
     validate-on-migrate: true
     baseline-on-migrate: false
     clean-disabled: true
+  datasource:
+    hikari:
+      connection-timeout: 2000
+      validation-timeout: 1000
   jackson:
     datatype:
       enum:
@@ -62,6 +66,9 @@ app:
       client-capacity: 5
       client-refill: 1m
 management:
+  health:
+    db:
+      enabled: false
   endpoints:
     web:
       base-path: /actuator
@@ -71,12 +78,13 @@ management:
     health:
       access: READ_ONLY
       show-details: never
+      show-components: never
       probes:
         enabled: true
       group:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState
+          include: readinessState,dbReadiness,telegramWorkerReadiness
 server:
   forward-headers-strategy: none
