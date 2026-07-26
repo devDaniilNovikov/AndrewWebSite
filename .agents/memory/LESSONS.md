@@ -17,9 +17,32 @@ LES-20260719-009 [active] ci: workflow success can precede CodeQL processing com
 LES-20260721-010 [active] security: inspect servlet filters before changing Security matchers → handoff 114211
 LES-20260725-011 [active] security: validate lexical JSON before general Jackson conversion → PR #40
 LES-20260725-012 [active] ci: owner-approved branch prefixes can drift from repository gates → PR #43
+LES-20260725-013 [active] process: separate current defects from unstarted roadmap contracts → handoff 205559
 ```
 
 ## Records
+
+## LES-20260725-013 — Current defects are distinct from unstarted roadmap contracts
+
+`LES-20260725-013 [active] process: separate current defects from unstarted roadmap contracts → handoff 205559`
+
+- **Date:** 2026-07-25
+- **Lesson:** before scoring a staged implementation, trace an apparent gap
+  through the live tracker and the canonical architecture allocation. The
+  first review correctly found the current Docker test-skip violation, but
+  also treated final dependency-aware readiness as a defect even though that
+  behavior is explicitly assigned to the blocked
+  `task-backend-observability`. Fix defects in the authorized stage; keep
+  unstarted roadmap contracts visible without silently expanding scope.
+- **Evidence:** the accepted and rejected findings, their canonical
+  traceability, and the corrected implementation are recorded in the
+  [review-hardening handoff](../../docs/handoffs/2026-07-25-205559-fix-code-review-hardening-handoff.md)
+  and fix commit `e9fe113`.
+- **Applicability:** reviews of incremental work where end-state architecture
+  documents intentionally describe behavior allocated to later tracker
+  tasks.
+- **Review-by:** any change to the roadmap allocation, tracker dependency, or
+  authorization of `task-backend-observability`.
 
 ## LES-20260725-012 — Owner-approved branch prefixes can drift from repository gates
 
