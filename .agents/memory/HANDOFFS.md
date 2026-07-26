@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-telegram-worker` | `2026-07-26-100359-task-telegram-worker-handoff.md` → `2026-07-26-102435-task-telegram-worker-draft-handoff.md` → `2026-07-26-104432-task-telegram-worker-ready-handoff.md` → `2026-07-26-105604-task-telegram-worker-rebased-ready-handoff.md` → `2026-07-26-113056-task-telegram-worker-review-fix-handoff.md` | `ready`; runtime verified; publication, CI, and merge state require live checks | backend, security, tracker |
+| `task-lead-retention` | `2026-07-26-122622-task-lead-retention-verified-handoff.md` | `in_progress`; local implementation and review gates are complete; publication state requires live checks | backend, privacy, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -44,6 +44,7 @@ design.
 | `fix-production-http-invariants` | 5 | `2026-07-25-180844-fix-production-http-invariants-merged-handoff.md` | merged as `d29e788`; retained source branch | backend, security, deploy, tracker |
 | `fix-code-review-hardening` | 1 | `2026-07-25-205559-fix-code-review-hardening-handoff.md` | merged as `0b0a62a`; retained source branch; corrective rollback merged as `848e94f`; corrected replacement merged as `b822770` | backend, deploy, tracker, process, incident |
 | `task-telegram-client` | 8 | `2026-07-26-060315-task-telegram-client-merged-handoff.md` | merged as `3f35c1d`; retained source branch | backend, security, tracker |
+| `task-telegram-worker` | 5 | `2026-07-26-113056-task-telegram-worker-review-fix-handoff.md` | merged as `857240f`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | backend, security, tracker |
 | `fix-revert-code-review-hardening` | 5 | `2026-07-26-072227-fix-revert-code-review-hardening-merged-handoff.md` | merged as `848e94f`; retained source branch; corrected replacement merged as `b822770` | backend, deploy, tracker, process, incident |
 | `fix-code-review-hardening-replacement` | 6 | `2026-07-26-082717-fix-code-review-hardening-replacement-final-closure-handoff.md` | merged as `b822770`; reconciled by PR #50 as `f515c59`; retained source branches | backend, deploy, tracker, process, incident |
 | `task-antigravity-frontend-role` | 5 | `2026-07-26-104346-task-antigravity-frontend-role-ready-handoff.md` | merged as `ba2ad48`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | frontend, tracker, memory, process |

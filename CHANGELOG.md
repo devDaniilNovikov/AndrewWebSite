@@ -13,6 +13,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   recovery, deterministic `FOR UPDATE SKIP LOCKED` claims, per-row lease
   tokens, privacy revalidation, capped retries, and bounded Micrometer
   telemetry ([PR #52](https://github.com/devDaniilNovikov/AndrewWorkWebSite/pull/52)).
+- Added a scheduled lead-retention worker implementing the
+  [canonical privacy lifecycle](docs/backend/architecture.md#privacy-lifecycle)
+  with bounded deterministic locking, atomic queue terminalization and PII
+  cleanup, calendar-based technical-row deletion, a complete-pass heartbeat,
+  and tagless aggregate metrics.
 
 ### Security
 
@@ -25,6 +30,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   unsafe management-port, health-group, and probe overrides.
 - Replaced the runtime container base with the Alpine Temurin JRE while
   preserving non-root execution and the liveness healthcheck.
+- Enforced atomic removal of retained lead PII and payload fingerprints while
+  preventing stale delivery leases and changed-payload replays from
+  reintroducing persisted work.
 
 ### Testing
 
@@ -33,6 +41,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Added PostgreSQL 18 worker coverage for concurrent claims, lease recovery,
   stale-token rejection, privacy boundaries, durable delivery outcomes, and
   the accepted at-least-once duplicate window.
+- Added PostgreSQL retention coverage for inclusive privacy boundaries,
+  transaction rollback, concurrent passes, cascade deletion, and safe replay,
+  plus database-free SQL-contract coverage for the retention repository.
 
 ### References
 
