@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-lead-retention` | `2026-07-26-122622-task-lead-retention-verified-handoff.md` → `2026-07-26-123205-task-lead-retention-draft-handoff.md` → `2026-07-26-123525-task-lead-retention-ready-handoff.md` | `ready`; runtime and Draft head verified; Ready-checkpoint exact-head checks pending | backend, privacy, security, tracker |
+| `task-backend-observability` | `2026-07-26-133209-task-backend-observability-handoff.md` | `in_progress`; isolated branch started from verified merged retention head | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -48,6 +48,7 @@ design.
 | `fix-revert-code-review-hardening` | 5 | `2026-07-26-072227-fix-revert-code-review-hardening-merged-handoff.md` | merged as `848e94f`; retained source branch; corrected replacement merged as `b822770` | backend, deploy, tracker, process, incident |
 | `fix-code-review-hardening-replacement` | 6 | `2026-07-26-082717-fix-code-review-hardening-replacement-final-closure-handoff.md` | merged as `b822770`; reconciled by PR #50 as `f515c59`; retained source branches | backend, deploy, tracker, process, incident |
 | `task-antigravity-frontend-role` | 5 | `2026-07-26-104346-task-antigravity-frontend-role-ready-handoff.md` | merged as `ba2ad48`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | frontend, tracker, memory, process |
+| `task-lead-retention` | 4 | `2026-07-26-133209-task-lead-retention-merged-handoff.md` | merged as `ceefd7a`; retained source branch; post-merge Repository policy, verify, Java security, Dependency Submission, and Semgrep green | backend, privacy, security, tracker |
 
 ## Rules
 
