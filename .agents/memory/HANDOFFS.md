@@ -9,6 +9,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
 | `task-antigravity-frontend-role` | `2026-07-26-032938-task-antigravity-frontend-role-handoff.md` → `2026-07-26-040219-task-antigravity-frontend-role-draft-handoff.md` → `2026-07-26-052732-task-antigravity-frontend-role-model-context-handoff.md` → `2026-07-26-102117-task-antigravity-frontend-role-reconciled-handoff.md` → `2026-07-26-104346-task-antigravity-frontend-role-ready-handoff.md` | Ready evidence recorded for PR #46; Ready and squash merge remain sequential explicit gates; no deploy | frontend, tracker, memory, process |
+| `task-telegram-worker` | `2026-07-26-100359-task-telegram-worker-handoff.md` | local implementation and verification complete; publication not authorized | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
