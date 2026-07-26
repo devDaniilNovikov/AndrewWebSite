@@ -14,6 +14,7 @@ DEC-20260718-005 [active] process: merged branches stay retained read-only; work
 DEC-20260719-006 [active] memory: product is an allowed topic tag for product-source records → user decision
 DEC-20260719-007 [active] tracker: frontend delivery uses six tasks F1-F6 assigned by the user → user
 DEC-20260721-008 [active] security: GitHub-native dependency controls replace ODC → architecture
+DEC-20260726-009 [active] frontend: Antigravity with Gemini 3.6 Flash High owns F1-F6; Claude retired → user
 ```
 
 ## Records
@@ -23,12 +24,14 @@ DEC-20260721-008 [active] security: GitHub-native dependency controls replace OD
 `DEC-20260718-001 [active] memory: all active agents share one file-first memory surface → user brief`
 
 - **Date:** 2026-07-18
-- **Scope:** Codex, Claude Code, and Jules
+- **Scope:** all active project agents; the current roster is routed by
+  [`../AGENTS.md`](../AGENTS.md).
 - **Decision:** all active project agents share the same file-first memory
   surface.
 - **Rationale:** shared, versioned context reduces repeated discovery without
   changing role ownership or canonical sources.
-- **Evidence:** user-confirmed shared-memory task brief.
+- **Evidence:** user-confirmed shared-memory task brief; participant routing
+  revalidated by DEC-20260726-009.
 - **Canonical source:** [README](README.md)
 - **Supersedes:** none
 - **Review-by:** any change to memory ownership or cross-owner write rules.
@@ -161,6 +164,28 @@ DEC-20260721-008 [active] security: GitHub-native dependency controls replace OD
   foundation plan; historical incident records remain valid.
 - **Review-by:** any change to dependency-security semantics, required check
   names, Dependabot settings, or branch protection.
+
+## DEC-20260726-009 — Antigravity frontend ownership
+
+`DEC-20260726-009 [active] frontend: Antigravity with Gemini 3.6 Flash High owns F1-F6; Claude retired → user`
+
+- **Date:** 2026-07-26
+- **Scope:** active frontend-agent identity, model routing, and F1-F6
+  ownership.
+- **Decision:** Google Antigravity owns frontend execution. Gemini 3.6 Flash
+  High is the default implementation model; Gemini 3.1 Pro High is reserved
+  for a separately selected planning, difficult-diagnosis, or final-review
+  turn. Claude Code is retired from the active roster.
+- **Rationale:** Antigravity is the user-selected implementer and needs a
+  native `GEMINI.md` entry plus a role that cannot conflict with Codex
+  identity.
+- **Evidence:** explicit user decision on 2026-07-26 and the reviewed
+  [`ANTIGRAVITY.md`](../ANTIGRAVITY.md) role.
+- **Canonical source:** [TASKS](../../TASKS.md) and
+  [`ANTIGRAVITY.md`](../ANTIGRAVITY.md).
+- **Supersedes:** current role text that assigned frontend implementation to
+  Claude Code; historical handoffs remain immutable.
+- **Review-by:** any frontend-owner, model-routing, or agent-harness change.
 
 ## Entry rules
 

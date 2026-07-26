@@ -70,17 +70,19 @@ Record the decision in `memory/DECISIONS.md`.
 A pause, transfer, or completion writes `docs/handoffs/
 YYYY-MM-DD-HHMMSS-<task>-handoff.md` with `HHMMSS` in **UTC** (so filename
 order equals chronology). The task controller updates
-[`memory/HANDOFFS.md`](../memory/HANDOFFS.md) in the same branch before
-publication or transfer; an implementer without shared-memory ownership
-writes only the delegated task handoff. A handoff records verified scope and
-evidence, links its predecessor, and gives conditional next steps requiring a
-live check. Once a successor links to it, it is historical and immutable.
-Handoffs are never deleted or archived.
+[`memory/HANDOFFS.md`](../memory/HANDOFFS.md) in the same branch after
+accepting sequential control and before publication or onward transfer; an
+implementer without shared-memory ownership writes only the delegated task
+handoff. A handoff records verified scope and evidence, links its predecessor,
+and gives conditional next steps requiring a live check. Once a successor
+links to it, it is historical and immutable. Handoffs are never deleted or
+archived.
 
 A task brief may delegate a sequential controller transfer: the implementer
-commits its handoff and stops, then Codex records ownership and enters that
-same task worktree only for tracker/index reconciliation and final review.
-This is not branch/worktree reuse; concurrent editing is forbidden.
+commits its handoff and stops, then Codex accepts and records control before
+any repository edit in that same task worktree. Codex may then perform only
+tracker/index reconciliation and final review. This is not branch/worktree
+reuse; concurrent editing is forbidden.
 
 ## Hotfix and rollback
 

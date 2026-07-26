@@ -15,10 +15,10 @@
 
 ## Startup
 
-- Verify live Git/GitHub first, then reconcile [`../TASKS.md`](../TASKS.md).
-- Read the assigned role file, current
-  [handoff](memory/HANDOFFS.md), executable task plan, and relevant canonical
-  contracts routed by [`../docs/SPEC.md`](../docs/SPEC.md).
+- Load this router and the assigned role before any repository action. Then
+  verify live Git/GitHub and reconcile [`../TASKS.md`](../TASKS.md).
+- Read Git Flow, the current [handoff](memory/HANDOFFS.md), executable task
+  plan, and relevant contracts routed by [`../docs/SPEC.md`](../docs/SPEC.md).
 - Follow [`workflows/GIT_FLOW.md`](workflows/GIT_FLOW.md): one authorized
   atomic task, one new external worktree, one branch from fresh `origin/main`,
   and one non-stacked PR.

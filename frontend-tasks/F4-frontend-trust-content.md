@@ -10,8 +10,10 @@ traceable provenance and safe, performant presentation.
 - **Owner:** Google Antigravity.
 - **Prerequisite:** F3 merged; real cases, reviews, media usage rights, source
   links, and descriptive copy confirmed by the user.
-- **Owned paths:** `frontend/**` and the task-specific handoff. Coordinate
-  tracker and shared-memory changes with Codex.
+- **Owned paths:** `frontend/**` and the task-specific handoff. After
+  Antigravity commits that handoff and stops, this task delegates sequential
+  control of the same worktree to Codex only for tracker/index reconciliation
+  and final review; concurrent editing is forbidden.
 - **Sources:** [product brief](../docs/product/technical-brief.ru.md),
   [SPEC](../docs/SPEC.md), and [Git Flow](../.agents/workflows/GIT_FLOW.md).
 
