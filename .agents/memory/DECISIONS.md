@@ -14,7 +14,8 @@ DEC-20260718-005 [active] process: merged branches stay retained read-only; work
 DEC-20260719-006 [active] memory: product is an allowed topic tag for product-source records → user decision
 DEC-20260719-007 [active] tracker: frontend delivery uses six tasks F1-F6 assigned by the user → user
 DEC-20260721-008 [active] security: GitHub-native dependency controls replace ODC → architecture
-DEC-20260726-009 [active] frontend: Antigravity with Gemini 3.6 Flash High owns F1-F6; Claude retired → user
+DEC-20260726-009 [active] frontend: Antigravity owns F1-F6; Claude retired → user
+DEC-20260726-010 [active] frontend: Antigravity requires Gemini 3.1 Pro High → user
 ```
 
 ## Records
@@ -167,15 +168,16 @@ DEC-20260726-009 [active] frontend: Antigravity with Gemini 3.6 Flash High owns 
 
 ## DEC-20260726-009 — Antigravity frontend ownership
 
-`DEC-20260726-009 [active] frontend: Antigravity with Gemini 3.6 Flash High owns F1-F6; Claude retired → user`
+`DEC-20260726-009 [active] frontend: Antigravity owns F1-F6; Claude retired → user`
 
 - **Date:** 2026-07-26
-- **Scope:** active frontend-agent identity, model routing, and F1-F6
-  ownership.
-- **Decision:** Google Antigravity owns frontend execution. Gemini 3.6 Flash
-  High is the default implementation model; Gemini 3.1 Pro High is reserved
-  for a separately selected planning, difficult-diagnosis, or final-review
-  turn. Claude Code is retired from the active roster.
+- **Scope:** active frontend-agent identity and F1-F6 ownership.
+- **Decision:** Google Antigravity owns frontend execution and Claude Code is
+  retired from the active roster.
+- **Superseded model clause:** this record originally set Gemini 3.6 Flash
+  High as the default and reserved Gemini 3.1 Pro High for selected turns.
+  DEC-20260726-010 makes that clause inactive while preserving this ownership
+  decision.
 - **Rationale:** Antigravity is the user-selected implementer and needs a
   native `GEMINI.md` entry plus a role that cannot conflict with Codex
   identity.
@@ -186,6 +188,28 @@ DEC-20260726-009 [active] frontend: Antigravity with Gemini 3.6 Flash High owns 
 - **Supersedes:** current role text that assigned frontend implementation to
   Claude Code; historical handoffs remain immutable.
 - **Review-by:** any frontend-owner, model-routing, or agent-harness change.
+
+## DEC-20260726-010 — Required Antigravity model
+
+`DEC-20260726-010 [active] frontend: Antigravity requires Gemini 3.1 Pro High → user`
+
+- **Date:** 2026-07-26
+- **Scope:** model routing for every assigned Antigravity frontend session.
+- **Decision:** use Gemini 3.1 Pro High for frontend planning,
+  implementation, diagnosis, self-review, and local completion. If that model
+  is not active or cannot be confirmed, stop before repository edits; do not
+  silently fall back to another model.
+- **Rationale:** the user selected the higher-reasoning model and requested
+  that it become durable project context rather than a one-off prompt choice.
+- **Evidence:** explicit user decision on 2026-07-26, root
+  [`GEMINI.md`](../../GEMINI.md), and
+  [`ANTIGRAVITY.md`](../ANTIGRAVITY.md).
+- **Canonical source:** [`ANTIGRAVITY.md`](../ANTIGRAVITY.md).
+- **Supersedes:** only the Gemini 3.6 Flash default / limited Gemini 3.1 Pro
+  allocation previously recorded in DEC-20260726-009; its Antigravity
+  ownership and Claude retirement decisions remain active.
+- **Review-by:** any frontend-model, Antigravity harness, or model-availability
+  change.
 
 ## Entry rules
 
