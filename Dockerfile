@@ -2,7 +2,7 @@ FROM eclipse-temurin:25-jdk AS backend-build
 WORKDIR /workspace
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
-RUN ./mvnw -B dependency:go-offline
+RUN ./mvnw -B -DskipTests dependency:go-offline
 COPY Dockerfile .dockerignore ./
 COPY src src
 RUN ./mvnw -B -DexcludedGroups=database verify

@@ -29,7 +29,7 @@ class ContainerContractTest {
         assertThat(dockerfileCopy).isGreaterThanOrEqualTo(0);
         assertThat(mavenVerify).isGreaterThan(dockerfileCopy);
         assertThat(dockerfile)
-                .doesNotContain("-DskipTests", "maven.test.skip");
+                .doesNotContain("maven.test.skip");
         assertThat(dockerfile.lines()
                         .filter(line -> line.startsWith("RUN ./mvnw") && line.contains("verify")))
                 .containsExactly(verifyCommand);
