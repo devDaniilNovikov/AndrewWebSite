@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-backend-observability` | `2026-07-26-133209-task-backend-observability-handoff.md` → `2026-07-26-154114-task-backend-observability-verified-handoff.md` → `2026-07-26-170716-task-backend-observability-publication-handoff.md` → `2026-07-26-171111-task-backend-observability-ready-handoff.md` | `ready`; PR #54 reviewed and green at pre-Ready head; final metadata exact-head gate pending | backend, security, telemetry, tracker |
+| `fix-http-security-framework-native-deny` | `2026-07-26-173224-fix-http-security-framework-native-deny-handoff.md` | `in_progress`; isolated task worktree created; TDD implementation pending | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -49,6 +49,7 @@ design.
 | `fix-code-review-hardening-replacement` | 6 | `2026-07-26-082717-fix-code-review-hardening-replacement-final-closure-handoff.md` | merged as `b822770`; reconciled by PR #50 as `f515c59`; retained source branches | backend, deploy, tracker, process, incident |
 | `task-antigravity-frontend-role` | 5 | `2026-07-26-104346-task-antigravity-frontend-role-ready-handoff.md` | merged as `ba2ad48`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | frontend, tracker, memory, process |
 | `task-lead-retention` | 4 | `2026-07-26-133209-task-lead-retention-merged-handoff.md` | merged as `ceefd7a`; retained source branch; post-merge Repository policy, verify, Java security, Dependency Submission, and Semgrep green | backend, privacy, security, tracker |
+| `task-backend-observability` | 5 | `2026-07-26-173224-task-backend-observability-merged-handoff.md` | merged as `27e6bb4`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | backend, security, telemetry, tracker |
 
 ## Rules
 
