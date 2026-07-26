@@ -19,6 +19,9 @@ import ru.andrew.website.leads.LeadAcceptanceTransaction;
         "app.web.rate-limit.enabled=false",
         "app.web.local-cors-origins=",
         "app.leads.fingerprint-key=local-cors-key-material-for-tests-0000001",
+        "app.telegram.bot-token=test-only-bot-token-not-a-secret",
+        "app.telegram.chat-id=test-only-chat-not-a-destination",
+        "app.telegram.base-url=http://127.0.0.1:18081",
         NO_DATABASE
 })
 @AutoConfigureMockMvc

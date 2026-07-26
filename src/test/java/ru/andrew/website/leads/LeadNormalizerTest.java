@@ -36,6 +36,13 @@ class LeadNormalizerTest {
     }
 
     @Test
+    void rejectsMissingRequiredTextBeforeNormalization() {
+        assertThatThrownBy(() ->
+                        normalizer.normalize(request(null, "79991234567", null, "/service/"), NOW))
+                .isInstanceOf(InvalidLeadRequestException.class);
+    }
+
+    @Test
     void countsNormalizedTextBoundsByUnicodeCodePoint() {
         String acceptedName = "😀".repeat(100);
 

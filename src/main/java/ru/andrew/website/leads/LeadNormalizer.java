@@ -73,15 +73,9 @@ public final class LeadNormalizer {
     }
 
     private static String phoneDigits(String value) {
-        if (value == null) {
-            throw new InvalidLeadRequestException();
-        }
         StringBuilder digits = new StringBuilder();
         value.codePoints().filter(Character::isDigit).forEach(codePoint -> {
             int digit = Character.digit(codePoint, 10);
-            if (digit < 0) {
-                throw new InvalidLeadRequestException();
-            }
             digits.append((char) ('0' + digit));
         });
         return digits.toString();

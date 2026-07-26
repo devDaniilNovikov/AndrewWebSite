@@ -6,6 +6,11 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  http:
+    clients:
+      connect-timeout: 3s
+      read-timeout: 10s
+      redirects: dont-follow
   web:
     error:
       path: /error

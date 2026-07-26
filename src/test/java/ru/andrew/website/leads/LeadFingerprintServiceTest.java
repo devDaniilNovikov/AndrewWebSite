@@ -1,7 +1,10 @@
 package ru.andrew.website.leads;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -60,6 +63,23 @@ class LeadFingerprintServiceTest {
     }
 
     @Test
+    void reportsAnUnavailableHmacImplementationWithoutLeakingPayloadData() {
+        LeadFingerprintService unavailable = new LeadFingerprintService(
+                new LeadProperties(TEST_KEY),
+                () -> {
+                    throw new NoSuchAlgorithmException("fictional-provider-failure");
+                });
+
+        assertThatThrownBy(() -> unavailable.fingerprint(lead(
+                        UUID.fromString("11111111-1111-4111-8111-111111111111"),
+                        Instant.parse("2026-07-24T12:00:00Z"),
+                        "sensitive-fictional-comment")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("HMAC-SHA-256 is unavailable")
+                .hasRootCauseInstanceOf(NoSuchAlgorithmException.class);
+    }
+
+    @Test
     void fingerprintDefensivelyCopiesInputAndOutput() {
         byte[] source = new byte[32];
         LeadFingerprint fingerprint = new LeadFingerprint(source);
@@ -69,6 +89,19 @@ class LeadFingerprintServiceTest {
 
         assertThat(fingerprint.bytes()).containsOnly(0);
         assertThat(fingerprint.matches(null)).isFalse();
+    }
+
+    @Test
+    void fingerprintRejectsNullAndNonSha256Lengths() {
+        assertThatNullPointerException()
+                .isThrownBy(() -> new LeadFingerprint(null))
+                .withMessage("bytes");
+        assertThatThrownBy(() -> new LeadFingerprint(new byte[31]))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("HMAC-SHA-256 must be 32 bytes");
+        assertThatThrownBy(() -> new LeadFingerprint(new byte[33]))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("HMAC-SHA-256 must be 32 bytes");
     }
 
     private static NormalizedLead lead(UUID requestId, Instant consentedAt, String comment) {

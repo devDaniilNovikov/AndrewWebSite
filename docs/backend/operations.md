@@ -18,7 +18,7 @@ There is no `spring.profiles.default` and no implicit fallback. A startup guard 
 
 ## Configuration bindings
 
-Environment variables are names, not storage. The platform secret store injects sensitive values at process start; Dockerfiles, image `ENV` instructions, Maven resources, GitHub Issues, Actions logs, repository variables, command histories, and tracked files must not contain them.
+Environment variables are names, not storage. The approved platform secret store must encrypt sensitive values at rest, restrict and audit access, and deliver runtime bindings only through the platform's protected channel. The application receives the usable value only in process memory; it does not persist application-managed ciphertext or a second decryption key. Dockerfiles, image `ENV` instructions, Maven resources, GitHub Issues, Actions logs, repository variables, command histories, and tracked files must not contain secret values.
 
 | Environment binding | Spring property | Sensitivity | Validation |
 | --- | --- | --- | --- |
@@ -27,8 +27,9 @@ Environment variables are names, not storage. The platform secret store injects 
 | `SPRING_DATASOURCE_USERNAME` | `spring.datasource.username` | sensitive | required in `local` and `prod` |
 | `SPRING_DATASOURCE_PASSWORD` | `spring.datasource.password` | secret | required in `local` and `prod` |
 | `LEAD_FINGERPRINT_HMAC_KEY` | `app.leads.fingerprint-key` | secret | required in `prod`; UTF-8 representation at least 32 bytes; no default |
-| `TELEGRAM_BOT_TOKEN` | `app.telegram.bot-token` | secret | required in `prod`; no default; never included in a logged URI |
-| `TELEGRAM_CHAT_ID` | `app.telegram.chat-id` | sensitive | required in `prod`; validated non-blank; no default |
+| `TELEGRAM_BOT_TOKEN` | `app.telegram.bot-token` | secret | required in `local` and `prod`; production value comes only from the secret store; local value must be fictional; no default; never included in a logged URI |
+| `TELEGRAM_CHAT_ID` | `app.telegram.chat-id` | sensitive | required in `local` and `prod`; production value comes only from the secret store; local value must be fictional; validated non-blank; no default |
+| `TELEGRAM_BASE_URL` | `app.telegram.base-url` | operational | `local` only; explicit `http` or `https` loopback host and port with no credentials, path, query, or fragment; production ignores this binding and uses the fixed Telegram API origin |
 | `OTLP_METRICS_URL` | `management.otlp.metrics.export.url` | operational | required only when production OTLP export is enabled; HTTPS |
 | `OTLP_AUTHORIZATION` | `management.otlp.metrics.export.headers.Authorization` | secret | required only when the collector requires it; no default |
 | `LOCAL_CORS_ORIGINS` | `app.web.local-cors-origins` | operational | `local` only; explicit loopback HTTP origins; absent in `prod` |
@@ -119,9 +120,9 @@ When the queue grows:
 
 ## Telegram operations
 
-The gateway uses the fixed Telegram Bot API host and a Boot-managed `RestClient.Builder`; a request cannot supply a URL, bot token, or chat ID. The bot token must not appear in a loggable full URL. Telegram 429 `parameters.retry_after` is parsed as integer seconds, validated, and combined with exponential backoff under the six-hour cap. Network errors, timeouts, and 5xx retry; non-429 4xx block with a bounded technical status code.
+The gateway uses the fixed Telegram Bot API host and a Boot-managed synchronous `RestClient.Builder`; WebFlux/Reactor is not part of this delivery path. A request cannot supply a URL, bot token, or chat ID. The client connects within three seconds, reads within ten seconds, and does not follow redirects. Standard HTTP observations are disabled for this client because a Spring network exception can retain Telegram's credential-bearing request URI. The replacement `andrew.telegram.client` observation contains only the static token-free route, method, and bounded outcome, receives no raw exception, and framework body logging sees only a redacted request projection. Telegram 429 `parameters.retry_after` is read from a bounded response body, parsed only as positive integral seconds, and combined with exponential backoff under the six-hour cap. Network errors, timeouts, and 5xx retry; non-429 4xx block with a bounded technical status code; other statuses use the bounded `telegram_unexpected` retry code.
 
-The recipient message contains necessary lead PII plus source, intent, UTC creation time, and `requestId`. Telegram destination auto-delete of no more than 30 days is therefore a mandatory production gate. Telegram request/response bodies are never logged. Delivery is at least once; the recipient uses `requestId` to recognize a possible duplicate after a post-send database crash.
+The recipient message is plain text without Telegram markup and contains necessary lead PII plus source, intent, UTC creation time, and `requestId`. Telegram destination auto-delete of no more than 30 days is therefore a mandatory production gate. Telegram request/response bodies are never logged. Delivery is at least once; the recipient uses `requestId` to recognize a possible duplicate after a post-send database crash.
 
 For 401/403 or sustained permanent failures, rotate or repair the credential only in the approved secret store, deploy/restart through the normal process, and verify with a fictional non-PII canary. Never paste a token, chat ID, full Telegram URL, response body, or lead message into a task, Issue, log, or chat.
 
@@ -178,12 +179,12 @@ Application rollback selects a previously verified image only when its code is c
 
 ## Verification and release gates
 
-For each implementation PR, run only commands introduced by its committed manifests. Once the skeleton owns the wrapper, the host/CI backend gate is `./mvnw -B verify`; JaCoCo must fail `verify` below 80%. Database changes run both `@Tag("database")` PostgreSQL 18 Testcontainers suites, `LeadOutboxMigrationTest` and `LeadOutboxConstraintTest`, with Docker available. The containerized `backend-build` runs `./mvnw -B -DexcludedGroups=database verify` because it cannot start a sibling Testcontainers database; this excludes only the database group, must not use `-DskipTests` or `maven.test.skip`, and still runs all other tests. Container tasks build and smoke-test the exact image. The final integration verifies home page, hashed asset, real 404, lead API, liveness, and readiness.
+For each implementation PR, run only commands introduced by its committed manifests. Once the skeleton owns the wrapper, the host/CI backend gate is `./mvnw -B verify`; JaCoCo must fail `verify` unless both bundle line and branch coverage are 100%. Database changes run both `@Tag("database")` PostgreSQL 18 Testcontainers suites, `LeadOutboxMigrationTest` and `LeadOutboxConstraintTest`, with Docker available. The containerized `backend-build` runs `./mvnw -B -DexcludedGroups=database verify` because it cannot start a sibling Testcontainers database; this excludes only the database group, must not use `-DskipTests` or `maven.test.skip`, and still runs all other tests. Container tasks build and smoke-test the exact image. The final integration verifies home page, hashed asset, real 404, lead API, liveness, and readiness.
 
 Before production release, confirm all of the following with fresh evidence:
 
 - Java 25, Spring Boot 4.1.0, Maven Wrapper, one root module, and one final Java container;
-- complete unit, integration, MockMvc, concurrency, migration, privacy, telemetry, dependency-security, and container gates described by the [canonical architecture](architecture.md), with at least 80% JaCoCo coverage;
+- complete unit, integration, MockMvc, concurrency, migration, privacy, telemetry, dependency-security, and container gates described by the [canonical architecture](architecture.md), with 100% JaCoCo line and branch coverage;
 - exact OpenAPI behaviors for `202`, `400`, `409`, `413`, `415`, `429`, and `503`;
 - first acceptance commits lead and outbox atomically; rollback never returns `202`;
 - equal duplicates, conflicting payloads, website-only synthetic acceptance with no rows, and post-fingerprint replay match the contract;

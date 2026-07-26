@@ -129,6 +129,47 @@ class LivenessContractTest {
     }
 
     @Test
+    void decodedActuatorPathCannotBypassHealthFiltering() {
+        MockHttpServletRequest request =
+                new MockHttpServletRequest("GET", "/%61ctuator/health/liveness");
+        request.setServletPath("/actuator/health/liveness");
+
+        org.assertj.core.api.Assertions.assertThat(
+                        new HealthCacheControlFilter().shouldNotFilter(request))
+                .isFalse();
+    }
+
+    @Test
+    void nullContextPathIsHandledDefensivelyForAnActuatorCandidate() {
+        MockHttpServletRequest request =
+                new MockHttpServletRequest("GET", "/actuator/health/liveness") {
+                    @Override
+                    public String getContextPath() {
+                        return null;
+                    }
+                };
+
+        org.assertj.core.api.Assertions.assertThat(
+                        new HealthCacheControlFilter().shouldNotFilter(request))
+                .isFalse();
+    }
+
+    @Test
+    void mismatchedContextPathCannotHideAnActuatorCandidate() {
+        MockHttpServletRequest request =
+                new MockHttpServletRequest("GET", "/actuator/health/liveness") {
+                    @Override
+                    public String getContextPath() {
+                        return "/website";
+                    }
+                };
+
+        org.assertj.core.api.Assertions.assertThat(
+                        new HealthCacheControlFilter().shouldNotFilter(request))
+                .isFalse();
+    }
+
+    @Test
     void unapprovedActuatorPathStopsTheFilterChain() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/actuator/health");
         MockHttpServletResponse response = new MockHttpServletResponse();
