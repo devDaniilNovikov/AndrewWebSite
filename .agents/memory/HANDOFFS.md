@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-antigravity-frontend-role` | `2026-07-26-032938-task-antigravity-frontend-role-handoff.md` | local role migration and exact-head verification complete; publication not authorized | frontend, tracker, memory, process |
+| `task-antigravity-frontend-role` | `2026-07-26-032938-task-antigravity-frontend-role-handoff.md` → `2026-07-26-040219-task-antigravity-frontend-role-draft-handoff.md` | Draft PR #46 open; final-head CI running; Ready and merge not authorized | frontend, tracker, memory, process |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
