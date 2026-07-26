@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-http-security-framework-native-deny` | `2026-07-26-173224-fix-http-security-framework-native-deny-handoff.md` | `in_progress`; isolated task worktree created; TDD implementation pending | backend, security, tracker |
+| `fix-http-security-framework-native-deny` | `2026-07-26-173224-fix-http-security-framework-native-deny-handoff.md` → `2026-07-26-174852-fix-http-security-framework-native-deny-verified-handoff.md` | `in_progress`; local implementation `3d5e382` verified; publication unauthorized | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
