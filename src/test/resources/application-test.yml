@@ -5,3 +5,7 @@ spring:
 app:
   leads:
     fingerprint-key: test-only-key-material-not-for-production-0001
+  telegram:
+    bot-token: test-only-bot-token-not-a-secret
+    chat-id: test-only-chat-not-a-destination
+    base-url: https://telegram.invalid

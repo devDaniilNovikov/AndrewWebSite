@@ -18,9 +18,73 @@ LES-20260721-010 [active] security: inspect servlet filters before changing Secu
 LES-20260725-011 [active] security: validate lexical JSON before general Jackson conversion → PR #40
 LES-20260725-012 [active] ci: owner-approved branch prefixes can drift from repository gates → PR #43
 LES-20260725-013 [active] process: separate current defects from unstarted roadmap contracts → handoff 205559
+LES-20260726-014 [active] process: reconcile squash attribution and tracker state after merge → merge 0b0a62a
+LES-20260726-015 [active] deploy: mount PostgreSQL 18 container data at its parent directory → replacement smoke 3e3eb33
+LES-20260726-016 [active] process: close reconciliation once instead of recursively tracking its transport → PR #50
 ```
 
 ## Records
+
+## LES-20260726-016 — Post-merge reconciliation needs a terminal closure
+
+`LES-20260726-016 [active] process: close reconciliation once instead of recursively tracking its transport → PR #50`
+
+- **Date:** 2026-07-26
+- **Lesson:** a reconciliation branch can record the preceding squash merge,
+  but its own future squash SHA does not exist while that branch is reviewable.
+  Requiring every reconciliation transport to record its own merge creates an
+  infinite chain with no fixed point. Record the implementation merge, one
+  post-merge reconciliation, and a terminal closure backed by live evidence;
+  transporting that closure does not reopen the completed task or create
+  another tracker row.
+- **Evidence:** implementation
+  [PR #49](https://github.com/devDaniilNovikov/AndrewWebSite/pull/49),
+  reconciliation
+  [PR #50](https://github.com/devDaniilNovikov/AndrewWebSite/pull/50), and the
+  [terminal closure handoff](../../docs/handoffs/2026-07-26-082717-fix-code-review-hardening-replacement-final-closure-handoff.md).
+- **Applicability:** post-merge metadata that records facts unavailable before
+  a squash commit exists.
+- **Review-by:** any workflow that can atomically publish final merge facts
+  without requiring a follow-up commit.
+
+## LES-20260726-015 — PostgreSQL 18 container data mounts target the parent directory
+
+`LES-20260726-015 [active] deploy: mount PostgreSQL 18 container data at its parent directory → replacement smoke 3e3eb33`
+
+- **Date:** 2026-07-26
+- **Lesson:** PostgreSQL 18's official container image creates
+  version-specific data directories below `/var/lib/postgresql` and rejects
+  the older `/var/lib/postgresql/data` mount layout. Disposable smoke and
+  test harnesses for PostgreSQL 18+ mount the parent directory and inspect
+  database startup logs before treating an application health timeout as an
+  application defect.
+- **Evidence:** the failed old-layout startup and successful corrected
+  PostgreSQL 18.4/Flyway smoke for exact image
+  `andrew-website:review-hardening-replacement-3e3eb33` are recorded in the
+  [replacement verification handoff](../../docs/handoffs/2026-07-26-073921-fix-code-review-hardening-replacement-handoff.md).
+- **Applicability:** container smoke tests and disposable integration
+  harnesses using PostgreSQL 18 or newer.
+- **Review-by:** any PostgreSQL image version or official data-layout change.
+
+## LES-20260726-014 — Reconcile squash attribution and tracker state after merge
+
+`LES-20260726-014 [active] process: reconcile squash attribution and tracker state after merge → merge 0b0a62a`
+
+- **Date:** 2026-07-26
+- **Lesson:** a green pre-merge branch cannot contain the final squash SHA or
+  prove the final merge message. Merge `0b0a62a` therefore left the tracker
+  and active handoff at their pre-publication state, while an overridden
+  squash body dropped the required Codex attribution. Prepare the exact merge
+  footer before the merge action, then use a fresh post-merge reconciliation
+  task for facts that only exist after GitHub creates the squash commit.
+- **Evidence:** merged
+  [PR #45](https://github.com/devDaniilNovikov/AndrewWebSite/pull/45),
+  squash commit `0b0a62acfce09857807c4eb11e92795af3c20576`, and the
+  [rollback handoff](../../docs/handoffs/2026-07-26-055452-fix-revert-code-review-hardening-handoff.md).
+- **Applicability:** every squash merge whose tracker or handoff records the
+  final PR state, merge SHA, checks, or agent attribution.
+- **Review-by:** any change to the squash-merge, attribution, tracker, or
+  post-merge reconciliation protocol.
 
 ## LES-20260725-013 — Current defects are distinct from unstarted roadmap contracts
 

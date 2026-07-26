@@ -4,8 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -15,14 +15,21 @@ public final class LeadFingerprintService {
     private static final JsonMapper CANONICAL_JSON = JsonMapper.builder().build();
 
     private final byte[] key;
+    private final MacFactory macFactory;
 
+    @Autowired
     public LeadFingerprintService(LeadProperties properties) {
+        this(properties, () -> Mac.getInstance(HMAC_ALGORITHM));
+    }
+
+    LeadFingerprintService(LeadProperties properties, MacFactory macFactory) {
         this.key = properties.fingerprintKey().getBytes(StandardCharsets.UTF_8);
+        this.macFactory = macFactory;
     }
 
     public LeadFingerprint fingerprint(NormalizedLead lead) {
         try {
-            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
+            Mac mac = macFactory.create();
             mac.init(new SecretKeySpec(key, HMAC_ALGORITHM));
             return new LeadFingerprint(mac.doFinal(canonicalBytes(lead)));
         } catch (GeneralSecurityException exception) {
@@ -42,10 +49,11 @@ public final class LeadFingerprintService {
         payload.put("sourcePath", lead.sourcePath());
         payload.put("intent", lead.intent().name());
         payload.put("consent", true);
-        try {
-            return CANONICAL_JSON.writeValueAsBytes(payload);
-        } catch (JacksonException exception) {
-            throw new IllegalStateException("Canonical JSON serialization failed", exception);
-        }
+        return payload.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    @FunctionalInterface
+    interface MacFactory {
+        Mac create() throws GeneralSecurityException;
     }
 }

@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-antigravity-frontend-role` | `2026-07-26-032938-task-antigravity-frontend-role-handoff.md` → `2026-07-26-040219-task-antigravity-frontend-role-draft-handoff.md` → `2026-07-26-052732-task-antigravity-frontend-role-model-context-handoff.md` | Gemini 3.1 Pro context update local; Draft PR #46 refresh pending; Ready and merge not authorized | frontend, tracker, memory, process |
+| `task-antigravity-frontend-role` | `2026-07-26-032938-task-antigravity-frontend-role-handoff.md` → `2026-07-26-040219-task-antigravity-frontend-role-draft-handoff.md` → `2026-07-26-052732-task-antigravity-frontend-role-model-context-handoff.md` | Draft PR #46 reconciliation in progress against `origin/main` `5056e6e`; current user authorized the loop through Ready and squash merge; no deploy | frontend, tracker, memory, process |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -42,7 +42,10 @@ design.
 | `fix-leads-api-json-boundary-replacement` | 3 | `2026-07-25-045958-fix-leads-api-json-boundary-replacement-ready-handoff.md` | merged as `2f565dd`; retained source branch | backend, security, tracker |
 | `fix-leads-unicode-boundary` | 3 | `2026-07-25-074000-fix-leads-unicode-boundary-ready-handoff.md` | merged as `4da6448`; retained source branch | backend, security, tracker |
 | `fix-production-http-invariants` | 5 | `2026-07-25-180844-fix-production-http-invariants-merged-handoff.md` | merged as `d29e788`; retained source branch | backend, security, deploy, tracker |
-| `fix-code-review-hardening` | 1 | `2026-07-25-205559-fix-code-review-hardening-handoff.md` | merged as `0b0a62a` through PR #45; retained source branch | backend, deploy, tracker, process |
+| `fix-code-review-hardening` | 1 | `2026-07-25-205559-fix-code-review-hardening-handoff.md` | merged as `0b0a62a`; retained source branch; corrective rollback merged as `848e94f`; corrected replacement merged as `b822770` | backend, deploy, tracker, process, incident |
+| `task-telegram-client` | 8 | `2026-07-26-060315-task-telegram-client-merged-handoff.md` | merged as `3f35c1d`; retained source branch | backend, security, tracker |
+| `fix-revert-code-review-hardening` | 5 | `2026-07-26-072227-fix-revert-code-review-hardening-merged-handoff.md` | merged as `848e94f`; retained source branch; corrected replacement merged as `b822770` | backend, deploy, tracker, process, incident |
+| `fix-code-review-hardening-replacement` | 6 | `2026-07-26-082717-fix-code-review-hardening-replacement-final-closure-handoff.md` | merged as `b822770`; reconciled by PR #50 as `f515c59`; retained source branches | backend, deploy, tracker, process, incident |
 
 ## Rules
 
