@@ -44,7 +44,7 @@ design.
 | `fix-code-review-hardening` | 1 | `2026-07-25-205559-fix-code-review-hardening-handoff.md` | merged as `0b0a62a`; retained source branch; corrective rollback merged as `848e94f`; corrected replacement merged as `b822770` | backend, deploy, tracker, process, incident |
 | `task-telegram-client` | 8 | `2026-07-26-060315-task-telegram-client-merged-handoff.md` | merged as `3f35c1d`; retained source branch | backend, security, tracker |
 | `fix-revert-code-review-hardening` | 5 | `2026-07-26-072227-fix-revert-code-review-hardening-merged-handoff.md` | merged as `848e94f`; retained source branch; corrected replacement merged as `b822770` | backend, deploy, tracker, process, incident |
-| `fix-code-review-hardening-replacement` | 5 | `2026-07-26-081134-fix-code-review-hardening-replacement-merged-handoff.md` | merged as `b822770`; retained source branch | backend, deploy, tracker, process, incident |
+| `fix-code-review-hardening-replacement` | 6 | `2026-07-26-082717-fix-code-review-hardening-replacement-final-closure-handoff.md` | merged as `b822770`; reconciled by PR #50 as `f515c59`; retained source branches | backend, deploy, tracker, process, incident |
 
 ## Rules
 
