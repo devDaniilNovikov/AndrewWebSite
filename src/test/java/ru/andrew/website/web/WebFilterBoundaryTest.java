@@ -2,9 +2,6 @@ package ru.andrew.website.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import jakarta.servlet.DispatcherType;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -13,10 +10,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import ru.andrew.website.leads.LeadMetrics;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -64,54 +59,6 @@ class WebFilterBoundaryTest {
                 (ignoredRequest, ignoredResponse) -> invoked.set(true));
 
         assertThat(invoked).isTrue();
-    }
-
-    @Test
-    void exactClosedNamespaceRootsAreDeniedBeforeReachingMvc() throws Exception {
-        PublicBoundaryDenyFilter filter =
-                new PublicBoundaryDenyFilter(new MockEnvironment());
-
-        for (String path : List.of("/api", "/actuator", "/error")) {
-            MockHttpServletResponse response = new MockHttpServletResponse();
-            filter.doFilter(
-                    new MockHttpServletRequest("GET", path),
-                    response,
-                    (ignoredRequest, ignoredResponse) -> {
-                        throw new AssertionError(path + " must not reach the chain");
-                    });
-
-            assertThat(response.getStatus()).as(path).isEqualTo(403);
-        }
-    }
-
-    @Test
-    void namespaceMatcherDistinguishesRootChildAndNearCollision() {
-        RequestMatcher matcher = invokeMatcher("namespace", "/api");
-
-        assertThat(matcher.matches(new MockHttpServletRequest("GET", "/api"))).isTrue();
-        assertThat(matcher.matches(new MockHttpServletRequest("GET", "/api/leads"))).isTrue();
-        assertThat(matcher.matches(new MockHttpServletRequest("GET", "/apiary"))).isFalse();
-    }
-
-    @Test
-    void errorDispatchMatcherRequiresBothDispatcherTypeAndExactPath() {
-        RequestMatcher matcher = invokeMatcher("errorDispatch", "/error");
-        MockHttpServletRequest wrongPath = new MockHttpServletRequest("GET", "/different");
-        wrongPath.setDispatcherType(DispatcherType.ERROR);
-
-        assertThat(matcher.matches(wrongPath)).isFalse();
-    }
-
-    private static RequestMatcher invokeMatcher(String methodName, String value) {
-        try {
-            Method method = SecurityConfiguration.class.getDeclaredMethod(methodName, String.class);
-            method.setAccessible(true);
-            return (RequestMatcher) method.invoke(null, value);
-        } catch (NoSuchMethodException | IllegalAccessException exception) {
-            throw new AssertionError(exception);
-        } catch (InvocationTargetException exception) {
-            throw new AssertionError(exception.getCause());
-        }
     }
 
     private static Clock clock() {

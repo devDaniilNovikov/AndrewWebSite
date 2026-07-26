@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
+import jakarta.servlet.DispatcherType;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,6 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.web.FilterChainProxy;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import ru.andrew.website.leads.LeadAcceptanceTransaction;
@@ -52,8 +54,122 @@ class SecurityContractTest {
     @Autowired
     ProblemResponseWriter problems;
 
+    @Autowired
+    FilterChainProxy springSecurityFilterChain;
+
     @MockitoBean
     LeadAcceptanceTransaction transaction;
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/api", "/api/unknown", "/actuator", "/actuator/health"})
+    void securityChainDeniesClosedNamespacesWithoutOuterServletFilters(String path)
+            throws Exception {
+        MockHttpServletRequest request = directRequest("GET", path);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean downstreamInvoked = new AtomicBoolean();
+
+        springSecurityFilterChain.doFilter(
+                request,
+                response,
+                (ignoredRequest, ignoredResponse) -> downstreamInvoked.set(true));
+
+        assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(downstreamInvoked).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/apiary", "/actuatorish"})
+    void securityChainDoesNotTreatNearCollisionsAsClosedNamespaces(String path)
+            throws Exception {
+        MockHttpServletRequest request = directRequest("GET", path);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean downstreamInvoked = new AtomicBoolean();
+
+        springSecurityFilterChain.doFilter(
+                request,
+                response,
+                (ignoredRequest, ignoredResponse) -> downstreamInvoked.set(true));
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(downstreamInvoked).isTrue();
+    }
+
+    @Test
+    void securityChainDeniesNonLocalPreflightWithoutOuterServletFilters()
+            throws Exception {
+        MockHttpServletRequest request = directRequest("OPTIONS", "/api/leads");
+        request.addHeader(HttpHeaders.ORIGIN, "https://cross-origin.invalid");
+        request.addHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean downstreamInvoked = new AtomicBoolean();
+
+        springSecurityFilterChain.doFilter(
+                request,
+                response,
+                (ignoredRequest, ignoredResponse) -> downstreamInvoked.set(true));
+
+        assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(response.getHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN)).isNull();
+        assertThat(downstreamInvoked).isFalse();
+    }
+
+    @Test
+    void securityChainAllowsOnlyErrorDispatchToTheExactErrorPath() throws Exception {
+        MockHttpServletRequest directRequest = directRequest("GET", "/error");
+        MockHttpServletResponse directResponse = new MockHttpServletResponse();
+        AtomicBoolean directDownstream = new AtomicBoolean();
+
+        springSecurityFilterChain.doFilter(
+                directRequest,
+                directResponse,
+                (ignoredRequest, ignoredResponse) -> directDownstream.set(true));
+
+        assertThat(directResponse.getStatus()).isEqualTo(403);
+        assertThat(directDownstream).isFalse();
+
+        MockHttpServletRequest errorRequest = directRequest("GET", "/error");
+        errorRequest.setDispatcherType(DispatcherType.ERROR);
+        MockHttpServletResponse errorResponse = new MockHttpServletResponse();
+        AtomicBoolean errorDownstream = new AtomicBoolean();
+
+        springSecurityFilterChain.doFilter(
+                errorRequest,
+                errorResponse,
+                (ignoredRequest, ignoredResponse) -> errorDownstream.set(true));
+
+        assertThat(errorResponse.getStatus()).isEqualTo(200);
+        assertThat(errorDownstream).isTrue();
+    }
+
+    @Test
+    void securityChainUsesApplicationRelativePathsWithAServletContext() throws Exception {
+        MockHttpServletRequest leadRequest =
+                directRequest("POST", "/website/api/leads", "/website", "/api/leads");
+        leadRequest.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        MockHttpServletResponse leadResponse = new MockHttpServletResponse();
+        AtomicBoolean leadDownstream = new AtomicBoolean();
+
+        springSecurityFilterChain.doFilter(
+                leadRequest,
+                leadResponse,
+                (ignoredRequest, ignoredResponse) -> leadDownstream.set(true));
+
+        assertThat(leadResponse.getStatus()).isEqualTo(200);
+        assertThat(leadDownstream).isTrue();
+
+        MockHttpServletRequest closedRequest =
+                directRequest("GET", "/website/api/unknown", "/website", "/api/unknown");
+        MockHttpServletResponse closedResponse = new MockHttpServletResponse();
+        AtomicBoolean closedDownstream = new AtomicBoolean();
+
+        springSecurityFilterChain.doFilter(
+                closedRequest,
+                closedResponse,
+                (ignoredRequest, ignoredResponse) -> closedDownstream.set(true));
+
+        assertThat(closedResponse.getStatus()).isEqualTo(403);
+        assertThat(closedDownstream).isFalse();
+    }
 
     @Test
     void publicAllowlistKeepsDiagnosticsAndAuthenticationRoutesClosed() throws Exception {
@@ -92,11 +208,21 @@ class SecurityContractTest {
             "/api;v=1/unknown",
             "/api%2Funknown",
             "/ap%69/unknown",
-            "/api/leads;v=1"
+            "/api/leads;v=1",
+            "/api/leads/",
+            "/api/leads/descendant"
     })
     void encodedAndParameterizedApiPathsCannotEscapeTheClosedNamespace(String path)
             throws Exception {
         mvc.perform(get(path)).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void matrixParameterizedLeadPostIsNotAnExactAllowlistMatch() throws Exception {
+        mvc.perform(post("/api/leads;v=1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(HONEYPOT_JSON))
+                .andExpect(status().is4xxClientError());
     }
 
     @Test
@@ -232,6 +358,18 @@ class SecurityContractTest {
                         wrappedRequest.getInputStream().readAllBytes()));
 
         assertThat(downstreamBody.get()).containsExactly(body);
+    }
+
+    private static MockHttpServletRequest directRequest(String method, String path) {
+        return directRequest(method, path, "", path);
+    }
+
+    private static MockHttpServletRequest directRequest(
+            String method, String requestUri, String contextPath, String servletPath) {
+        MockHttpServletRequest request = new MockHttpServletRequest(method, requestUri);
+        request.setContextPath(contextPath);
+        request.setServletPath(servletPath);
+        return request;
     }
 
     private void expectProblem(ResultActions result, int expectedStatus, String type,
