@@ -37,6 +37,13 @@ spring:
     mapper:
       allow-coercion-of-scalars: false
 app:
+  privacy:
+    retention:
+      anonymize-after: 29d
+      hard-limit: 30d
+      delete-after: P12M
+      poll-interval: 1h
+      batch-size: 100
   telegram:
     worker:
       poll-interval: 15s

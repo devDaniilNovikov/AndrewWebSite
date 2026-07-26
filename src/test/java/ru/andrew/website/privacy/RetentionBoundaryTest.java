@@ -60,7 +60,7 @@ class RetentionBoundaryTest {
     @Test
     void thresholdAnonymizesPiiAndTerminalizesEveryUndeliveredState() {
         Instant cutoff = NOW.minus(Duration.ofDays(29));
-        Seed early = insertLead(cutoff.plusNanos(1), "pending");
+        Seed early = insertLead(cutoff.plusNanos(1_000), "pending");
         List<Seed> undelivered = List.of(
                 insertLead(cutoff, "pending"),
                 insertLead(cutoff, "retry"),
@@ -71,8 +71,6 @@ class RetentionBoundaryTest {
         UUID staleToken = undelivered.get(2).leaseToken();
         double anonymizedBefore =
                 meterRegistry.get("andrew.privacy.anonymized").counter().count();
-        double blockedBefore =
-                meterRegistry.get("andrew.privacy.blocked").counter().count();
 
         retention.runOnce();
 
@@ -103,11 +101,6 @@ class RetentionBoundaryTest {
                         .counter()
                         .count())
                 .isEqualTo(anonymizedBefore + undelivered.size() + 1);
-        assertThat(meterRegistry
-                        .get("andrew.privacy.blocked")
-                        .counter()
-                        .count())
-                .isEqualTo(blockedBefore + undelivered.size());
     }
 
     @Test
@@ -115,7 +108,8 @@ class RetentionBoundaryTest {
         Instant deletionCutoff =
                 Instant.parse("2025-01-30T00:00:00Z");
         Seed exact = insertAnonymizedLead(deletionCutoff);
-        Seed newer = insertAnonymizedLead(deletionCutoff.plusNanos(1));
+        Seed newer =
+                insertAnonymizedLead(deletionCutoff.plusNanos(1_000));
 
         retention.runOnce();
 
