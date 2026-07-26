@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-http-security-framework-native-deny` | `2026-07-26-173224-fix-http-security-framework-native-deny-handoff.md` → `2026-07-26-174852-fix-http-security-framework-native-deny-verified-handoff.md` → `2026-07-26-182249-fix-http-security-framework-native-deny-remote-checks-handoff.md` → `2026-07-26-183059-fix-http-security-framework-native-deny-draft-pr-handoff.md` | `draft_pr`; PR #55 open; exact PR-head checks pending; conditional merge authorized after green | backend, security, tracker |
+| `fix-http-security-framework-native-deny` | `2026-07-26-173224-fix-http-security-framework-native-deny-handoff.md` → `2026-07-26-174852-fix-http-security-framework-native-deny-verified-handoff.md` → `2026-07-26-182249-fix-http-security-framework-native-deny-remote-checks-handoff.md` → `2026-07-26-183059-fix-http-security-framework-native-deny-draft-pr-handoff.md` → `2026-07-26-183503-fix-http-security-framework-native-deny-ready-handoff.md` | reviewed code head green; metadata-only Ready head requires exact checks; conditional merge authorized | backend, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
