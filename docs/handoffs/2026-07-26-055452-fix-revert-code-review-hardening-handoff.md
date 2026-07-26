@@ -1,6 +1,6 @@
 # fix-revert-code-review-hardening handoff
 
-Signature: HND fix-revert-code-review-hardening [in_progress] topics: backend, deploy, tracker, process, incident → predecessor: 2026-07-25-205559-fix-code-review-hardening-handoff.md
+Signature: HND fix-revert-code-review-hardening [draft_pr] topics: backend, deploy, tracker, process, incident → predecessor: 2026-07-25-205559-fix-code-review-hardening-handoff.md
 
 ## Durable — safe to cite later
 
