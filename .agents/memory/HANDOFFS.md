@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-backend-observability` | `2026-07-26-133209-task-backend-observability-handoff.md` | `in_progress`; isolated branch started from verified merged retention head | backend, security, tracker |
+| `task-backend-observability` | `2026-07-26-133209-task-backend-observability-handoff.md` → `2026-07-26-154114-task-backend-observability-verified-handoff.md` | `in_progress`; local implementation complete and verified; publication unauthorized | backend, security, telemetry, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
