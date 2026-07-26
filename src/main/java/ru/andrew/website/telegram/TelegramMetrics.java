@@ -60,6 +60,7 @@ public final class TelegramMetrics {
                             outbox,
                             repository -> repository.countByState(state))
                     .tag("state", state.name())
+                    .strongReference(true)
                     .register(registry);
         }
     }

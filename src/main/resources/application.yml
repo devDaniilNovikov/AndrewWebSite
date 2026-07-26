@@ -66,6 +66,13 @@ app:
       client-capacity: 5
       client-refill: 1m
 management:
+  opentelemetry:
+    enabled: false
+    map-environment-variables: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
   health:
     db:
       enabled: false

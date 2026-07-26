@@ -22,6 +22,10 @@ public final class RuntimeProfileGuard implements EnvironmentPostProcessor, Orde
             ConfigurableEnvironment environment, SpringApplication application) {
         Set<String> active = Arrays.stream(environment.getActiveProfiles())
                 .collect(Collectors.toUnmodifiableSet());
+        if (active.contains("prod")) {
+            ProductionStartupFailureReporter
+                    .prepareEarlyFailure(application);
+        }
         if (active.size() != 1 || !ALLOWED.containsAll(active)) {
             throw new ApplicationContextException(MESSAGE);
         }

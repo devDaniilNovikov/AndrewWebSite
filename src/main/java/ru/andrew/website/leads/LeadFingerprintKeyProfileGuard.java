@@ -6,6 +6,7 @@ import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcesso
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
+import ru.andrew.website.common.ProductionStartupFailureReporter;
 
 public final class LeadFingerprintKeyProfileGuard implements EnvironmentPostProcessor, Ordered {
     static final String TEST_KEY_MESSAGE =
@@ -16,6 +17,10 @@ public final class LeadFingerprintKeyProfileGuard implements EnvironmentPostProc
     @Override
     public void postProcessEnvironment(
             ConfigurableEnvironment environment, SpringApplication application) {
+        if (environment.matchesProfiles("prod")) {
+            ProductionStartupFailureReporter
+                    .prepareEarlyFailure(application);
+        }
         String fingerprintKey = Binder.get(environment)
                 .bind("app.leads.fingerprint-key", String.class)
                 .orElse(null);
