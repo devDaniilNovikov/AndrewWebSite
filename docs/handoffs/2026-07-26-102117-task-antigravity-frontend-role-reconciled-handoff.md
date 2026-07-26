@@ -3,14 +3,16 @@ Signature: HND task-antigravity-frontend-role [draft_pr] topics: frontend, track
 
 ## Durable — safe to cite later
 - PR #46 routes frontend work to Google Antigravity and requires Gemini 3.1 Pro High.
-- Branch `task-antigravity-frontend-role` was reconciled with `origin/main` `5056e6e`; only `TASKS.md` and `.agents/memory/HANDOFFS.md` had manual conflict resolutions.
+- The branch was reconciled with `origin/main` `5056e6e`; only `TASKS.md` and the handoff index needed manual resolution.
+- The current user directed PR #46 and PR #30 to successful closure. Ready and squash merge remain sequential explicit gates; production deploy is out of scope.
 
 ## Snapshot at 2026-07-26T10:21:17Z — re-verify live before use
-- Worktree: `/Users/daniilnovikov/.codex/worktrees/antigravity-frontend-role/AndrewWorkWebSite`.
-- Local head `23d4295`; remote PR #46 still needs push from `976fb3f` plus fresh CI.
+- Worktree: `/Users/daniilnovikov/.codex/worktrees/antigravity-frontend-role/AndrewWorkWebSite`; Draft PR #46 still needs a refreshed push and CI.
 
 ## Verification
-- Pre-commit evidence: no PR threads/reviews, `git diff --check` PASS, no conflict markers, non-database Maven verify PASS 431/431.
+- Container-equivalent verify passed 431 tests; full verify passed 447 tests with PostgreSQL/Flyway and JaCoCo.
+- Links, role imports, memory signatures, conflict scan, diff check, changed-text secret checks, and TruffleHog passed.
 
 ## Next steps — conditional on live evidence
-1. Re-run gates, push PR #46, wait for CI, final-review, then request the next explicit gate; do not deploy.
+1. Push and wait for fresh required checks.
+2. Resolve final review, mark Ready, then separately squash-merge; verify `main` and do not deploy.
