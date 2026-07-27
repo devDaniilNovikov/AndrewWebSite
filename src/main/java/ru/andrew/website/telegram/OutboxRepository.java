@@ -22,6 +22,7 @@ public interface OutboxRepository {
     Optional<TelegramLeadMessage> reloadDeliverable(
             long outboxId,
             UUID leaseToken,
+            Instant observedAt,
             Instant privacyCutoff);
 
     boolean resolvePrivacyInvalidation(

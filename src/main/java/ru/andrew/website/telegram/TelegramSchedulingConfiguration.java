@@ -3,6 +3,7 @@ package ru.andrew.website.telegram;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.http.client.autoconfigure.HttpClientsProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -31,6 +32,13 @@ public class TelegramSchedulingConfiguration {
     }
 
     @Bean
+    TelegramDeliveryWindow telegramDeliveryWindow(
+            TelegramWorkerProperties properties,
+            HttpClientsProperties httpClients) {
+        return TelegramDeliveryWindow.from(properties, httpClients);
+    }
+
+    @Bean
     @Lazy
     TelegramWorker telegramWorker(
             OutboxRepository outbox,
@@ -39,6 +47,7 @@ public class TelegramSchedulingConfiguration {
             WorkerHeartbeat heartbeat,
             TelegramMetrics metrics,
             TelegramWorkerProperties properties,
+            TelegramDeliveryWindow deliveryWindow,
             Clock clock) {
         return new TelegramWorker(
                 outbox,
@@ -47,6 +56,7 @@ public class TelegramSchedulingConfiguration {
                 heartbeat,
                 metrics,
                 properties,
+                deliveryWindow,
                 clock);
     }
 

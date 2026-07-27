@@ -216,14 +216,15 @@ class JdbcOutboxRepositoryIntegrationTest {
                 .containsExactly(eligible);
         ClaimedDelivery claim = claims.getFirst();
         assertThat(outbox.reloadDeliverable(
-                        eligible, claim.leaseToken(), PRIVACY_CUTOFF))
+                        eligible, claim.leaseToken(), NOW, PRIVACY_CUTOFF))
                 .contains(claim.message());
         assertThat(outbox.reloadDeliverable(
-                        eligible, UUID.randomUUID(), PRIVACY_CUTOFF))
+                        eligible, UUID.randomUUID(), NOW, PRIVACY_CUTOFF))
                 .isEmpty();
         assertThat(outbox.reloadDeliverable(
                         eligible,
                         claim.leaseToken(),
+                        NOW,
                         PRIVACY_CUTOFF.plusSeconds(2)))
                 .isEmpty();
         jdbc.sql("""
@@ -240,7 +241,7 @@ class JdbcOutboxRepositoryIntegrationTest {
                 .param("leadId", claim.leadId())
                 .update();
         assertThat(outbox.reloadDeliverable(
-                        eligible, claim.leaseToken(), PRIVACY_CUTOFF))
+                        eligible, claim.leaseToken(), NOW, PRIVACY_CUTOFF))
                 .isEmpty();
         assertThat(state(boundary)).isEqualTo(OutboxState.pending);
     }
@@ -258,7 +259,10 @@ class JdbcOutboxRepositoryIntegrationTest {
         Instant advancedCutoff = PRIVACY_CUTOFF.plusSeconds(2);
 
         assertThat(outbox.reloadDeliverable(
-                        outboxId, claim.leaseToken(), advancedCutoff))
+                        outboxId,
+                        claim.leaseToken(),
+                        advancedNow,
+                        advancedCutoff))
                 .isEmpty();
         assertThat(outbox.resolvePrivacyInvalidation(
                         outboxId,

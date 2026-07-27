@@ -2,6 +2,9 @@ package ru.andrew.website.telegram;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,7 +36,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import ru.andrew.website.privacy.RetentionRepository;
 import ru.andrew.website.testing.MutableClock;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
@@ -53,8 +58,11 @@ class TelegramWorkerIntegrationTest {
     @Autowired
     TelegramWorker worker;
 
+    @MockitoSpyBean
+    JdbcOutboxRepository outbox;
+
     @Autowired
-    OutboxRepository outbox;
+    RetentionRepository retention;
 
     @Autowired
     WorkerHeartbeat heartbeat;
@@ -76,7 +84,7 @@ class TelegramWorkerIntegrationTest {
         jdbc.sql("delete from telegram_outbox").update();
         jdbc.sql("delete from leads").update();
         clock.setInstant(NOW);
-        reset(gateway);
+        reset(outbox, gateway);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -93,7 +101,7 @@ class TelegramWorkerIntegrationTest {
         long outboxId = seedDueLead(1);
         AtomicBoolean transactionActive = new AtomicBoolean(true);
         double before = counterValue(metricOutcome, metricReason);
-        when(gateway.send(any())).thenAnswer(invocation -> {
+        when(gateway.send(any(), any())).thenAnswer(invocation -> {
             transactionActive.set(
                     TransactionSynchronizationManager
                             .isActualTransactionActive());
@@ -190,16 +198,18 @@ class TelegramWorkerIntegrationTest {
                         10,
                         Duration.ofMinutes(2))
                 .getFirst();
-        when(gateway.send(any()))
+        when(gateway.send(any(), any()))
                 .thenReturn(new TelegramDeliveryResult.Delivered());
 
-        gateway.send(first.message());
+        gateway.send(
+                first.message(), first.leaseUntil().minusSeconds(13));
         clock.advance(Duration.ofMinutes(3));
         worker.poll();
 
         ArgumentCaptor<TelegramLeadMessage> messages =
                 ArgumentCaptor.forClass(TelegramLeadMessage.class);
-        verify(gateway, org.mockito.Mockito.times(2)).send(messages.capture());
+        verify(gateway, org.mockito.Mockito.times(2))
+                .send(messages.capture(), any());
         List<TelegramLeadMessage> sent = messages.getAllValues();
         assertThat(sent).extracting(TelegramLeadMessage::requestId)
                 .containsExactly(first.message().requestId(), first.message().requestId());
@@ -208,7 +218,61 @@ class TelegramWorkerIntegrationTest {
         assertThat(heartbeat.lastSuccess()).contains(NOW.plus(Duration.ofMinutes(3)));
     }
 
+    @Test
+    void retentionCommitBetweenReloadAndGatewayPreventsSend() {
+        Instant createdAt =
+                NOW.minus(Duration.ofDays(29)).plusSeconds(14);
+        long outboxId = seedDueLead(30, createdAt);
+        JdbcOutboxRepository realOutbox =
+                new JdbcOutboxRepository(jdbc);
+        doAnswer(invocation -> {
+                    var loaded = realOutbox.reloadDeliverable(
+                            invocation.getArgument(0),
+                            invocation.getArgument(1),
+                            invocation.getArgument(2),
+                            invocation.getArgument(3));
+                    clock.advance(Duration.ofSeconds(14));
+                    var expired = retention.expireBatch(
+                            clock.instant().minus(Duration.ofDays(29)),
+                            10);
+                    assertThat(expired.anonymized()).isEqualTo(1);
+                    assertThat(expired.blocked()).isEqualTo(1);
+                    return loaded;
+                })
+                .when(outbox)
+                .reloadDeliverable(anyLong(), any(), any(), any());
+
+        Throwable failure =
+                org.assertj.core.api.Assertions.catchThrowable(worker::poll);
+
+        assertThat(failure).isNull();
+        verify(gateway, never()).send(any(), any());
+        assertThat(persisted(outboxId).state()).isEqualTo(OutboxState.blocked);
+        assertThat(persisted(outboxId).lastErrorCode())
+                .isEqualTo("privacy_expired");
+        assertThat(jdbc.sql("""
+                            select anonymized_at is not null
+                                   and source_path = '/'
+                            from leads
+                            where id = (
+                                select lead_id
+                                from telegram_outbox
+                                where id = :outboxId
+                            )
+                            """)
+                .param("outboxId", outboxId)
+                .query(Boolean.class)
+                .single())
+                .isTrue();
+        assertThat(heartbeat.lastSuccess())
+                .contains(NOW.plusSeconds(14));
+    }
+
     private long seedDueLead(int index) {
+        return seedDueLead(index, CREATED_AT);
+    }
+
+    private long seedDueLead(int index, Instant createdAt) {
         long leadId = jdbc.sql("""
                         insert into leads(
                             request_id, payload_fingerprint, name, phone, comment,
@@ -223,7 +287,7 @@ class TelegramWorkerIntegrationTest {
                         returning id
                         """)
                 .param("requestId", requestId(index))
-                .param("createdAt", CREATED_AT.atOffset(ZoneOffset.UTC))
+                .param("createdAt", createdAt.atOffset(ZoneOffset.UTC))
                 .query(Long.class)
                 .single();
         return jdbc.sql("""
@@ -235,7 +299,7 @@ class TelegramWorkerIntegrationTest {
                         """)
                 .param("leadId", leadId)
                 .param("now", NOW.atOffset(ZoneOffset.UTC))
-                .param("createdAt", CREATED_AT.atOffset(ZoneOffset.UTC))
+                .param("createdAt", createdAt.atOffset(ZoneOffset.UTC))
                 .query(Long.class)
                 .single();
     }

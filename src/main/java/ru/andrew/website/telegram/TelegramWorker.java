@@ -13,7 +13,7 @@ public final class TelegramWorker {
     private static final String UNSUPPORTED_RESULT =
             "Unsupported Telegram delivery result code";
     private static final String EXPIRED_LEASE =
-            "Outbox lease expired before delivery";
+            "Outbox delivery window expired before send";
 
     private final OutboxRepository outbox;
     private final TelegramGateway gateway;
@@ -21,6 +21,7 @@ public final class TelegramWorker {
     private final WorkerHeartbeat heartbeat;
     private final TelegramMetrics metrics;
     private final TelegramWorkerProperties properties;
+    private final TelegramDeliveryWindow deliveryWindow;
     private final Clock clock;
 
     public TelegramWorker(
@@ -30,6 +31,7 @@ public final class TelegramWorker {
             WorkerHeartbeat heartbeat,
             TelegramMetrics metrics,
             TelegramWorkerProperties properties,
+            TelegramDeliveryWindow deliveryWindow,
             Clock clock) {
         this.outbox = outbox;
         this.gateway = gateway;
@@ -37,6 +39,7 @@ public final class TelegramWorker {
         this.heartbeat = heartbeat;
         this.metrics = metrics;
         this.properties = properties;
+        this.deliveryWindow = deliveryWindow;
         this.clock = clock;
     }
 
@@ -60,23 +63,52 @@ public final class TelegramWorker {
     }
 
     private void deliver(ClaimedDelivery claim) {
-        Instant now = clock.instant();
-        if (!now.isBefore(claim.leaseUntil())) {
-            throw new IllegalStateException(EXPIRED_LEASE);
-        }
-        Instant privacyCutoff = now.minus(PRIVACY_THRESHOLD);
+        Instant observedAt = clock.instant();
+        requireCanStart(
+                observedAt,
+                deliveryWindow.leaseLatestStart(claim));
+        Instant privacyCutoff =
+                deliveryWindow.privacyCutoff(observedAt);
         var message = outbox.reloadDeliverable(
-                claim.outboxId(), claim.leaseToken(), privacyCutoff);
+                claim.outboxId(),
+                claim.leaseToken(),
+                observedAt,
+                privacyCutoff);
         if (message.isEmpty()) {
-            requirePersisted(outbox.resolvePrivacyInvalidation(
-                    claim.outboxId(),
-                    claim.leaseToken(),
-                    privacyCutoff,
-                    now));
-            metrics.delivery("blocked", "privacy_expired");
+            resolvePrivacyInvalidation(
+                    claim, privacyCutoff, observedAt);
             return;
         }
-        apply(claim, gateway.send(message.get()), clock.instant());
+        TelegramLeadMessage reloaded = message.orElseThrow();
+        Instant beforeSend = clock.instant();
+        if (!deliveryWindow.canStart(
+                beforeSend,
+                deliveryWindow.privacyLatestStart(reloaded))) {
+            resolvePrivacyInvalidation(
+                    claim,
+                    deliveryWindow.privacyCutoff(beforeSend),
+                    beforeSend);
+            return;
+        }
+        Instant latestStart =
+                deliveryWindow.latestStart(claim, reloaded);
+        requireCanStart(beforeSend, latestStart);
+        apply(
+                claim,
+                gateway.send(reloaded, latestStart),
+                clock.instant());
+    }
+
+    private void resolvePrivacyInvalidation(
+            ClaimedDelivery claim,
+            Instant privacyCutoff,
+            Instant observedAt) {
+        requirePersisted(outbox.resolvePrivacyInvalidation(
+                claim.outboxId(),
+                claim.leaseToken(),
+                privacyCutoff,
+                observedAt));
+        metrics.delivery("blocked", "privacy_expired");
     }
 
     private void apply(
@@ -146,6 +178,13 @@ public final class TelegramWorker {
     private static void requirePersisted(boolean persisted) {
         if (!persisted) {
             throw new IllegalStateException(STATE_WRITE_FAILURE);
+        }
+    }
+
+    private void requireCanStart(
+            Instant observedAt, Instant latestStart) {
+        if (!deliveryWindow.canStart(observedAt, latestStart)) {
+            throw new IllegalStateException(EXPIRED_LEASE);
         }
     }
 }

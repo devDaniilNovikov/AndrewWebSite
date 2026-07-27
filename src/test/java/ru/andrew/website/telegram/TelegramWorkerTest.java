@@ -20,12 +20,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.andrew.website.testing.MutableClock;
 
 @ExtendWith(MockitoExtension.class)
 class TelegramWorkerTest {
     private static final Instant NOW = Instant.parse("2026-01-30T00:00:00Z");
     private static final Instant PRIVACY_CUTOFF =
             NOW.minus(Duration.ofDays(29));
+    private static final Duration CALL_BUDGET =
+            Duration.ofSeconds(13);
+    private static final Instant DELIVERY_CUTOFF =
+            NOW.plus(CALL_BUDGET).minus(Duration.ofDays(29));
+    private static final Instant LEASE_LATEST_START =
+            NOW.plus(Duration.ofMinutes(2)).minus(CALL_BUDGET);
     private static final UUID LEASE =
             UUID.fromString("11111111-1111-4111-8111-111111111111");
 
@@ -58,6 +65,7 @@ class TelegramWorkerTest {
                 heartbeat,
                 metrics,
                 properties,
+                new TelegramDeliveryWindow(CALL_BUDGET),
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -70,24 +78,25 @@ class TelegramWorkerTest {
         worker.poll();
 
         verify(heartbeat).success(NOW);
-        verify(gateway, never()).send(any());
+        verify(gateway, never()).send(any(), any());
     }
 
     @Test
     void privacyInvalidatedReloadIsSkippedAndPollSucceeds() {
         arrangeClaim();
-        when(outbox.reloadDeliverable(7L, LEASE, PRIVACY_CUTOFF))
+        when(outbox.reloadDeliverable(
+                        7L, LEASE, NOW, DELIVERY_CUTOFF))
                 .thenReturn(Optional.empty());
         when(outbox.resolvePrivacyInvalidation(
-                        7L, LEASE, PRIVACY_CUTOFF, NOW))
+                        7L, LEASE, DELIVERY_CUTOFF, NOW))
                 .thenReturn(true);
 
         worker.poll();
 
-        verify(gateway, never()).send(any());
+        verify(gateway, never()).send(any(), any());
         var order = inOrder(outbox, metrics, heartbeat);
         order.verify(outbox).resolvePrivacyInvalidation(
-                7L, LEASE, PRIVACY_CUTOFF, NOW);
+                7L, LEASE, DELIVERY_CUTOFF, NOW);
         order.verify(metrics).delivery("blocked", "privacy_expired");
         order.verify(heartbeat).success(NOW);
     }
@@ -95,15 +104,16 @@ class TelegramWorkerTest {
     @Test
     void staleReloadDoesNotAdvanceHeartbeat() {
         arrangeClaim();
-        when(outbox.reloadDeliverable(7L, LEASE, PRIVACY_CUTOFF))
+        when(outbox.reloadDeliverable(
+                        7L, LEASE, NOW, DELIVERY_CUTOFF))
                 .thenReturn(Optional.empty());
         when(outbox.resolvePrivacyInvalidation(
-                        7L, LEASE, PRIVACY_CUTOFF, NOW))
+                        7L, LEASE, DELIVERY_CUTOFF, NOW))
                 .thenReturn(false);
 
         assertFailureWithoutHeartbeat();
 
-        verify(gateway, never()).send(any());
+        verify(gateway, never()).send(any(), any());
         verify(metrics, never()).delivery(any(), any());
     }
 
@@ -123,8 +133,9 @@ class TelegramWorkerTest {
 
         assertFailureWithoutHeartbeat();
 
-        verify(outbox, never()).reloadDeliverable(any(Long.class), any(), any());
-        verify(gateway, never()).send(any());
+        verify(outbox, never()).reloadDeliverable(
+                any(Long.class), any(), any(), any());
+        verify(gateway, never()).send(any(), any());
         verify(metrics, never()).delivery(any(), any());
     }
 
@@ -145,7 +156,8 @@ class TelegramWorkerTest {
     @Test
     void deliveredStateAndMetricPrecedeHeartbeat() {
         arrangeDeliverable();
-        when(gateway.send(any())).thenReturn(new TelegramDeliveryResult.Delivered());
+        when(gateway.send(any(), any()))
+                .thenReturn(new TelegramDeliveryResult.Delivered());
         when(outbox.markDelivered(7L, LEASE, NOW)).thenReturn(true);
 
         worker.poll();
@@ -154,6 +166,49 @@ class TelegramWorkerTest {
         order.verify(outbox).markDelivered(7L, LEASE, NOW);
         order.verify(metrics).delivery("delivered", "success");
         order.verify(heartbeat).success(NOW);
+    }
+
+    @Test
+    void privacyExpiryAfterReloadPreventsGatewayInvocation() {
+        MutableClock mutableClock =
+                new MutableClock(NOW, ZoneOffset.UTC);
+        worker = worker(mutableClock);
+        arrangeClaim();
+        when(outbox.reloadDeliverable(
+                        7L, LEASE, NOW, DELIVERY_CUTOFF))
+                .thenAnswer(invocation -> {
+                    mutableClock.advance(Duration.ofSeconds(14));
+                    return Optional.of(expiringMessage());
+                });
+        Instant afterReload = NOW.plusSeconds(14);
+        Instant afterReloadCutoff =
+                afterReload.plus(CALL_BUDGET).minus(Duration.ofDays(29));
+        when(outbox.resolvePrivacyInvalidation(
+                        7L, LEASE, afterReloadCutoff, afterReload))
+                .thenReturn(true);
+
+        worker.poll();
+
+        verify(gateway, never()).send(any(), any());
+        verify(heartbeat).success(afterReload);
+    }
+
+    @Test
+    void leaseExpiryAfterReloadPreventsGatewayInvocation() {
+        MutableClock mutableClock =
+                new MutableClock(NOW, ZoneOffset.UTC);
+        worker = worker(mutableClock);
+        arrangeClaim();
+        when(outbox.reloadDeliverable(
+                        7L, LEASE, NOW, DELIVERY_CUTOFF))
+                .thenAnswer(invocation -> {
+                    mutableClock.advance(Duration.ofMinutes(2));
+                    return Optional.of(message());
+                });
+
+        assertFailureWithoutHeartbeat();
+
+        verify(gateway, never()).send(any(), any());
     }
 
     @Test
@@ -181,7 +236,7 @@ class TelegramWorkerTest {
     @Test
     void permanentStatusPersistsDetailedCodeButUsesFixedMetricReason() {
         arrangeDeliverable();
-        when(gateway.send(any())).thenReturn(
+        when(gateway.send(any(), any())).thenReturn(
                 new TelegramDeliveryResult.PermanentFailure(
                         "telegram_permanent_403"));
         when(outbox.markBlocked(
@@ -206,19 +261,21 @@ class TelegramWorkerTest {
 
         org.mockito.Mockito.reset(outbox, gateway, heartbeat, metrics);
         arrangeClaim();
-        when(outbox.reloadDeliverable(any(Long.class), any(), any()))
+        when(outbox.reloadDeliverable(
+                        any(Long.class), any(), any(), any()))
                 .thenThrow(new IllegalStateException("fictional-reload-failure"));
         assertFailureWithoutHeartbeat();
 
         org.mockito.Mockito.reset(outbox, gateway, heartbeat, metrics);
         arrangeDeliverable();
-        when(gateway.send(any()))
+        when(gateway.send(any(), any()))
                 .thenThrow(new IllegalStateException("fictional-gateway-failure"));
         assertFailureWithoutHeartbeat();
 
         org.mockito.Mockito.reset(outbox, gateway, heartbeat, metrics);
         arrangeDeliverable();
-        when(gateway.send(any())).thenReturn(new TelegramDeliveryResult.Delivered());
+        when(gateway.send(any(), any()))
+                .thenReturn(new TelegramDeliveryResult.Delivered());
         when(outbox.markDelivered(7L, LEASE, NOW)).thenReturn(false);
         assertFailureWithoutHeartbeat();
     }
@@ -226,7 +283,7 @@ class TelegramWorkerTest {
     @Test
     void unsupportedGatewayCodeFailsWithoutWritingOrEmittingMetric() {
         arrangeDeliverable();
-        when(gateway.send(any())).thenReturn(
+        when(gateway.send(any(), any())).thenReturn(
                 new TelegramDeliveryResult.Retryable(
                         "fictional_dynamic_code", null));
 
@@ -239,7 +296,7 @@ class TelegramWorkerTest {
     @Test
     void unsupportedPermanentCodeFailsWithoutWritingOrEmittingMetric() {
         arrangeDeliverable();
-        when(gateway.send(any())).thenReturn(
+        when(gateway.send(any(), any())).thenReturn(
                 new TelegramDeliveryResult.PermanentFailure(
                         "fictional_dynamic_code"));
 
@@ -252,7 +309,7 @@ class TelegramWorkerTest {
     @Test
     void failedRetryAndBlockedCompareAndSetNeverAdvanceHeartbeatOrMetrics() {
         arrangeDeliverable();
-        when(gateway.send(any())).thenReturn(
+        when(gateway.send(any(), any())).thenReturn(
                 new TelegramDeliveryResult.Retryable("network", null));
         when(outbox.markRetry(
                         7L, LEASE, "network", NOW.plusSeconds(30), NOW))
@@ -262,7 +319,7 @@ class TelegramWorkerTest {
 
         org.mockito.Mockito.reset(outbox, gateway, heartbeat, metrics);
         arrangeDeliverable();
-        when(gateway.send(any())).thenReturn(
+        when(gateway.send(any(), any())).thenReturn(
                 new TelegramDeliveryResult.PermanentFailure(
                         "telegram_permanent_403"));
         when(outbox.markBlocked(
@@ -278,7 +335,7 @@ class TelegramWorkerTest {
             Instant nextAttemptAt) {
         org.mockito.Mockito.reset(outbox, gateway, heartbeat, metrics);
         arrangeDeliverable();
-        when(gateway.send(any())).thenReturn(result);
+        when(gateway.send(any(), any())).thenReturn(result);
         when(outbox.markRetry(
                         7L, LEASE, reason, nextAttemptAt, NOW))
                 .thenReturn(true);
@@ -305,7 +362,8 @@ class TelegramWorkerTest {
 
     private void arrangeDeliverable() {
         arrangeClaim();
-        when(outbox.reloadDeliverable(7L, LEASE, PRIVACY_CUTOFF))
+        when(outbox.reloadDeliverable(
+                        7L, LEASE, NOW, DELIVERY_CUTOFF))
                 .thenReturn(Optional.of(message()));
     }
 
@@ -329,5 +387,37 @@ class TelegramWorkerTest {
                 "/fictional/",
                 "repair",
                 NOW.minus(Duration.ofDays(1)));
+    }
+
+    private static TelegramLeadMessage expiringMessage() {
+        return new TelegramLeadMessage(
+                9L,
+                UUID.fromString("33333333-3333-4333-8333-333333333333"),
+                "Fictional Expiring User",
+                "70000000000",
+                null,
+                "/fictional-expiring/",
+                "repair",
+                NOW.minus(Duration.ofDays(29)).plusSeconds(14));
+    }
+
+    private TelegramWorker worker(Clock workerClock) {
+        TelegramWorkerProperties properties = new TelegramWorkerProperties(
+                Duration.ofSeconds(15),
+                10,
+                Duration.ofMinutes(2),
+                Duration.ofSeconds(30),
+                Duration.ofHours(6));
+        return new TelegramWorker(
+                outbox,
+                gateway,
+                new RetryPolicy(
+                        properties.retryInitial(),
+                        properties.retryMaximum()),
+                heartbeat,
+                metrics,
+                properties,
+                new TelegramDeliveryWindow(CALL_BUDGET),
+                workerClock);
     }
 }

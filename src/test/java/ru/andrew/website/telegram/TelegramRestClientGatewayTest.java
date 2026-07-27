@@ -1,6 +1,7 @@
 package ru.andrew.website.telegram;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
@@ -19,8 +20,10 @@ import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,6 +53,10 @@ class TelegramRestClientGatewayTest {
     private static final String BOT_ENDPOINT =
             "https://api.telegram.org/bot" + ENCODED_BOT_PATH_VALUE + "/sendMessage";
     private static final String CHAT = "test-only-chat-not-a-destination";
+    private static final Instant NOW =
+            Instant.parse("2026-01-30T00:00:00Z");
+    private static final Instant DELIVERY_DEADLINE =
+            NOW.plusSeconds(30);
     private RestClient.Builder builder;
     private MockRestServiceServer server;
     private TelegramRestClientGateway gateway;
@@ -72,7 +79,7 @@ class TelegramRestClientGatewayTest {
                 .andExpect(jsonPath("$.parse_mode").doesNotExist())
                 .andRespond(withStatus(HttpStatus.OK));
 
-        assertThat(gateway.send(message()))
+        assertThat(gateway.send(message(), DELIVERY_DEADLINE))
                 .isEqualTo(new TelegramDeliveryResult.Delivered());
         server.verify();
     }
@@ -84,7 +91,8 @@ class TelegramRestClientGatewayTest {
         server.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withStatus(status));
 
-        assertThat(gateway.send(message())).isEqualTo(expected);
+        assertThat(gateway.send(message(), DELIVERY_DEADLINE))
+                .isEqualTo(expected);
         server.verify();
     }
 
@@ -130,7 +138,7 @@ class TelegramRestClientGatewayTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body));
 
-        assertThat(gateway.send(message()))
+        assertThat(gateway.send(message(), DELIVERY_DEADLINE))
                 .isEqualTo(new TelegramDeliveryResult.Retryable(
                         "telegram_429", expected));
         server.verify();
@@ -165,7 +173,7 @@ class TelegramRestClientGatewayTest {
         server.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withException(failure));
 
-        assertThat(gateway.send(message()))
+        assertThat(gateway.send(message(), DELIVERY_DEADLINE))
                 .isEqualTo(new TelegramDeliveryResult.Retryable("network", null));
         assertThat(output.getAll()).doesNotContain(
                 failure.getMessage(), BOT_PATH_VALUE, ENCODED_BOT_PATH_VALUE, CHAT,
@@ -183,7 +191,7 @@ class TelegramRestClientGatewayTest {
 
         try {
             restClientLogger.setLevel(Level.DEBUG);
-            gateway.send(message());
+            gateway.send(message(), DELIVERY_DEADLINE);
         } finally {
             restClientLogger.setLevel(previousLevel);
         }
@@ -238,7 +246,7 @@ class TelegramRestClientGatewayTest {
         observedServer.expect(once(), requestTo(BOT_ENDPOINT))
                 .andRespond(withStatus(HttpStatus.OK));
 
-        observedGateway.send(message());
+        observedGateway.send(message(), DELIVERY_DEADLINE);
 
         assertThat(meters.find("http.client.requests").meters()).isEmpty();
         assertThat(meters.find(TelegramClientTelemetry.OBSERVATION_NAME).meters())
@@ -299,7 +307,8 @@ class TelegramRestClientGatewayTest {
                 .andRespond(withException(
                         new IOException("fictional-network-failure")));
 
-        assertThat(observedGateway.send(message()))
+        assertThat(observedGateway.send(
+                        message(), DELIVERY_DEADLINE))
                 .isEqualTo(new TelegramDeliveryResult.Retryable(
                         "network", null));
 
@@ -325,6 +334,15 @@ class TelegramRestClientGatewayTest {
         observedServer.verify();
     }
 
+    @Test
+    void expiredDeadlinePreventsTheHttpCall() {
+        assertThatThrownBy(() -> gateway.send(message(), NOW))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Telegram delivery deadline expired before HTTP call");
+
+        server.verify();
+    }
+
     private TelegramRestClientGateway gateway(RestClient.Builder restClientBuilder) {
         return gateway(restClientBuilder, ObservationRegistry.NOOP);
     }
@@ -340,7 +358,8 @@ class TelegramRestClientGatewayTest {
                         URI.create("https://api.telegram.org")),
                 new TelegramMessageFormatter(),
                 new TelegramRetryAfterParser(JsonMapper.builder().build()),
-                new TelegramClientTelemetry(observationRegistry));
+                new TelegramClientTelemetry(observationRegistry),
+                Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private static TelegramLeadMessage message() {

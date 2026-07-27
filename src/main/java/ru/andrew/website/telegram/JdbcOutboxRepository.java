@@ -13,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 public class JdbcOutboxRepository implements OutboxRepository {
     static final int MAX_CLAIM_SIZE = 10;
-    private static final Duration PRIVACY_THRESHOLD =
-            Duration.ofDays(29);
 
     private final JdbcClient jdbc;
 
@@ -55,6 +53,7 @@ public class JdbcOutboxRepository implements OutboxRepository {
     public Optional<TelegramLeadMessage> reloadDeliverable(
             long outboxId,
             UUID leaseToken,
+            Instant observedAt,
             Instant privacyCutoff) {
         return jdbc.sql("""
                         select
@@ -77,10 +76,7 @@ public class JdbcOutboxRepository implements OutboxRepository {
                         """)
                 .param("outboxId", outboxId)
                 .param("leaseToken", leaseToken)
-                .param(
-                        "now",
-                        asUtcTimestamp(
-                                privacyCutoff.plus(PRIVACY_THRESHOLD)))
+                .param("now", asUtcTimestamp(observedAt))
                 .param("privacyCutoff", asUtcTimestamp(privacyCutoff))
                 .query((result, rowNumber) -> message(
                         result.getLong("id"),
