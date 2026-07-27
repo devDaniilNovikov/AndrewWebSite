@@ -14,6 +14,7 @@ import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.http.client.autoconfigure.HttpClientsProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -73,6 +74,11 @@ class TelegramSchedulingConfigurationTest {
                 Duration.ofMinutes(2),
                 Duration.ofSeconds(30),
                 Duration.ofHours(6));
+        var httpClients = new HttpClientsProperties();
+        httpClients.setConnectTimeout(Duration.ofSeconds(3));
+        httpClients.setReadTimeout(Duration.ofSeconds(10));
+        var deliveryWindow = configuration.telegramDeliveryWindow(
+                properties, httpClients);
         var metrics = configuration.telegramMetrics(
                 registry, outbox, heartbeat, clock);
 
@@ -85,6 +91,7 @@ class TelegramSchedulingConfigurationTest {
                         heartbeat,
                         metrics,
                         properties,
+                        deliveryWindow,
                         clock))
                 .isInstanceOf(TelegramWorker.class);
     }

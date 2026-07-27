@@ -67,7 +67,7 @@ class TelegramBootRestClientIntegrationTest {
         RESPONSE_MODE.set(ResponseMode.REDIRECT);
         REDIRECT_TARGET_CALLS.set(0);
 
-        assertThat(gateway.send(message()))
+        assertThat(gateway.send(message(), Instant.MAX))
                 .isEqualTo(new TelegramDeliveryResult.Retryable(
                         "telegram_unexpected", null));
         assertThat(REDIRECT_TARGET_CALLS).hasValue(0);
@@ -79,7 +79,7 @@ class TelegramBootRestClientIntegrationTest {
 
         TelegramDeliveryResult result = assertTimeout(
                 Duration.ofMillis(750),
-                () -> gateway.send(message()));
+                () -> gateway.send(message(), Instant.MAX));
 
         assertThat(result)
                 .isEqualTo(new TelegramDeliveryResult.Retryable("network", null));

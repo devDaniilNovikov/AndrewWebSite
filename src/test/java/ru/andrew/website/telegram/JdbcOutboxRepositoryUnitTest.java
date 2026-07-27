@@ -110,7 +110,8 @@ class JdbcOutboxRepositoryUnitTest {
         var repository = new JdbcOutboxRepository(jdbc);
 
         var message =
-                repository.reloadDeliverable(7L, LEASE_TOKEN, PRIVACY_CUTOFF);
+                repository.reloadDeliverable(
+                        7L, LEASE_TOKEN, NOW, PRIVACY_CUTOFF);
 
         assertThat(message).contains(new TelegramLeadMessage(
                 17L,

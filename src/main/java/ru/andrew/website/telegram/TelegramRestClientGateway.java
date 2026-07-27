@@ -2,7 +2,9 @@ package ru.andrew.website.telegram;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.observation.ObservationRegistry;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.OptionalLong;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -13,19 +15,23 @@ import org.springframework.web.client.RestClientException;
 @Component
 public final class TelegramRestClientGateway implements TelegramGateway {
     private static final Duration MAX_RETRY_AFTER = Duration.ofHours(6);
+    private static final String EXPIRED_DEADLINE =
+            "Telegram delivery deadline expired before HTTP call";
 
     private final RestClient restClient;
     private final TelegramClientProperties properties;
     private final TelegramMessageFormatter formatter;
     private final TelegramRetryAfterParser retryAfterParser;
     private final TelegramClientTelemetry telemetry;
+    private final Clock clock;
 
     public TelegramRestClientGateway(
             RestClient.Builder restClientBuilder,
             TelegramClientProperties properties,
             TelegramMessageFormatter formatter,
             TelegramRetryAfterParser retryAfterParser,
-            TelegramClientTelemetry telemetry) {
+            TelegramClientTelemetry telemetry,
+            Clock clock) {
         this.restClient = restClientBuilder
                 .baseUrl(properties.baseUrl().toString())
                 .observationRegistry(ObservationRegistry.NOOP)
@@ -34,15 +40,21 @@ public final class TelegramRestClientGateway implements TelegramGateway {
         this.formatter = formatter;
         this.retryAfterParser = retryAfterParser;
         this.telemetry = telemetry;
+        this.clock = clock;
     }
 
     @Override
-    public TelegramDeliveryResult send(TelegramLeadMessage message) {
+    public TelegramDeliveryResult send(
+            TelegramLeadMessage message, Instant latestStart) {
         String text = formatter.format(message);
-        return telemetry.observe(() -> send(text));
+        return telemetry.observe(() -> send(text, latestStart));
     }
 
-    private TelegramDeliveryResult send(String text) {
+    private TelegramDeliveryResult send(
+            String text, Instant latestStart) {
+        if (!clock.instant().isBefore(latestStart)) {
+            throw new IllegalStateException(EXPIRED_DEADLINE);
+        }
         try {
             return restClient
                     .post()
