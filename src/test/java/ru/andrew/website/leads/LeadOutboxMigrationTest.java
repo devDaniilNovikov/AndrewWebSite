@@ -1,17 +1,23 @@
 package ru.andrew.website.leads;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import ru.andrew.website.testing.PostgresTestConfiguration;
@@ -21,26 +27,33 @@ import ru.andrew.website.testing.PostgresTestConfiguration;
 @ActiveProfiles("test")
 @Import(PostgresTestConfiguration.class)
 class LeadOutboxMigrationTest {
+    private static final String UPGRADE_SCHEMA = "sec03_upgrade";
+
     @Autowired
     JdbcClient jdbc;
 
     @Autowired
     Flyway flyway;
 
+    @Autowired
+    DataSource dataSource;
+
     @Test
-    void appliesOneValidatedMigrationToPostgres18AndRemainsIdempotent() {
+    void appliesValidatedMigrationsToPostgres18AndRemainsIdempotent() {
         int serverVersion = Integer.parseInt(
                 jdbc.sql("show server_version_num").query(String.class).single());
         assertThat(serverVersion / 10_000).isEqualTo(18);
 
         assertThat(migrationHistory()).containsExactly(
-                new MigrationHistory("1", "lead outbox baseline", "SQL", true, true));
+                new MigrationHistory("1", "lead outbox baseline", "SQL", true, true),
+                new MigrationHistory("2", "privacy identity hardening", "SQL", true, true));
 
         flyway.validate();
         flyway.migrate();
 
         assertThat(migrationHistory()).containsExactly(
-                new MigrationHistory("1", "lead outbox baseline", "SQL", true, true));
+                new MigrationHistory("1", "lead outbox baseline", "SQL", true, true),
+                new MigrationHistory("2", "privacy identity hardening", "SQL", true, true));
     }
 
     @Test
@@ -83,7 +96,8 @@ class LeadOutboxMigrationTest {
                 "ck_leads_intent",
                 "ck_leads_fingerprint",
                 "ck_leads_phone",
-                "ck_leads_privacy");
+                "ck_leads_privacy",
+                "ck_leads_request_id_v4");
         assertThat(constraintNames("telegram_outbox")).containsExactlyInAnyOrder(
                 "telegram_outbox_pkey",
                 "uk_telegram_outbox_lead_id",
@@ -101,6 +115,14 @@ class LeadOutboxMigrationTest {
                 .single();
         assertThat(foreignKey).contains(
                 "FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE");
+        assertThat(constraintDefinition("ck_leads_privacy"))
+                .contains("source_path")
+                .contains("'/'");
+        assertThat(constraintDefinition("ck_leads_request_id_v4"))
+                .contains("uuid_extract_version(request_id)")
+                .contains("distinct from 4")
+                .contains("not valid");
+        assertThat(constraintValidated("ck_leads_request_id_v4")).isFalse();
 
         Map<String, String> indexes = indexes();
         assertThat(indexes).containsOnlyKeys(
@@ -123,6 +145,122 @@ class LeadOutboxMigrationTest {
                 .contains("on public.telegram_outbox using btree (lease_until, id)")
                 .contains("where")
                 .contains("'processing'");
+    }
+
+    @Test
+    void upgradesLegacyRowsWithoutBlockingTheirAnonymization() {
+        jdbc.sql("drop schema if exists " + UPGRADE_SCHEMA + " cascade").update();
+        jdbc.sql("create schema " + UPGRADE_SCHEMA).update();
+        try {
+            Flyway v1 = isolatedFlyway(MigrationVersion.fromVersion("1"));
+            v1.migrate();
+
+            UUID legacyActive =
+                    UUID.fromString("11111111-1111-1111-8111-111111111111");
+            UUID legacyAnonymized = UUID.randomUUID();
+            insertUpgradeLead(legacyActive, false, "/legacy/active/");
+            insertUpgradeLead(
+                    legacyAnonymized,
+                    true,
+                    "/legacy/anonymized?phone=70000000000");
+
+            isolatedFlyway(MigrationVersion.LATEST).migrate();
+
+            assertThat(upgradeSourcePath(legacyAnonymized)).isEqualTo("/");
+            assertThat(upgradeSourcePath(legacyActive))
+                    .isEqualTo("/legacy/active/");
+
+            jdbc.sql("""
+                            update sec03_upgrade.leads
+                            set payload_fingerprint = null,
+                                name = null,
+                                phone = null,
+                                comment = null,
+                                source_path = '/',
+                                anonymized_at = now()
+                            where request_id = :requestId
+                            """)
+                    .param("requestId", legacyActive)
+                    .update();
+
+            assertThatThrownBy(() -> insertUpgradeLead(
+                            UUID.fromString(
+                                    "22222222-2222-1222-8222-222222222222"),
+                            false,
+                            "/new/v1/"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> insertUpgradeLead(
+                            UUID.fromString(
+                                    "33333333-3333-4333-0333-333333333333"),
+                            false,
+                            "/new/non-rfc/"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+        } finally {
+            jdbc.sql("drop schema if exists " + UPGRADE_SCHEMA + " cascade")
+                    .update();
+        }
+    }
+
+    private Flyway isolatedFlyway(MigrationVersion target) {
+        return Flyway.configure()
+                .dataSource(dataSource)
+                .schemas(UPGRADE_SCHEMA)
+                .defaultSchema(UPGRADE_SCHEMA)
+                .target(target)
+                .locations("classpath:db/migration")
+                .load();
+    }
+
+    private void insertUpgradeLead(
+            UUID requestId, boolean anonymized, String sourcePath) {
+        OffsetDateTime now = OffsetDateTime.now();
+        jdbc.sql("""
+                        insert into sec03_upgrade.leads(
+                            request_id, payload_fingerprint, name, phone,
+                            comment, source_path, intent, consented_at,
+                            created_at, anonymized_at
+                        )
+                        values (
+                            :requestId, :fingerprint, :name, :phone,
+                            :comment, :sourcePath, 'repair', :now, :now,
+                            :anonymizedAt
+                        )
+                        """)
+                .param("requestId", requestId)
+                .param(
+                        "fingerprint",
+                        anonymized ? null : new byte[32],
+                        java.sql.Types.BINARY)
+                .param(
+                        "name",
+                        anonymized ? null : "Fictional Legacy User",
+                        java.sql.Types.VARCHAR)
+                .param(
+                        "phone",
+                        anonymized ? null : "70000000000",
+                        java.sql.Types.VARCHAR)
+                .param(
+                        "comment",
+                        anonymized ? null : "fictional legacy comment",
+                        java.sql.Types.VARCHAR)
+                .param("sourcePath", sourcePath)
+                .param("now", now)
+                .param(
+                        "anonymizedAt",
+                        anonymized ? now : null,
+                        java.sql.Types.TIMESTAMP_WITH_TIMEZONE)
+                .update();
+    }
+
+    private String upgradeSourcePath(UUID requestId) {
+        return jdbc.sql("""
+                        select source_path
+                        from sec03_upgrade.leads
+                        where request_id = :requestId
+                        """)
+                .param("requestId", requestId)
+                .query(String.class)
+                .single();
     }
 
     private List<MigrationHistory> migrationHistory() {
@@ -177,6 +315,28 @@ class LeadOutboxMigrationTest {
                 .param("table", "public." + table)
                 .query(String.class)
                 .list();
+    }
+
+    private String constraintDefinition(String constraint) {
+        return normalize(jdbc.sql("""
+                        select pg_get_constraintdef(oid)
+                        from pg_constraint
+                        where conname = :constraint
+                        """)
+                .param("constraint", constraint)
+                .query(String.class)
+                .single());
+    }
+
+    private boolean constraintValidated(String constraint) {
+        return jdbc.sql("""
+                        select convalidated
+                        from pg_constraint
+                        where conname = :constraint
+                        """)
+                .param("constraint", constraint)
+                .query(Boolean.class)
+                .single();
     }
 
     private Map<String, String> indexes() {

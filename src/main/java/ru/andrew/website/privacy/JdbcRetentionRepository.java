@@ -59,6 +59,7 @@ public class JdbcRetentionRepository
                             set name = null,
                                 phone = null,
                                 comment = null,
+                                source_path = '/',
                                 payload_fingerprint = null,
                                 anonymized_at = :anonymizedAt
                             from candidates c

@@ -245,7 +245,7 @@ class LeadControllerContractTest {
                 validBodyWithRequestIdAndIntent(
                         "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA", "maintenance"),
                 validBodyWithRequestIdAndIntent(
-                        "00000000-0000-0000-0000-000000000000", "repair"),
+                        "00000000-0000-4000-8000-000000000000", "repair"),
                 validBodyWithField(
                                 "\"name\":\"Иван\"",
                                 "\"name\":\"A\\uD83D\\uDE00B\"")
@@ -287,6 +287,9 @@ class LeadControllerContractTest {
                 validBodyWithRequestId("AAAAAAAAAAAAAAAAAAAAAA"),
                 validBodyWithRequestId("1-1-1-1-1"),
                 validBodyWithRequestId(" 11111111-1111-4111-8111-111111111111 "),
+                validBodyWithRequestId("11111111-1111-1111-8111-111111111111"),
+                validBodyWithRequestId("00000000-0000-0000-0000-000000000000"),
+                validBodyWithRequestId("11111111-1111-4111-0111-111111111111"),
                 validBodyWithIntent(" repair "),
                 validBodyWithIntent("Repair"),
                 validBodyWithIntent("unknown"),
@@ -309,6 +312,8 @@ class LeadControllerContractTest {
                 "{\"website\":\"bot\",\"requestId\":\"AAAAAAAAAAAAAAAAAAAAAA==\"}",
                 "{\"website\":\"bot\",\"requestId\":\"AAAAAAAAAAAAAAAAAAAAAA\"}",
                 "{\"website\":\"bot\",\"requestId\":\"1-1-1-1-1\"}",
+                "{\"website\":\"bot\",\"requestId\":\"11111111-1111-1111-8111-111111111111\"}",
+                "{\"website\":\"bot\",\"requestId\":\"11111111-1111-4111-0111-111111111111\"}",
                 """
                 {"website":"bot",
                  "requestId":" 11111111-1111-4111-8111-111111111111 "}

@@ -128,7 +128,7 @@ For 401/403 or sustained permanent failures, rotate or repair the credential onl
 
 ## Retention operations
 
-The privacy worker runs hourly in bounded batches with a supplied `Clock`. A single transaction first blocks every undelivered outbox row whose lead is at least 29 days old, including leased work, then clears lead name, phone, comment, and HMAC fingerprint and records `anonymized_at`. Rows anonymized for 12 months are deleted with their outbox rows. A successful complete pass advances the retention heartbeat; failures do not.
+The privacy worker runs hourly in bounded batches with a supplied `Clock`. A single transaction first blocks every undelivered outbox row whose lead is at least 29 days old, including leased work, then clears lead name, phone, comment, HMAC fingerprint, and the client-supplied source path (replacing it with `/`) before recording `anonymized_at`. Rows anonymized for 12 months are deleted with their outbox rows. A successful complete pass advances the retention heartbeat; failures do not.
 
 Alert before the hard boundary: retention heartbeat older than two hours is urgent, any PII-bearing row older than 29 days is critical, and any PII-bearing row at 30 days is a privacy incident. The outbox claim query repeats the `< 29 days` predicate, and the gateway reloads the lead using its lease token immediately before send, so retention wins races and stale claims cannot send expired PII.
 
