@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-sec-05-retention-skip-locked-heartbeat` | `2026-07-27-060528-fix-sec-05-retention-skip-locked-heartbeat-handoff.md` → `2026-07-27-061358-fix-sec-05-retention-skip-locked-heartbeat-verified-handoff.md` | local implementation and security gates verified; Draft PR next | backend, privacy, security, tracker |
+| `fix-sec-05-retention-skip-locked-heartbeat` | `2026-07-27-060528-fix-sec-05-retention-skip-locked-heartbeat-handoff.md` → `2026-07-27-061358-fix-sec-05-retention-skip-locked-heartbeat-verified-handoff.md` → `2026-07-27-061528-fix-sec-05-retention-skip-locked-heartbeat-draft-pr-handoff.md` | Draft PR #58 open; exact-head checks pending | backend, privacy, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
