@@ -277,7 +277,9 @@ class TelegramWorkerIntegrationTest {
     }
 
     private static UUID requestId(int index) {
-        return new UUID(0L, index + 1L);
+        return new UUID(
+                0x0000000000004000L,
+                0x8000000000000000L | Integer.toUnsignedLong(index + 1));
     }
 
     private record PersistedOutbox(

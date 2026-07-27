@@ -168,7 +168,7 @@ class RetentionBoundaryTest {
                         )
                         values (
                             :requestId, null, null, null, null,
-                            '/fictional-retention/', 'repair',
+                            '/', 'repair',
                             :createdAt, :createdAt, :anonymizedAt
                         )
                         returning id
@@ -265,13 +265,14 @@ class RetentionBoundaryTest {
         assertThat(row.get("phone")).isNull();
         assertThat(row.get("comment")).isNull();
         assertThat(row.get("payload_fingerprint")).isNull();
+        assertThat(row.get("source_path")).isEqualTo("/");
         assertThat(row.get("anonymized_at")).isNotNull();
     }
 
     private Map<String, Object> leadRow(long leadId) {
         return jdbc.sql("""
                         select
-                            name, phone, comment, payload_fingerprint,
+                            name, phone, comment, source_path, payload_fingerprint,
                             anonymized_at
                         from leads
                         where id = :id
@@ -302,6 +303,7 @@ class RetentionBoundaryTest {
                               name is not null
                               or phone is not null
                               or comment is not null
+                              or source_path <> '/'
                               or payload_fingerprint is not null
                           )
                         """)

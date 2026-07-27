@@ -232,6 +232,7 @@ class JdbcOutboxRepositoryIntegrationTest {
                             name = null,
                             phone = null,
                             comment = null,
+                            source_path = '/',
                             anonymized_at = :now
                         where id = :leadId
                         """)
@@ -436,7 +437,7 @@ class JdbcOutboxRepositoryIntegrationTest {
                         )
                         returning id
                         """)
-                .param("requestId", new UUID(0L, index + 1L))
+                .param("requestId", requestId(index))
                 .param("createdAt", createdAt.atOffset(ZoneOffset.UTC))
                 .query(Long.class)
                 .single();
@@ -492,13 +493,19 @@ class JdbcOutboxRepositoryIntegrationTest {
     private static TelegramLeadMessage message(long leadId, int index) {
         return new TelegramLeadMessage(
                 leadId,
-                new UUID(0L, index + 1L),
+                requestId(index),
                 "Fictional User",
                 "70000000000",
                 null,
                 "/fictional/",
                 "repair",
                 NOW.minus(Duration.ofDays(1)));
+    }
+
+    private static UUID requestId(int index) {
+        return new UUID(
+                0x0000000000004000L,
+                0x8000000000000000L | Integer.toUnsignedLong(index + 1));
     }
 
     private record PersistedState(

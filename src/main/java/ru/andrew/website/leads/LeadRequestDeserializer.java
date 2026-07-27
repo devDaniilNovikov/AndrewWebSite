@@ -63,7 +63,14 @@ public final class LeadRequestDeserializer extends ValueDeserializer<LeadRequest
             return context.reportPropertyInputMismatch(
                     LeadRequest.class, property, "Property must be a canonical UUID string");
         }
-        return UUID.fromString(rawUuid);
+        UUID requestId = UUID.fromString(rawUuid);
+        if (requestId.version() != 4 || requestId.variant() != 2) {
+            return context.reportPropertyInputMismatch(
+                    LeadRequest.class,
+                    property,
+                    "Property must be a version 4 UUID");
+        }
+        return requestId;
     }
 
     private static String optionalText(

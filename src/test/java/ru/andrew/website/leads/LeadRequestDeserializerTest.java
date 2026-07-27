@@ -73,6 +73,36 @@ class LeadRequestDeserializerTest {
     }
 
     @Test
+    void reportsNonVersionFourRequestIdThroughTheDeserializationContext()
+            throws JacksonException {
+        DeserializationContext context = mock(DeserializationContext.class);
+        ObjectNode request = NODES.objectNode()
+                .put("requestId", "11111111-1111-1111-8111-111111111111");
+
+        assertThat(deserialize(request, context).requestId()).isNull();
+        verify(context)
+                .reportPropertyInputMismatch(
+                        LeadRequest.class,
+                        "requestId",
+                        "Property must be a version 4 UUID");
+    }
+
+    @Test
+    void reportsNonRfcVariantRequestIdThroughTheDeserializationContext()
+            throws JacksonException {
+        DeserializationContext context = mock(DeserializationContext.class);
+        ObjectNode request = NODES.objectNode()
+                .put("requestId", "11111111-1111-4111-0111-111111111111");
+
+        assertThat(deserialize(request, context).requestId()).isNull();
+        verify(context)
+                .reportPropertyInputMismatch(
+                        LeadRequest.class,
+                        "requestId",
+                        "Property must be a version 4 UUID");
+    }
+
+    @Test
     void reportsNonStringTextThroughTheDeserializationContext() throws JacksonException {
         DeserializationContext context = mock(DeserializationContext.class);
         ObjectNode request = NODES.objectNode().put("name", false);

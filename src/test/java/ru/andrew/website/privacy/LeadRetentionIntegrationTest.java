@@ -206,6 +206,7 @@ class LeadRetentionIntegrationTest {
                         where name is not null
                            or phone is not null
                            or comment is not null
+                           or source_path <> '/'
                            or payload_fingerprint is not null
                         """)
                 .query(Integer.class)

@@ -45,6 +45,22 @@ class LeadOutboxConstraintTest {
         assertThatThrownBy(() ->
                         insertActiveLead(UUID.randomUUID(), 32, "7000000000000000", "repair"))
                 .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() ->
+                        insertActiveLead(
+                                UUID.fromString(
+                                        "11111111-1111-1111-8111-111111111111"),
+                                32,
+                                "70000000000",
+                                "repair"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() ->
+                        insertActiveLead(
+                                UUID.fromString(
+                                        "11111111-1111-4111-0111-111111111111"),
+                                32,
+                                "70000000000",
+                                "repair"))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -105,6 +121,36 @@ class LeadOutboxConstraintTest {
                         .update())
                 .isInstanceOf(DataIntegrityViolationException.class);
 
+        assertThatThrownBy(() -> jdbc.sql("""
+                                insert into leads(
+                                    request_id,
+                                    payload_fingerprint,
+                                    name,
+                                    phone,
+                                    comment,
+                                    source_path,
+                                    intent,
+                                    consented_at,
+                                    created_at,
+                                    anonymized_at
+                                )
+                                values (
+                                    :requestId,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    '/test/',
+                                    'maintenance',
+                                    now(),
+                                    now(),
+                                    now()
+                                )
+                                """)
+                        .param("requestId", UUID.randomUUID())
+                        .update())
+                .isInstanceOf(DataIntegrityViolationException.class);
+
         long anonymizedLeadId = jdbc.sql("""
                         insert into leads(
                             request_id,
@@ -124,7 +170,7 @@ class LeadOutboxConstraintTest {
                             null,
                             null,
                             null,
-                            '/test/',
+                            '/',
                             'maintenance',
                             now(),
                             now(),
