@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-sec-03-pii-anonymization-uuidv4` | `2026-07-27-052126-fix-sec-03-pii-anonymization-uuidv4-verified-handoff.md` → `2026-07-27-052308-fix-sec-03-pii-anonymization-uuidv4-draft-pr-handoff.md` → `2026-07-27-052649-fix-sec-03-pii-anonymization-uuidv4-ready-handoff.md` | reviewed Draft head green; metadata-only Ready head requires exact checks before authorized merge | backend, privacy, security, tracker |
+| `fix-sec-04-send-retention-race` | `2026-07-27-053724-fix-sec-04-send-retention-race-handoff.md` | fresh branch from merged SEC-03; deterministic RED race next | backend, privacy, telegram, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -51,6 +51,7 @@ design.
 | `task-lead-retention` | 4 | `2026-07-26-133209-task-lead-retention-merged-handoff.md` | merged as `ceefd7a`; retained source branch; post-merge Repository policy, verify, Java security, Dependency Submission, and Semgrep green | backend, privacy, security, tracker |
 | `task-backend-observability` | 5 | `2026-07-26-173224-task-backend-observability-merged-handoff.md` | merged as `27e6bb4`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | backend, security, telemetry, tracker |
 | `fix-http-security-framework-native-deny` | 5 | `2026-07-26-183503-fix-http-security-framework-native-deny-ready-handoff.md` | merged as `9d33ff6`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | backend, security, tracker |
+| `fix-sec-03-pii-anonymization-uuidv4` | 3 | `2026-07-27-052649-fix-sec-03-pii-anonymization-uuidv4-ready-handoff.md` | merged as `0419337`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | backend, privacy, security, tracker |
 
 ## Rules
 
