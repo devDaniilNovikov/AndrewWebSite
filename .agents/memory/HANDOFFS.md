@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-sec-03-pii-anonymization-uuidv4` | `2026-07-27-052126-fix-sec-03-pii-anonymization-uuidv4-verified-handoff.md` | local implementation and security gates green; publication and exact-head CI next | backend, privacy, security, tracker |
+| `fix-sec-03-pii-anonymization-uuidv4` | `2026-07-27-052126-fix-sec-03-pii-anonymization-uuidv4-verified-handoff.md` → `2026-07-27-052308-fix-sec-03-pii-anonymization-uuidv4-draft-pr-handoff.md` | Draft PR #56 open; metadata head requires exact CI/security checks | backend, privacy, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
