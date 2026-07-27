@@ -31,22 +31,28 @@ public final class RetentionService {
                     "${app.privacy.retention.poll-interval:1h}")
     public void runOnce() {
         Instant now = clock.instant();
+        Instant expireCutoff =
+                now.minus(properties.anonymizeAfter());
         RetentionBatchResult expired;
         do {
             expired = repository.expireBatch(
-                    now.minus(properties.anonymizeAfter()),
+                    expireCutoff,
                     properties.batchSize());
             metrics.anonymized(expired.anonymized());
         } while (expired.anonymized() == properties.batchSize());
 
+        Instant deleteCutoff = deletionCutoff(now);
         int deleted;
         do {
             deleted = repository.deleteBatch(
-                    deletionCutoff(now),
+                    deleteCutoff,
                     properties.batchSize());
             metrics.deleted(deleted);
         } while (deleted == properties.batchSize());
-        heartbeat.success(now);
+        if (repository.isComplete(
+                expireCutoff, deleteCutoff)) {
+            heartbeat.success(now);
+        }
     }
 
     private Instant deletionCutoff(Instant now) {

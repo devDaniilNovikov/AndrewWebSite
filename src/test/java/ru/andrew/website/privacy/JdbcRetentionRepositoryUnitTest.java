@@ -68,6 +68,33 @@ class JdbcRetentionRepositoryUnitTest {
         verify(statement).param("limit", 5);
     }
 
+    @Test
+    void provesCompletionAcrossBothIndexedCutoffs() {
+        JdbcClient jdbc = mock(JdbcClient.class);
+        JdbcClient.StatementSpec statement =
+                mock(JdbcClient.StatementSpec.class, RETURNS_SELF);
+        @SuppressWarnings("unchecked")
+        JdbcClient.MappedQuerySpec<Boolean> query =
+                mock(JdbcClient.MappedQuerySpec.class);
+        when(statement.query(Boolean.class)).thenReturn(query);
+        when(query.single()).thenReturn(true);
+        when(jdbc.sql(contains("select not (")))
+                .thenReturn(statement);
+        var repository = repository(jdbc);
+
+        assertThat(repository.isComplete(
+                        EXPIRE_CUTOFF, DELETE_CUTOFF))
+                .isTrue();
+        verify(jdbc).sql(contains("created_at <= :expireCutoff"));
+        verify(jdbc).sql(contains("anonymized_at <= :deleteCutoff"));
+        verify(statement).param(
+                "expireCutoff",
+                EXPIRE_CUTOFF.atOffset(ZoneOffset.UTC));
+        verify(statement).param(
+                "deleteCutoff",
+                DELETE_CUTOFF.atOffset(ZoneOffset.UTC));
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static JdbcClient.StatementSpec retentionResultSpec(
             int anonymized, int blocked) throws Exception {

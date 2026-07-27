@@ -116,16 +116,52 @@ public class JdbcRetentionRepository
                 .single();
     }
 
+    @Override
+    public boolean isComplete(
+            Instant expireCutoffInclusive,
+            Instant deleteCutoffInclusive) {
+        requireCutoff(expireCutoffInclusive);
+        requireCutoff(deleteCutoffInclusive);
+        return jdbc.sql("""
+                        select not (
+                            exists (
+                                select 1
+                                from leads
+                                where anonymized_at is null
+                                  and created_at <= :expireCutoff
+                            )
+                            or exists (
+                                select 1
+                                from leads
+                                where anonymized_at is not null
+                                  and anonymized_at <= :deleteCutoff
+                            )
+                        )
+                        """)
+                .param(
+                        "expireCutoff",
+                        asUtcTimestamp(expireCutoffInclusive))
+                .param(
+                        "deleteCutoff",
+                        asUtcTimestamp(deleteCutoffInclusive))
+                .query(Boolean.class)
+                .single();
+    }
+
     private static void validateArguments(
             Instant cutoff, int limit) {
-        if (cutoff == null) {
-            throw new IllegalArgumentException(MISSING_CUTOFF);
-        }
+        requireCutoff(cutoff);
         if (limit < 1) {
             throw new IllegalArgumentException(INVALID_BATCH);
         }
         if (limit > RetentionProperties.MAX_BATCH_SIZE) {
             throw new IllegalArgumentException(INVALID_BATCH);
+        }
+    }
+
+    private static void requireCutoff(Instant cutoff) {
+        if (cutoff == null) {
+            throw new IllegalArgumentException(MISSING_CUTOFF);
         }
     }
 

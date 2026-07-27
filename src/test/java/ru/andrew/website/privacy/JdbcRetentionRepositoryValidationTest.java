@@ -25,6 +25,12 @@ class JdbcRetentionRepositoryValidationTest {
         assertThatThrownBy(() -> repository.deleteBatch(null, 1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("retention cutoff must not be null");
+        assertThatThrownBy(() -> repository.isComplete(null, NOW))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("retention cutoff must not be null");
+        assertThatThrownBy(() -> repository.isComplete(NOW, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("retention cutoff must not be null");
     }
 
     @Test
