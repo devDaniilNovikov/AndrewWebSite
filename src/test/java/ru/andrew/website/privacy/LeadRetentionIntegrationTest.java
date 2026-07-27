@@ -3,6 +3,7 @@ package ru.andrew.website.privacy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.sql.Connection;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -42,6 +44,9 @@ class LeadRetentionIntegrationTest {
 
     @Autowired
     MutableClock clock;
+
+    @Autowired
+    DataSource dataSource;
 
     @BeforeEach
     void clean() {
@@ -134,7 +139,73 @@ class LeadRetentionIntegrationTest {
                 .isEqualTo(1);
     }
 
-    private void insertPendingLead(Instant createdAt) {
+    @Test
+    void lockedExpiredPiiDoesNotProduceACompletePassHeartbeat()
+            throws Exception {
+        Instant contentionNow = NOW.plus(Duration.ofMinutes(1));
+        clock.setInstant(contentionNow);
+        long leadId = insertPendingLead(
+                contentionNow.minus(Duration.ofDays(29)));
+        var heartbeatBefore = heartbeat.lastSuccess();
+
+        try (Connection lock = dataSource.getConnection()) {
+            lock.setAutoCommit(false);
+            try (var statement = lock.prepareStatement(
+                    "select id from leads where id = ? for update")) {
+                statement.setLong(1, leadId);
+                try (var rows = statement.executeQuery()) {
+                    assertThat(rows.next()).isTrue();
+                }
+            }
+
+            retention.runOnce();
+
+            assertThat(heartbeat.lastSuccess())
+                    .isEqualTo(heartbeatBefore);
+            assertThat(piiBearingLeadCount()).isEqualTo(1);
+            lock.rollback();
+        }
+
+        retention.runOnce();
+
+        assertThat(heartbeat.lastSuccess()).contains(contentionNow);
+        assertThat(piiBearingLeadCount()).isZero();
+    }
+
+    @Test
+    void lockedExpiredTechnicalRowDoesNotProduceACompletePassHeartbeat()
+            throws Exception {
+        Instant contentionNow = NOW.plus(Duration.ofMinutes(2));
+        clock.setInstant(contentionNow);
+        long leadId = insertAnonymizedLead(
+                Instant.parse("2025-01-30T00:02:00Z"));
+        var heartbeatBefore = heartbeat.lastSuccess();
+
+        try (Connection lock = dataSource.getConnection()) {
+            lock.setAutoCommit(false);
+            try (var statement = lock.prepareStatement(
+                    "select id from leads where id = ? for update")) {
+                statement.setLong(1, leadId);
+                try (var rows = statement.executeQuery()) {
+                    assertThat(rows.next()).isTrue();
+                }
+            }
+
+            retention.runOnce();
+
+            assertThat(heartbeat.lastSuccess())
+                    .isEqualTo(heartbeatBefore);
+            assertThat(leadExists(leadId)).isTrue();
+            lock.rollback();
+        }
+
+        retention.runOnce();
+
+        assertThat(heartbeat.lastSuccess()).contains(contentionNow);
+        assertThat(leadExists(leadId)).isFalse();
+    }
+
+    private long insertPendingLead(Instant createdAt) {
         long leadId = insertLead(createdAt);
         jdbc.sql("""
                         insert into telegram_outbox(
@@ -149,6 +220,7 @@ class LeadRetentionIntegrationTest {
                 .param("leadId", leadId)
                 .param("createdAt", createdAt.atOffset(ZoneOffset.UTC))
                 .update();
+        return leadId;
     }
 
     private Seed insertProcessingLead(Instant createdAt) {
@@ -196,6 +268,42 @@ class LeadRetentionIntegrationTest {
                 .param("requestId", UUID.randomUUID())
                 .param("createdAt", createdAt.atOffset(ZoneOffset.UTC))
                 .query(Long.class)
+                .single();
+    }
+
+    private long insertAnonymizedLead(Instant anonymizedAt) {
+        Instant createdAt =
+                anonymizedAt.minus(Duration.ofDays(29));
+        return jdbc.sql("""
+                        insert into leads(
+                            request_id, name, phone, comment, source_path,
+                            intent, consented_at, created_at, anonymized_at
+                        )
+                        values (
+                            :requestId, null, null, null, '/', 'repair',
+                            :createdAt, :createdAt, :anonymizedAt
+                        )
+                        returning id
+                        """)
+                .param("requestId", UUID.randomUUID())
+                .param("createdAt", createdAt.atOffset(ZoneOffset.UTC))
+                .param(
+                        "anonymizedAt",
+                        anonymizedAt.atOffset(ZoneOffset.UTC))
+                .query(Long.class)
+                .single();
+    }
+
+    private boolean leadExists(long leadId) {
+        return jdbc.sql("""
+                        select exists (
+                            select 1
+                            from leads
+                            where id = :leadId
+                        )
+                        """)
+                .param("leadId", leadId)
+                .query(Boolean.class)
                 .single();
     }
 

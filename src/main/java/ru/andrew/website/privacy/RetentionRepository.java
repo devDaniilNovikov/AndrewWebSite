@@ -7,4 +7,8 @@ public interface RetentionRepository {
             Instant cutoffInclusive, int limit);
 
     int deleteBatch(Instant anonymizedCutoffInclusive, int limit);
+
+    boolean isComplete(
+            Instant expireCutoffInclusive,
+            Instant deleteCutoffInclusive);
 }

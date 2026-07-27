@@ -184,7 +184,7 @@ The retention worker runs hourly against a supplied `Clock` and updates bounded 
 2. nulls `name`, `phone`, `comment`, and `payload_fingerprint`, replaces `source_path` with `/`, and sets `anonymized_at`;
 3. commits both effects together.
 
-This 29-day operational threshold provides a one-day margin before the hard 30-day PII limit and applies even when Telegram is unavailable. At `anonymized_at <= now - 12 months`, technical rows are deleted; cascade removes the associated outbox row. The retained `request_id` gives safe replay only until that deletion. PostgreSQL backup retention must be at most 30 days, and the Telegram destination auto-delete must be at most 30 days; both are verified production release gates.
+This 29-day operational threshold provides a one-day margin before the hard 30-day PII limit and applies even when Telegram is unavailable. At `anonymized_at <= now - 12 months`, technical rows are deleted; cascade removes the associated outbox row. After both bounded drains, one indexed snapshot checks for any remaining anonymization- or deletion-eligible row without taking a row lock. A row skipped because another transaction holds its lock therefore prevents the complete-pass heartbeat from advancing. The retained `request_id` gives safe replay only until that deletion. PostgreSQL backup retention must be at most 30 days, and the Telegram destination auto-delete must be at most 30 days; both are verified production release gates.
 
 ## Logging and telemetry contract
 

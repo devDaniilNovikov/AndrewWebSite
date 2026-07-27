@@ -33,11 +33,16 @@ class RetentionServiceTest {
                         new RetentionBatchResult(1, 1));
         when(repository.deleteBatch(deleteCutoff, 2))
                 .thenReturn(2, 0);
+        when(repository.isComplete(
+                        expireCutoff, deleteCutoff))
+                .thenReturn(true);
 
         fixture.service().runOnce();
 
         verify(repository, times(2)).expireBatch(expireCutoff, 2);
         verify(repository, times(2)).deleteBatch(deleteCutoff, 2);
+        verify(repository).isComplete(
+                expireCutoff, deleteCutoff);
         assertThat(fixture.heartbeat().lastSuccess()).contains(now);
         assertThat(fixture.registry()
                         .get("andrew.privacy.anonymized")
@@ -62,10 +67,35 @@ class RetentionServiceTest {
         when(repository.expireBatch(now.minus(Duration.ofDays(29)), 10))
                 .thenReturn(new RetentionBatchResult(0, 0));
         when(repository.deleteBatch(expectedCutoff, 10)).thenReturn(0);
+        when(repository.isComplete(
+                        now.minus(Duration.ofDays(29)),
+                        expectedCutoff))
+                .thenReturn(true);
 
         fixture.service().runOnce();
 
         verify(repository).deleteBatch(expectedCutoff, 10);
+    }
+
+    @Test
+    void incompleteSnapshotDoesNotAdvanceHeartbeat() {
+        Instant now = Instant.parse("2026-01-30T00:00:00Z");
+        Instant expireCutoff = now.minus(Duration.ofDays(29));
+        Instant deleteCutoff = Instant.parse("2025-01-30T00:00:00Z");
+        RetentionRepository repository = mock(RetentionRepository.class);
+        var fixture = fixture(repository, now, 10);
+        when(repository.expireBatch(expireCutoff, 10))
+                .thenReturn(new RetentionBatchResult(0, 0));
+        when(repository.deleteBatch(deleteCutoff, 10)).thenReturn(0);
+        when(repository.isComplete(
+                        expireCutoff, deleteCutoff))
+                .thenReturn(false);
+
+        fixture.service().runOnce();
+
+        assertThat(fixture.heartbeat().lastSuccess()).isEmpty();
+        verify(repository).isComplete(
+                expireCutoff, deleteCutoff);
     }
 
     static Stream<Arguments> calendarCutoffs() {
