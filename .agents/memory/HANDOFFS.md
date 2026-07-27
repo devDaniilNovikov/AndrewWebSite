@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-sec-04-send-retention-race` | `2026-07-27-053724-fix-sec-04-send-retention-race-handoff.md` → `2026-07-27-055116-fix-sec-04-send-retention-race-verified-handoff.md` | local implementation and security gates verified; Draft PR next | backend, privacy, telegram, security, tracker |
+| `fix-sec-04-send-retention-race` | `2026-07-27-053724-fix-sec-04-send-retention-race-handoff.md` → `2026-07-27-055116-fix-sec-04-send-retention-race-verified-handoff.md` → `2026-07-27-055303-fix-sec-04-send-retention-race-draft-pr-handoff.md` | Draft PR #57 open; exact-head checks pending | backend, privacy, telegram, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
