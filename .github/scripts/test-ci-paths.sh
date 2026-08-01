@@ -78,12 +78,63 @@ if echo "$FRONTEND_JOB_BLOCK" | grep -E "\bpnpm\b" | grep -v "corepack pnpm"; th
   exit 1
 fi
 
-# 6. Check for missing exact assertions, frozen install, with-deps chromium, full corepack pnpm run verify
+# 6. Check for job-local bootstrap routine and integrity-verified Corepack setup
+if ! echo "$FRONTEND_JOB_BLOCK" | grep -q "npm pack corepack@0.34.5 --ignore-scripts"; then
+  echo "Error: Missing 'npm pack corepack@0.34.5 --ignore-scripts' bootstrap." >&2
+  exit 1
+fi
+
+if ! echo "$FRONTEND_JOB_BLOCK" | grep -q "openssl dgst -sha512" && ! echo "$FRONTEND_JOB_BLOCK" | grep -q "sha512sum"; then
+  echo "Error: Missing SHA-512 calculation assertion." >&2
+  exit 1
+fi
+
 if ! echo "$FRONTEND_JOB_BLOCK" | grep -q 'G+ui7ZUxTzgwRc45pi7OhOybKFnGpxVDp0khf+eFdw/gcQmZfme4nUh4Z4URY9YPoaZYP86zNZmqV/T2Bf5/rA=='; then
   echo "Error: Missing exact Corepack integrity hash assertion." >&2
   exit 1
 fi
 
+if ! echo "$FRONTEND_JOB_BLOCK" | grep -q "ACTUAL_HASH" || ! echo "$FRONTEND_JOB_BLOCK" | grep -q "EXPECTED_HASH"; then
+  echo "Error: Missing integrity comparison guard before extraction." >&2
+  exit 1
+fi
+
+if ! echo "$FRONTEND_JOB_BLOCK" | grep -q "COREPACK_HOME=" || ! echo "$FRONTEND_JOB_BLOCK" | grep -q "BOOTSTRAP_DIR"; then
+  echo "Error: COREPACK_HOME must be RUNNER_TEMP/BOOTSTRAP_DIR-based." >&2
+  exit 1
+fi
+
+if ! echo "$FRONTEND_JOB_BLOCK" | grep -q "package/dist/corepack.js"; then
+  echo "Error: Local function must execute verified package/dist/corepack.js." >&2
+  exit 1
+fi
+
+# Check ordering of cd frontend before actual_pm assertion
+CD_FRONTEND_INDEX=$(echo "$FRONTEND_JOB_BLOCK" | grep -n "cd frontend" | head -n 1 | cut -d: -f1)
+PM_ASSERT_INDEX=$(echo "$FRONTEND_JOB_BLOCK" | grep -n "actual_pm=\$(corepack pnpm --version)" | head -n 1 | cut -d: -f1)
+
+if [ -z "$CD_FRONTEND_INDEX" ] || [ -z "$PM_ASSERT_INDEX" ]; then
+  echo "Error: cd frontend or actual_pm assertion is missing." >&2
+  exit 1
+fi
+
+if [ "$CD_FRONTEND_INDEX" -gt "$PM_ASSERT_INDEX" ]; then
+  echo "Error: cd frontend must occur before the actual_pm pnpm version assertion." >&2
+  exit 1
+fi
+
+# Reject explicit forbidden commands
+if echo "$FRONTEND_JOB_BLOCK" | grep -q "npx corepack"; then
+  echo "Error: 'npx corepack' is forbidden." >&2
+  exit 1
+fi
+
+if echo "$FRONTEND_JOB_BLOCK" | grep -q "npm exec corepack"; then
+  echo "Error: 'npm exec corepack' is forbidden." >&2
+  exit 1
+fi
+
+# 7. Check Node and Playwright chromium run assertions
 if ! echo "$FRONTEND_JOB_BLOCK" | grep -q 'actual_node=$(node --version)'; then
   echo "Error: Missing node version assertion." >&2
   exit 1
@@ -91,11 +142,6 @@ fi
 
 if ! echo "$FRONTEND_JOB_BLOCK" | grep -q 'actual_corepack=$(corepack --version)'; then
   echo "Error: Missing corepack version assertion." >&2
-  exit 1
-fi
-
-if ! echo "$FRONTEND_JOB_BLOCK" | grep -q 'actual_pm=$(corepack pnpm --version)'; then
-  echo "Error: Missing pnpm version assertion." >&2
   exit 1
 fi
 
@@ -114,7 +160,7 @@ if ! echo "$FRONTEND_JOB_BLOCK" | grep -q "corepack pnpm run verify"; then
   exit 1
 fi
 
-# 7. Test verify-ci-paths.sh logic with path fixtures (docs/frontend)
+# 8. Test verify-ci-paths.sh logic with path fixtures (docs/frontend)
 is_skip_paths() {
   local input="$1"
   local result

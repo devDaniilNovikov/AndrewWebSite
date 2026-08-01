@@ -281,14 +281,14 @@ jobs:
             exit 1
           fi
 
+          cd frontend
+
           # Assert exact package manager version
           actual_pm=$(corepack pnpm --version)
           if [ "$actual_pm" != "11.18.0" ]; then
             echo "Error: expected package manager version 11.18.0, got $actual_pm" >&2
             exit 1
           fi
-
-          cd frontend
 
           # Install dependencies with frozen lockfile
           corepack pnpm install --frozen-lockfile
