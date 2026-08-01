@@ -82,6 +82,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Run CI path and security policy compliance tests
+        shell: bash
+        run: |
+          ./.github/scripts/test-ci-paths.sh
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -156,78 +161,101 @@ jobs:
 
       - name: Check changed files
         id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          PUSH_AFTER_SHA: ${{ github.event.after || github.sha }}
         shell: bash
         run: |
           set -euo pipefail
 
-          # Determine the base commit for git diff.
-          # If we are on main branch, we compare HEAD with its parent HEAD~1.
-          # On any other branch or PR, we compare with origin/main.
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            if git rev-parse HEAD~1 >/dev/null 2>&1; then
-              BASE_COMMIT="HEAD~1"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Workflow dispatched manually. Forcing full run."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Determine comparison range
+          DIFF_RANGE=""
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            DIFF_RANGE="$PR_BASE_SHA...$PR_HEAD_SHA"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            if [ -z "$PUSH_BEFORE_SHA" ] || [[ "$PUSH_BEFORE_SHA" =~ ^0+$ ]]; then
+              git fetch origin "$DEFAULT_BRANCH" --depth=1 || true
+              MERGE_BASE=$(git merge-base "origin/$DEFAULT_BRANCH" "$PUSH_AFTER_SHA" || echo "")
+              if [ -n "$MERGE_BASE" ]; then
+                DIFF_RANGE="$MERGE_BASE...$PUSH_AFTER_SHA"
+              fi
             else
-              BASE_COMMIT="HEAD"
+              DIFF_RANGE="$PUSH_BEFORE_SHA..$PUSH_AFTER_SHA"
+            fi
+          fi
+
+          echo "Diff range computed: $DIFF_RANGE"
+
+          any_relevant=false
+          if [ -n "$DIFF_RANGE" ]; then
+            RESULT=$(git diff --name-only -z "$DIFF_RANGE" | .github/scripts/verify-ci-paths.sh)
+            if [ "$RESULT" = "relevant" ]; then
+              any_relevant=true
             fi
           else
-            BASE_COMMIT="origin/main"
+            any_relevant=true
           fi
 
-          echo "Comparing HEAD against $BASE_COMMIT"
-
-          # Use git diff -z to get NUL-separated filenames, then pipe to our verification script.
-          # We run the script to see if the changes are "relevant" or "skip".
-          # Since the script is in our repository, we execute it directly.
-          # Note: if BASE_COMMIT equals HEAD, git diff is empty, which is handled correctly.
-          RESULT=$(git diff --name-only -z "$BASE_COMMIT"...HEAD | .github/scripts/verify-ci-paths.sh)
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Workflow dispatched manually. Forcing full run."
-            RESULT="relevant"
-          fi
-
-          if [ "$RESULT" = "relevant" ]; then
+          if [ "$any_relevant" = true ]; then
             echo "skip=false" >> "$GITHUB_OUTPUT"
             echo "Frontend-relevant changes detected. Full quality run required."
           else
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "No frontend-relevant changes detected. Returning success check early."
+            echo "No frontend-relevant changes detected. Skip run."
           fi
 
-      - name: Set up Node.js 24.14.0
+      - name: Set up Node.js from .node-version
         if: steps.filter.outputs.skip != 'true'
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: '24.14.0'
+          node-version-file: frontend/.node-version
 
-      - name: Enable Corepack and manifest-declared package manager
+      - name: Assert exact versions and execute frontend quality gate
         if: steps.filter.outputs.skip != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          npm install -g corepack@0.34.5
-          corepack enable
 
-      - name: Install dependencies with frozen lockfile
-        if: steps.filter.outputs.skip != 'true'
-        working-directory: frontend
-        shell: bash
-        run: |
-          set -euo pipefail
-          pnpm install --frozen-lockfile
+          # Assert exact Node version
+          actual_node=$(node --version)
+          if [ "$actual_node" != "v24.14.0" ]; then
+            echo "Error: expected Node v24.14.0, got $actual_node" >&2
+            exit 1
+          fi
 
-      - name: Install Playwright Chromium browser only
-        if: steps.filter.outputs.skip != 'true'
-        working-directory: frontend
-        shell: bash
-        run: |
-          set -euo pipefail
-          pnpm exec playwright install chromium
+          # Assert exact Corepack version
+          actual_corepack=$(corepack --version)
+          if [ "$actual_corepack" != "0.34.5" ]; then
+            echo "Error: expected Corepack 0.34.5, got $actual_corepack" >&2
+            exit 1
+          fi
 
-      - name: Run complete frontend verification contract
-        if: steps.filter.outputs.skip != 'true'
-        working-directory: frontend
-        shell: bash
-        run: |
-          set -euo pipefail
-          pnpm run verify
+          # Assert exact package manager version
+          actual_pm=$(corepack pnpm --version)
+          if [ "$actual_pm" != "11.18.0" ]; then
+            echo "Error: expected package manager version 11.18.0, got $actual_pm" >&2
+            exit 1
+          fi
+
+          cd frontend
+
+          # Install dependencies with frozen lockfile
+          corepack pnpm install --frozen-lockfile
+
+          # Install Playwright Chromium browser only with its dependencies
+          corepack pnpm exec playwright install --with-deps chromium
+
+          # Run complete frontend verification contract
+          corepack pnpm run verify

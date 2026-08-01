@@ -19,10 +19,6 @@ is_frontend_relevant() {
   if [[ "$file" =~ ^\.github/scripts/ ]]; then
     return 0
   fi
-  # Frontend-tasks files are also frontend-relevant
-  if [[ "$file" =~ ^frontend-tasks/ ]]; then
-    return 0
-  fi
   return 1
 }
 
