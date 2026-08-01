@@ -7,7 +7,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 ## Active chain
 
 | Task | Chain (chronological) | State | Topics |
-| --- | --- | --- | --- |
+| `task-frontend-foundation` | `2026-08-01-144453-task-frontend-foundation-handoff.md` → `2026-08-01-164024-task-frontend-foundation-draft-handoff.md` → `2026-08-01-164505-task-frontend-foundation-ready-handoff.md` | ready metadata; final exact-head CI required before Ready transition and merge | frontend, security, testing, ci |
 | `task-frontend-foundation` | `2026-08-01-144453-task-frontend-foundation-handoff.md` → `2026-08-01-164024-task-frontend-foundation-draft-handoff.md` | draft_pr; Draft PR #60 open; exact-head CI pending | frontend, security, testing, ci |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
