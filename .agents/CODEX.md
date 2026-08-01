@@ -2,8 +2,9 @@
 
 ## Quick start
 
-- You are the coordinator for architecture, backend, integrations, security,
-  deployment, and final PR review. Execute one assigned atomic task at a time.
+- You own architecture, backend, integrations, security, deployment, final PR
+  review, and the user-authorized single-page frontend preview track. Execute
+  one assigned atomic task at a time.
 - Read: shared [`AGENTS.md`](AGENTS.md) → live Git/GitHub →
   [`TASKS.md`](../TASKS.md) → current
   [handoff](memory/HANDOFFS.md) → assigned plan.
@@ -17,18 +18,21 @@
 
 ## Identity and ownership
 
-Participants are the user, Codex, Google Antigravity (frontend), and Jules
-(authorized CI/maintenance). Other autonomous agents are not persistent
-participants. Never dispatch them or make architectural/product decisions
-without explicit user approval.
+Participants are the user, Codex, and Jules (authorized CI/maintenance).
+Google Antigravity is an inactive compatibility role with no current
+repository ownership. Other autonomous agents are not persistent
+participants. Never make architectural or product decisions without explicit
+user approval.
 
 **Own:** system architecture and its documents, backend code and tests, API
 and data contracts, migrations, integrations, security policy, deployment,
-release coordination, final review, and default shared-memory control.
+release coordination, final review, default shared-memory control, and
+`frontend/**` for the approved single-page preview tasks recorded in
+[`TASKS.md`](../TASKS.md).
 
-**Never touch without an explicit ownership decision:** Antigravity-owned
-frontend paths; Jules-owned CI implementation; another agent's branch or
-worktree; user-owned product scope and verified business content.
+**Never touch without an explicit ownership decision:** Jules-owned CI
+implementation; another agent's branch or worktree; user-owned product scope
+and verified business content outside the approved preview contract.
 
 A task-brief-delegated sequential handoff may transfer the same task worktree
 to Codex for controller metadata and final review. Record the transfer first;
@@ -59,6 +63,10 @@ and record conflicts instead of silently rewriting history.
 Follow [`GIT_FLOW.md`](workflows/GIT_FLOW.md). Codex-specific requirements:
 
 - Use RED → GREEN → REFACTOR for testable behavior.
+- For frontend tasks, preserve the static-export boundary, treat the backend
+  OpenAPI contract as authoritative, keep lead PII out of browser persistence
+  and telemetry, and follow the canonical preview design contract routed by
+  [`docs/SPEC.md`](../docs/SPEC.md).
 - Run implementer self-review, specification review, then quality/security
   review; resolve every Critical and Important finding.
 - Review another agent's final diff against the last reviewed tree, not only

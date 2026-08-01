@@ -17,6 +17,14 @@ assumptions, and open questions in that brief are not approved requirements;
 prices, requisites, guarantees, legal texts, and other missing facts are never
 invented and remain launch blockers until verified.
 
+## Frontend preview
+
+Canonical: [`frontend/landing-preview.md`](frontend/landing-preview.md) — the
+user-approved single-page preview slice, visual reference, responsive and
+motion behavior, placeholder policy, and preview-versus-production boundary.
+This slice ships `/` first and defers, rather than deletes, the product brief's
+multi-page delivery. The screenshot is never a source of business facts.
+
 ## Architecture
 
 Canonical: [`backend/architecture.md`](backend/architecture.md) — runtime

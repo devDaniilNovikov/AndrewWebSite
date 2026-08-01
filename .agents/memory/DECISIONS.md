@@ -12,10 +12,8 @@ DEC-20260718-003 [active] process: live Git/GitHub, then reconciled TASKS.md, ou
 DEC-20260718-004 [active] memory: file-first implementation; codex-mem deferred, inactive, advisory → user brief
 DEC-20260718-005 [active] process: merged branches stay retained read-only; worktree removal never deletes → 288fdd5b
 DEC-20260719-006 [active] memory: product is an allowed topic tag for product-source records → user decision
-DEC-20260719-007 [active] tracker: frontend delivery uses six tasks F1-F6 assigned by the user → user
 DEC-20260721-008 [active] security: GitHub-native dependency controls replace ODC → architecture
-DEC-20260726-009 [active] frontend: Antigravity owns F1-F6; Claude retired → user
-DEC-20260726-010 [active] frontend: Antigravity requires Gemini 3.1 Pro High → user
+DEC-20260801-011 [active] frontend: Codex owns the single-page preview; multi-page delivery is deferred → user
 ```
 
 ## Records
@@ -32,7 +30,8 @@ DEC-20260726-010 [active] frontend: Antigravity requires Gemini 3.1 Pro High →
 - **Rationale:** shared, versioned context reduces repeated discovery without
   changing role ownership or canonical sources.
 - **Evidence:** user-confirmed shared-memory task brief; participant routing
-  revalidated by DEC-20260726-009.
+  was historically revalidated by DEC-20260726-009 and is currently routed by
+  DEC-20260801-011.
 - **Canonical source:** [README](README.md)
 - **Supersedes:** none
 - **Review-by:** any change to memory ownership or cross-owner write rules.
@@ -124,26 +123,6 @@ DEC-20260726-010 [active] frontend: Antigravity requires Gemini 3.1 Pro High →
 - **Supersedes:** the prior closed vocabulary without `product`.
 - **Review-by:** any further change to the closed topic vocabulary.
 
-## DEC-20260719-007 — Six-task frontend delivery track
-
-`DEC-20260719-007 [active] tracker: frontend delivery uses six tasks F1-F6 assigned by the user → user`
-
-- **Date:** 2026-07-19
-- **Scope:** frontend delivery planning after the canonical product brief.
-- **Decision:** use six atomic tasks for a user-assigned frontend agent:
-  foundation, shared shell, product pages, trust content, lead form, and
-  final quality hardening. Every task starts from fresh `main` after its
-  declared prerequisites; no stacked PR is allowed.
-- **Rationale:** the split keeps framework setup, verified content, API
-  integration, and final cross-cutting quality review independently
-  reviewable while leaving the concrete frontend-agent assignment to the
-  user.
-- **Evidence:** the user's explicit F1-F6 choice and T5 authorization.
-- **Canonical source:** [TASKS](../../TASKS.md).
-- **Supersedes:** the unplanned frontend placeholder represented by
-  Q-20260718-004.
-- **Review-by:** any frontend task split, dependency, or ownership change.
-
 ## DEC-20260721-008 — GitHub-native dependency security
 
 `DEC-20260721-008 [active] security: GitHub-native dependency controls replace ODC → architecture`
@@ -166,50 +145,32 @@ DEC-20260726-010 [active] frontend: Antigravity requires Gemini 3.1 Pro High →
 - **Review-by:** any change to dependency-security semantics, required check
   names, Dependabot settings, or branch protection.
 
-## DEC-20260726-009 — Antigravity frontend ownership
+## DEC-20260801-011 — Codex-owned single-page frontend preview
 
-`DEC-20260726-009 [active] frontend: Antigravity owns F1-F6; Claude retired → user`
+`DEC-20260801-011 [active] frontend: Codex owns the single-page preview; multi-page delivery is deferred → user`
 
-- **Date:** 2026-07-26
-- **Scope:** active frontend-agent identity and F1-F6 ownership.
-- **Decision:** Google Antigravity owns frontend execution and Claude Code is
-  retired from the active roster.
-- **Superseded model clause:** this record originally set Gemini 3.6 Flash
-  High as the default and reserved Gemini 3.1 Pro High for selected turns.
-  DEC-20260726-010 makes that clause inactive while preserving this ownership
-  decision.
-- **Rationale:** Antigravity is the user-selected implementer and needs a
-  native `GEMINI.md` entry plus a role that cannot conflict with Codex
-  identity.
-- **Evidence:** explicit user decision on 2026-07-26 and the reviewed
-  [`ANTIGRAVITY.md`](../ANTIGRAVITY.md) role.
-- **Canonical source:** [TASKS](../../TASKS.md) and
-  [`ANTIGRAVITY.md`](../ANTIGRAVITY.md).
-- **Supersedes:** current role text that assigned frontend implementation to
-  Claude Code; historical handoffs remain immutable.
-- **Review-by:** any frontend-owner, model-routing, or agent-harness change.
-
-## DEC-20260726-010 — Required Antigravity model
-
-`DEC-20260726-010 [active] frontend: Antigravity requires Gemini 3.1 Pro High → user`
-
-- **Date:** 2026-07-26
-- **Scope:** model routing for every assigned Antigravity frontend session.
-- **Decision:** use Gemini 3.1 Pro High for frontend planning,
-  implementation, diagnosis, self-review, and local completion. If that model
-  is not active or cannot be confirmed, stop before repository edits; do not
-  silently fall back to another model.
-- **Rationale:** the user selected the higher-reasoning model and requested
-  that it become durable project context rather than a one-off prompt choice.
-- **Evidence:** explicit user decision on 2026-07-26, root
-  [`GEMINI.md`](../../GEMINI.md), and
-  [`ANTIGRAVITY.md`](../ANTIGRAVITY.md).
-- **Canonical source:** [`ANTIGRAVITY.md`](../ANTIGRAVITY.md).
-- **Supersedes:** only the Gemini 3.6 Flash default / limited Gemini 3.1 Pro
-  allocation previously recorded in DEC-20260726-009; its Antigravity
-  ownership and Claude retirement decisions remain active.
-- **Review-by:** any frontend-model, Antigravity harness, or model-availability
-  change.
+- **Date:** 2026-08-01
+- **Scope:** active frontend ownership and the first frontend delivery slice.
+- **Decision:** Codex owns the replacement, foundation, landing-page, lead
+  form, and preview-hardening tasks. The first delivery exports only `/` with
+  explicit non-production placeholders and a production gate. Multi-page
+  product routes and verified trust content are deferred follow-up work, not
+  prerequisites for the preview. Jules retains separately authorized CI
+  ownership; Google Antigravity has no active repository ownership.
+- **Rationale:** the user selected a fast, reviewable preview based on the
+  supplied low-resolution landing-page reference, chose Codex as implementer,
+  and explicitly rejected reviving stale Draft PR #30.
+- **Evidence:** explicit user decisions on 2026-08-01 and the canonical
+  [preview contract](../../docs/frontend/landing-preview.md).
+- **Canonical source:** [TASKS](../../TASKS.md),
+  [`../AGENTS.md`](../AGENTS.md), and
+  [preview contract](../../docs/frontend/landing-preview.md).
+- **Supersedes:** DEC-20260719-007 as the active frontend split,
+  DEC-20260726-009 as active frontend ownership, and DEC-20260726-010 as the
+  model requirement for an active frontend owner. Their historical evidence
+  remains preserved in the [decision archive](archive/DECISIONS-20260719-007-20260726-009-010.md).
+- **Review-by:** any frontend scope, owner, preview/production boundary, or
+  agent-routing change.
 
 ## Entry rules
 

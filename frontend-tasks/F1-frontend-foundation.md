@@ -1,49 +1,39 @@
-# F1 — Frontend foundation
+# F1 — Frontend preview foundation
 
 ## Objective
 
-Create the production frontend workspace and a tested static-export baseline
-that later frontend tasks can extend without changing backend, CI, or product
-contracts.
+Create the production frontend workspace and a tested static-export foundation
+for the approved single-page preview without adding business content.
 
 ## Ownership and prerequisites
 
-- **Owner:** Google Antigravity.
-- **Prerequisite:** `fix-frontend-track-gaps` and
-  `task-antigravity-frontend-role` merged; start from fresh `origin/main` in
-  a dedicated `task-frontend-foundation` worktree and non-stacked PR.
-- **Owned paths:** `frontend/**` and the task-specific handoff. After
-  Antigravity commits that handoff and stops, this task delegates sequential
-  control of the same worktree to Codex only for tracker/index reconciliation
-  and final review; concurrent editing is forbidden.
-- **Sources:** [SPEC](../docs/SPEC.md),
+- **Owner:** Codex.
+- **Prerequisite:** `fix-frontend-track-preview-replacement` merged; start from
+  fresh `origin/main` in a dedicated `task-frontend-foundation` worktree.
+- **Owned paths:** `frontend/**` and the task-specific handoff.
+- **Sources:** [SPEC](../docs/SPEC.md), [preview design](../docs/frontend/landing-preview.md),
   [architecture](../docs/backend/architecture.md), and
   [Git Flow](../.agents/workflows/GIT_FLOW.md).
 
 ## Tasks
 
-1. Scaffold the architecture-approved frontend stack under `frontend/` with
-   its manifest, lockfile, strict type checking, styling configuration, and
-   static-export command. This task explicitly delegates selection of one
-   Node 24/Corepack-compatible package manager and the smallest maintained
-   development-only format, lint, type, unit/component, accessibility, and
-   E2E toolchain needed by the acceptance gates. Commit its exact lockfile
-   and record the selection rationale in the task handoff. Any runtime or
-   product dependency outside the architecture-approved stack still requires
-   explicit Codex approval.
-2. Add the minimum design-token, global-style, root-layout, test, and
-   accessibility-test foundations required by later tasks. Keep all business
-   content explicitly placeholder-free or clearly marked as non-production.
-3. Prove a deterministic production export to the architecture-defined output
-   path and document only commands that actually run.
+1. Scaffold the architecture-approved Next.js 16.2.9, React 19.2.x, strict
+   TypeScript, Tailwind CSS 4, Motion, and Node 24 stack under `frontend/`;
+   select and pin one pnpm release and exact lockfile.
+2. Configure `output: 'export'` to `out/`, a real static 404, preview and
+   production build modes, production-content validation, local Inter
+   Variable, design tokens, and the approved ESLint, Prettier, Vitest,
+   Testing Library, axe, and Playwright toolchain.
+3. Prove frozen install, format, lint, typecheck, smoke tests, and deterministic
+   preview export; prove production export fails safely while required content
+   remains missing.
 
 ## Acceptance
 
-- A clean checkout can install with the committed lockfile, format, lint,
-  typecheck, test, and produce the static export.
-- No backend, API contract, CI, deployment, analytics, or production-content
-  behavior changes.
-- Dependency audit, secret scan, whole-diff review, required CI, and Codex
-  review pass before Ready.
-- The PR stops at Ready; merge requires a separate explicit user command and
-  the source branch is retained.
+- No API routes, middleware, Server Actions, SSR, runtime proxy, redirects,
+  rewrites, headers, server image optimizer, backend, CI, analytics, or
+  production behavior is introduced.
+- `frontend/out/` is generated and ignored, never committed.
+- Dependency audit, secret scan, whole-diff review, required existing CI, and
+  Codex review pass before Ready.
+- Push, Draft PR, Ready, and merge remain separately authorized stages.

@@ -11,7 +11,9 @@
 ## Global Constraints
 
 - One root Maven module; Java 25 LTS; Spring Boot 4.1.0; package `ru.andrew.website`; managed PostgreSQL 18.
-- Do not start until the Google Antigravity instructions and Antigravity-owned frontend scaffold, package-manager declaration, lockfile, static-export command, output path, and frontend tests are merged into fresh `origin/main`.
+- Do not start until the Codex-owned frontend preview scaffold,
+  package-manager declaration, lockfile, static-export command, output path,
+  and frontend tests are merged into fresh `origin/main`.
 - Frontend remains under `frontend/`; use its one committed package manager and lockfile without conversion or mixing; Next.js is exactly 16.2.9 with `output: 'export'`; the build artifact is `frontend/out/`.
 - Node 24 is build-time only. Use a writable `COREPACK_HOME` and direct `corepack <manager>` execution for the exact manifest declaration; never run `corepack enable` or install global shims. The final artifact and container contain one Spring Boot executable JAR on Java 25 and no Node executable, package-manager cache, frontend source, or build credential.
 - Preserve backend ownership of `/api/**` and `/actuator/**`; no static fallback on those prefixes. Missing static routes are real 404 responses, never home-page fallbacks.
@@ -47,7 +49,7 @@
 
 - [ ] **Step 1: Gate execution on the merged prerequisite without changing frontend ownership**
 
-From the dedicated `task-static-jar-integration` worktree and branch created from the latest `origin/main`, verify all backend task PRs and the frontend prerequisite are merged, then inspect the merged frontend manifest. Require `next` exactly `16.2.9`, React `19.2.x`, strict TypeScript, Tailwind CSS 4, Motion, `output: 'export'`, output `out/`, a package-manager declaration with exactly one matching lockfile, a static-safe build script, and passing frontend tests. Stop and return to Google Antigravity if any fact is absent or contradictory; do not choose a package manager or output convention on its behalf.
+From the dedicated `task-static-jar-integration` worktree and branch created from the latest `origin/main`, verify all backend task PRs and the frontend prerequisite are merged, then inspect the merged frontend manifest. Require `next` exactly `16.2.9`, React `19.2.x`, strict TypeScript, Tailwind CSS 4, Motion, `output: 'export'`, output `out/`, a package-manager declaration with exactly one matching lockfile, a static-safe build script, and passing frontend tests. Stop and return to the Codex-owned frontend task if any fact is absent or contradictory; do not choose a package manager or output convention on its behalf.
 
 - [ ] **Step 2: RED — write the JAR-content integration test before build integration**
 
