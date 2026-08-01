@@ -8,6 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
+| `task-frontend-foundation` | `2026-08-01-144453-task-frontend-foundation-handoff.md` | in_progress; tested local foundation at `a4a37b7`; no push or PR | frontend, security, testing |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
