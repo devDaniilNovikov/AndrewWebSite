@@ -82,6 +82,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Run CI path and security policy compliance tests
+        shell: bash
+        run: |
+          ./.github/scripts/test-ci-paths.sh
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -140,3 +145,160 @@ jobs:
         run: ./mvnw -B -DskipTests package
       - name: Analyze
         uses: github/codeql-action/analyze@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3.37.1
+
+  frontend-quality:
+    name: Frontend quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check changed files
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          PUSH_AFTER_SHA: ${{ github.event.after || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Workflow dispatched manually. Forcing full run."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Determine comparison range
+          DIFF_RANGE=""
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            DIFF_RANGE="$PR_BASE_SHA...$PR_HEAD_SHA"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            if [ -z "$PUSH_BEFORE_SHA" ] || [[ "$PUSH_BEFORE_SHA" =~ ^0+$ ]]; then
+              # Full-history, no-tags fetch explicitly refreshing refs/remotes/origin/$DEFAULT_BRANCH
+              git fetch --no-tags origin "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
+              MERGE_BASE=$(git merge-base "origin/$DEFAULT_BRANCH" "$PUSH_AFTER_SHA" || echo "")
+              if [ -z "$MERGE_BASE" ]; then
+                echo "Error: Could not establish merge-base with origin/$DEFAULT_BRANCH for push $PUSH_AFTER_SHA" >&2
+                exit 1
+              fi
+              DIFF_RANGE="$MERGE_BASE...$PUSH_AFTER_SHA"
+            else
+              DIFF_RANGE="$PUSH_BEFORE_SHA..$PUSH_AFTER_SHA"
+            fi
+          fi
+
+          echo "Diff range computed: $DIFF_RANGE"
+
+          any_relevant=false
+          if [ -n "$DIFF_RANGE" ]; then
+            RESULT=$(git diff --name-only -z "$DIFF_RANGE" | .github/scripts/verify-ci-paths.sh)
+            if [ "$RESULT" = "relevant" ]; then
+              any_relevant=true
+            fi
+          else
+            echo "Error: Empty diff range is unexpected." >&2
+            exit 1
+          fi
+
+          if [ "$any_relevant" = true ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Frontend-relevant changes detected. Full quality run required."
+          else
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No frontend-relevant changes detected. Skip run."
+          fi
+
+      - name: Set up Node.js from .node-version
+        if: steps.filter.outputs.skip != 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: frontend/.node-version
+
+      - name: Assert exact versions and execute frontend quality gate
+        if: steps.filter.outputs.skip != 'true'
+        env:
+          BOOTSTRAP_TEMP: ${{ runner.temp }}
+          WORKSPACE_DIR: ${{ github.workspace }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Bootstrap Corepack 0.34.5 in RUNNER_TEMP only
+          BOOTSTRAP_DIR="$BOOTSTRAP_TEMP/corepack-bootstrap"
+          mkdir -p "$BOOTSTRAP_DIR"
+
+          # Fetch the exact corepack package into BOOTSTRAP_DIR
+          cd "$BOOTSTRAP_DIR"
+          npm pack corepack@0.34.5 --ignore-scripts
+
+          # Calculate and verify SHA-512 integrity
+          TARBALL="$BOOTSTRAP_DIR/corepack-0.34.5.tgz"
+          EXPECTED_HASH="G+ui7ZUxTzgwRc45pi7OhOybKFnGpxVDp0khf+eFdw/gcQmZfme4nUh4Z4URY9YPoaZYP86zNZmqV/T2Bf5/rA=="
+          ACTUAL_HASH=$(openssl dgst -sha512 -binary "$TARBALL" | base64 | tr -d '\n')
+
+          if [ "$ACTUAL_HASH" != "$EXPECTED_HASH" ]; then
+            echo "Error: corepack@0.34.5 integrity verification failed!" >&2
+            echo "Expected: $EXPECTED_HASH" >&2
+            echo "Actual:   $ACTUAL_HASH" >&2
+            exit 1
+          fi
+          echo "Corepack tarball integrity verified successfully."
+
+          # Extract the verified package
+          tar -xzf "$TARBALL" -C "$BOOTSTRAP_DIR"
+
+          # Set COREPACK_HOME under RUNNER_TEMP
+          export COREPACK_HOME="$BOOTSTRAP_DIR/corepack-home"
+          mkdir -p "$COREPACK_HOME"
+
+          # Return to the workspace root directory
+          cd "$WORKSPACE_DIR"
+
+          # Define local corepack command/function to execute the bootstrap version
+          corepack() {
+            node "$BOOTSTRAP_DIR/package/dist/corepack.js" "$@"
+          }
+
+          # Assert exact Node version
+          actual_node=$(node --version)
+          if [ "$actual_node" != "v24.14.0" ]; then
+            echo "Error: expected Node v24.14.0, got $actual_node" >&2
+            exit 1
+          fi
+
+          # Assert exact Corepack version
+          actual_corepack=$(corepack --version)
+          if [ "$actual_corepack" != "0.34.5" ]; then
+            echo "Error: expected Corepack 0.34.5, got $actual_corepack" >&2
+            exit 1
+          fi
+
+          cd frontend
+
+          # Assert exact package manager version
+          actual_pm=$(corepack pnpm --version)
+          if [ "$actual_pm" != "11.18.0" ]; then
+            echo "Error: expected package manager version 11.18.0, got $actual_pm" >&2
+            exit 1
+          fi
+
+          # Install dependencies with frozen lockfile
+          corepack pnpm install --frozen-lockfile
+
+          # Install Playwright Chromium browser only with its dependencies
+          corepack pnpm exec playwright install --with-deps chromium
+
+          # Run complete frontend verification contract
+          corepack pnpm run verify
