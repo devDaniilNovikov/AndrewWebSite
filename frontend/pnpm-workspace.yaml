@@ -1,0 +1,13 @@
+packages:
+  - .
+
+nodeVersion: 24.14.0
+savePrefix: ''
+strictPeerDependencies: true
+
+overrides:
+  postcss: 8.5.18
+  'next@16.2.11>sharp': '-'
+
+allowBuilds:
+  unrs-resolver: true
