@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-frontend-track-preview-replacement` | `2026-08-01-103525-fix-frontend-track-preview-replacement-handoff.md` | local implementation in progress; publication not authorized | frontend, product, tracker, memory |
+| `fix-frontend-track-preview-replacement` | `2026-08-01-103525-fix-frontend-track-preview-replacement-handoff.md` | local implementation and verification committed; publication not authorized | frontend, product, tracker, memory |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
