@@ -228,6 +228,11 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Define corepack function to use the exact Corepack 0.34.5 version via npx
+          corepack() {
+            npx corepack@0.34.5 "$@"
+          }
+
           # Assert exact Node version
           actual_node=$(node --version)
           if [ "$actual_node" != "v24.14.0" ]; then
