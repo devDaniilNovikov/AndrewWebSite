@@ -17,7 +17,7 @@ for the approved single-page preview without adding business content.
 
 ## Tasks
 
-1. Scaffold the architecture-approved Next.js 16.2.9, React 19.2.x, strict
+1. Scaffold the architecture-approved Next.js 16.2.11, React 19.2.x, strict
    TypeScript, Tailwind CSS 4, Motion, and Node 24 stack under `frontend/`;
    select and pin one pnpm release and exact lockfile.
 2. Configure `output: 'export'` to `out/`, a real static 404, preview and

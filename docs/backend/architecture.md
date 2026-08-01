@@ -4,7 +4,7 @@
 
 This document is the binding Phase 0 backend design for AndrewWebSite. It defines the names, types, boundaries, transactions, and operating rules reused by the OpenAPI contract and the implementation plans. The MVP is a Russian-language B2B static website plus one public lead command. It has no login, sessions, user accounts, administration UI, CRM, ecommerce, booking, payments, CMS, blog, Redis, or separate message broker.
 
-The fixed platform is Java 25 LTS, Spring Boot 4.1.0, one root Maven module, Maven Wrapper, PostgreSQL 18, and one final Java container. The Java root package is `ru.andrew.website`. The frontend remains owned under `frontend/` and uses Next.js 16.2.9, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only during the build.
+The fixed platform is Java 25 LTS, Spring Boot 4.1.0, one root Maven module, Maven Wrapper, PostgreSQL 18, and one final Java container. The Java root package is `ru.andrew.website`. The frontend remains owned under `frontend/` and uses Next.js 16.2.11, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only during the build.
 
 ## System and trust boundaries
 
@@ -259,7 +259,7 @@ The skeleton merge triggers only the normal `push` CI path. It does not assign J
 ## Primary implementation references
 
 - Spring Boot 4.1.0 reference/API: health groups, `spring-boot-starter-webmvc`, configuration-property validation, Actuator, Micrometer OTLP, and static resources.
-- Next.js 16.2.9 static export guide: `output: 'export'`, `next build`, and the default `out/` artifact.
+- Next.js 16.2.11 static export guide: `output: 'export'`, `next build`, and the default `out/` artifact.
 - PostgreSQL 18 documentation: transactions, row-level locks, constraints, partial indexes, and `FOR UPDATE SKIP LOCKED`.
 - OpenAPI 3.1.1 and RFC 9457 for the HTTP contract and problem details.
 - Testcontainers for Java 2.0.5 for the `testcontainers-postgresql` and JUnit Jupiter integration.
