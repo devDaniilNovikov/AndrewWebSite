@@ -1,43 +1,47 @@
-# F5 — Lead form and API client
+# F5 — Preview lead form and API client
 
 ## Objective
 
-Implement the accessible lead form and typed same-origin client against the
-canonical backend contract, including safe retries, errors, consent, and call
-fallbacks.
+Implement the accessible lead form and typed browser client against the
+canonical backend contract with safe preview execution, retries, errors,
+consent, and production gating.
 
 ## Ownership and prerequisites
 
-- **Owner:** Google Antigravity.
-- **Prerequisite:** F2 and `task-leads-api` merged; start from their resulting
-  fresh `origin/main`.
-- **Owned paths:** `frontend/**` and the task-specific handoff. After
-  Antigravity commits that handoff and stops, this task delegates sequential
-  control of the same worktree to Codex only for tracker/index reconciliation
-  and final review; concurrent editing is forbidden. Backend and OpenAPI
-  changes require a separate Codex-owned task.
+- **Owner:** Codex.
+- **Prerequisite:** F2 and `task-leads-api` merged; start from fresh
+  `origin/main`.
+- **Owned paths:** `frontend/**` and the task-specific handoff. Backend and
+  OpenAPI changes require a separate task.
 - **Sources:** [OpenAPI](../docs/backend/openapi.yaml),
   [architecture](../docs/backend/architecture.md),
-  [product brief](../docs/product/technical-brief.ru.md), and
+  [preview design](../docs/frontend/landing-preview.md), and
   [Git Flow](../.agents/workflows/GIT_FLOW.md).
 
 ## Tasks
 
-1. Implement the typed same-origin client and form payload directly from
-   OpenAPI, including contract-required idempotency, intent, source, consent,
-   and anti-automation behavior without redefining server rules.
-2. Implement client validation for UX, all documented success/error states,
-   in-flight and retry behavior, accessible field errors/status messages, and
-   a persistent phone fallback. The server remains authoritative.
-3. Add unit, component, accessibility, retry/idempotency, error-mapping, and
-   browser E2E tests against a contract-faithful test boundary.
+1. Deterministically generate TypeScript schema types from OpenAPI with
+   `openapi-typescript` and build only the payload fields `requestId`, `name`,
+   `phone`, optional `comment`, `sourcePath`, `intent` (`repair|maintenance`),
+   `consent`, and honeypot `website`. Build `sourcePath` only from
+   `window.location.pathname`.
+2. Implement immutable in-flight attempts, same-payload idempotent retry,
+   a `crypto.randomUUID()` identity that changes after an edit, 15-second
+   timeout, `202`, `400`, `409`, `413`, `415`, `429`, `503`, network failures,
+   and `Retry-After` handling, with accessible errors/status and loopback-only
+   preview submission.
+3. Add unit, component, accessibility, retry/idempotency, error-mapping,
+   privacy, and Playwright network-boundary tests.
 
 ## Acceptance
 
-- Retrying one submission reuses its contract identity; a new submission does
-  not. Every documented response degrades safely.
-- Lead PII never enters URLs, analytics, logs, browser persistence, fixtures,
-  or snapshots; no credential or direct Telegram integration exists.
-- Format, lint, strict typecheck, tests, build, dependency audit, secret/PII
-  review, required CI, and Codex contract/security review pass.
-- The PR stops at Ready and requires separate merge authorization.
+- A hosted preview cannot submit; production uses only relative
+  same-origin `/api/leads` after production-content validation succeeds.
+- The form exposes visible name, phone, optional comment, explicit consent,
+  and `repair|maintenance` controls; the `website` honeypot remains outside
+  normal visual and keyboard flow.
+- Lead PII never enters URLs, analytics, logs, storage, fixtures, or snapshots;
+  no frontend Telegram integration or credential exists.
+- Every documented response degrades safely and never echoes rejected values.
+- Format, lint, strict typecheck, coverage, E2E, export, dependency audit,
+  secret/PII review, frontend CI, and Codex review pass before Ready.

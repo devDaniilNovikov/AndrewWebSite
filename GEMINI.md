@@ -1,9 +1,6 @@
-# AndrewWebSite — Google Antigravity workspace entry
+# AndrewWebSite — inactive Antigravity entry
 
-- Required model: **Gemini 3.1 Pro (High)**. Stop before editing if another
-  model is active or the model cannot be confirmed.
-- Read and follow @AGENTS.md, then @.agents/ANTIGRAVITY.md.
-- Orient on live Git/GitHub, @TASKS.md, the current handoff, the assigned
-  `frontend-tasks/F*.md`, and @docs/SPEC.md with the task-listed canonical
-  sources.
-- An explicit current user decision outranks older repository text.
+Google Antigravity has no active task or repository ownership. Read
+[`AGENTS.md`](AGENTS.md) and [`.agents/ANTIGRAVITY.md`](.agents/ANTIGRAVITY.md),
+then stop before any repository edit unless the user explicitly reassigns a
+new task and the tracker and role files are updated first.

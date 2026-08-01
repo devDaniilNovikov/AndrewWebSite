@@ -8,14 +8,11 @@ approved claims.
 
 ## Ownership and prerequisites
 
-- **Owner:** Google Antigravity.
-- **Prerequisite:** F2 merged; route slugs, page copy, prices, legal text, and
-  required assets for the selected pages verified in canonical product
-  sources.
-- **Owned paths:** `frontend/**` and the task-specific handoff. After
-  Antigravity commits that handoff and stops, this task delegates sequential
-  control of the same worktree to Codex only for tracker/index reconciliation
-  and final review; concurrent editing is forbidden.
+- **Owner:** Codex when separately authorized.
+- **Prerequisite:** preview F6 merged; multi-page expansion separately
+  authorized; route slugs, page copy, prices, legal text, and required assets
+  verified in canonical product sources.
+- **Owned paths:** `frontend/**` and the task-specific handoff.
 - **Sources:** [product brief](../docs/product/technical-brief.ru.md),
   [SPEC](../docs/SPEC.md), and [Git Flow](../.agents/workflows/GIT_FLOW.md).
 
@@ -39,3 +36,5 @@ approved claims.
 - Format, lint, strict typecheck, tests, build, secret scan, required CI, and
   Codex content/specification review pass.
 - The PR stops at Ready and requires separate merge authorization.
+- This deferred task is not a prerequisite for the approved single-page
+  preview or its F6 hardening task.

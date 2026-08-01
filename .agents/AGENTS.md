@@ -3,11 +3,13 @@
 ## Role routing
 
 - The user owns product decisions, task authorization, merges, and production.
-- Codex coordinates architecture, backend, integration, security, deployment,
-  and final review. Codex must read [`CODEX.md`](CODEX.md).
-- Google Antigravity owns assigned frontend tasks. Its native entry is
-  [`../GEMINI.md`](../GEMINI.md), which routes to
-  [`ANTIGRAVITY.md`](ANTIGRAVITY.md).
+- Codex owns the user-authorized single-page frontend preview track in
+  addition to architecture, backend, integration, security, deployment, and
+  final review. Codex must read [`CODEX.md`](CODEX.md).
+- Google Antigravity has no active repository ownership. Its compatibility
+  entries, [`../GEMINI.md`](../GEMINI.md) and
+  [`ANTIGRAVITY.md`](ANTIGRAVITY.md), remain only to stop stale sessions from
+  editing until the user makes a new assignment.
 - Jules owns separately authorized CI and maintenance tasks; follow
   [`workflows/JULES_AUTOMATION.md`](workflows/JULES_AUTOMATION.md).
 - [`CLAUDE.md`](CLAUDE.md) is a retired compatibility notice, not an active

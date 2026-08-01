@@ -7,13 +7,10 @@ traceable provenance and safe, performant presentation.
 
 ## Ownership and prerequisites
 
-- **Owner:** Google Antigravity.
+- **Owner:** Codex when separately authorized.
 - **Prerequisite:** F3 merged; real cases, reviews, media usage rights, source
   links, and descriptive copy confirmed by the user.
-- **Owned paths:** `frontend/**` and the task-specific handoff. After
-  Antigravity commits that handoff and stops, this task delegates sequential
-  control of the same worktree to Codex only for tracker/index reconciliation
-  and final review; concurrent editing is forbidden.
+- **Owned paths:** `frontend/**` and the task-specific handoff.
 - **Sources:** [product brief](../docs/product/technical-brief.ru.md),
   [SPEC](../docs/SPEC.md), and [Git Flow](../.agents/workflows/GIT_FLOW.md).
 
@@ -36,3 +33,5 @@ traceable provenance and safe, performant presentation.
 - Format, lint, strict typecheck, tests, build, dependency audit, secret scan,
   required CI, and Codex review pass.
 - The PR stops at Ready and requires separate merge authorization.
+- This deferred task is not a prerequisite for the approved single-page
+  preview or its F6 hardening task.
