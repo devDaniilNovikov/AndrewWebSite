@@ -8,7 +8,6 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-frontend-track-preview-replacement` | `2026-08-01-103525-fix-frontend-track-preview-replacement-handoff.md` → `2026-08-01-111248-fix-frontend-track-preview-replacement-draft-pr-handoff.md` → `2026-08-01-111916-fix-frontend-track-preview-replacement-ready-handoff.md` | Draft head green; Ready successor and exact-head checks next | frontend, product, tracker, memory |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -54,6 +53,7 @@ design.
 | `fix-sec-03-pii-anonymization-uuidv4` | 3 | `2026-07-27-052649-fix-sec-03-pii-anonymization-uuidv4-ready-handoff.md` | merged as `0419337`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | backend, privacy, security, tracker |
 | `fix-sec-04-send-retention-race` | 4 | `2026-07-27-055657-fix-sec-04-send-retention-race-ready-handoff.md` | merged as `6d800ec`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | backend, privacy, telegram, security, tracker |
 | `fix-sec-05-retention-skip-locked-heartbeat` | 4 | `2026-07-27-061908-fix-sec-05-retention-skip-locked-heartbeat-ready-handoff.md` | merged as `90698e1`; retained source branch; post-merge CI, Dependency Submission, Semgrep, and subsequent scheduled Semgrep green | backend, privacy, security, tracker |
+| `fix-frontend-track-preview-replacement` | 3 | `2026-08-01-111916-fix-frontend-track-preview-replacement-ready-handoff.md` | merged as `2e51f44`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, product, tracker, memory |
 
 ## Rules
 
