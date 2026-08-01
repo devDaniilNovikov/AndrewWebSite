@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-frontend-ci-gates` | `2026-08-01-165805-task-frontend-ci-gates-dispatch-handoff.md` | in_progress; controller reconciliation complete; Jules dispatch pending | frontend, ci, testing, tracker |
+| `task-frontend-ci-gates` | `2026-08-01-165805-task-frontend-ci-gates-dispatch-handoff.md` → `2026-08-01-170547-task-frontend-ci-gates-blocked-handoff.md` | in_progress; Issue #61 dispatch failed before API; owner decision required | frontend, ci, testing, tracker, incident |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
