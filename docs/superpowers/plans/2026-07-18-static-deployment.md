@@ -4,9 +4,9 @@
 
 **Goal:** Build the merged Next.js static export into the executable Spring Boot JAR and ship one production Java container with correct routing, caching, and smoke coverage.
 
-**Architecture:** The merged frontend's declared package manager builds Next.js `out/` under Node 24.18.0. Maven copies that immutable export into generated JAR resources, and a narrow static handler resolves real exported pages/assets without catching `/api/**` or `/actuator/**`. A multi-stage container discards Node and serves the single Java artifact as a non-root user.
+**Architecture:** The merged frontend's declared package manager builds Next.js `out/` under Node 24.14.0. Maven copies that immutable export into generated JAR resources, and a narrow static handler resolves real exported pages/assets without catching `/api/**` or `/actuator/**`. A multi-stage container discards Node and serves the single Java artifact as a non-root user.
 
-**Tech Stack:** Next.js 16.2.9, React 19.2.x, TypeScript strict, Tailwind CSS 4, Motion, Node 24.18.0 LTS at build time, Maven, Spring Boot 4.1.0, Java 25, Docker
+**Tech Stack:** Next.js 16.2.11, React 19.2.x, TypeScript strict, Tailwind CSS 4, Motion, Node 24.14.0 at build time, Maven, Spring Boot 4.1.0, Java 25, Docker
 
 ## Global Constraints
 
@@ -14,7 +14,7 @@
 - Do not start until the Codex-owned frontend preview scaffold,
   package-manager declaration, lockfile, static-export command, output path,
   and frontend tests are merged into fresh `origin/main`.
-- Frontend remains under `frontend/`; use its one committed package manager and lockfile without conversion or mixing; Next.js is exactly 16.2.9 with `output: 'export'`; the build artifact is `frontend/out/`.
+- Frontend remains under `frontend/`; use its one committed package manager and lockfile without conversion or mixing; Next.js is exactly 16.2.11 with `output: 'export'`; the build artifact is `frontend/out/`.
 - Node 24 is build-time only. Use a writable `COREPACK_HOME` and direct `corepack <manager>` execution for the exact manifest declaration; never run `corepack enable` or install global shims. The final artifact and container contain one Spring Boot executable JAR on Java 25 and no Node executable, package-manager cache, frontend source, or build credential.
 - Preserve backend ownership of `/api/**` and `/actuator/**`; no static fallback on those prefixes. Missing static routes are real 404 responses, never home-page fallbacks.
 - Lead API remains JSON-only at 16 KiB with empty indistinguishable `202`, RFC 9457 `400/409/413/415/429/503`, exact validation bounds/intents/consent, production HMAC only from `LEAD_FINGERPRINT_HMAC_KEY`, and no PII in logs/metrics/problems.
@@ -49,7 +49,7 @@
 
 - [ ] **Step 1: Gate execution on the merged prerequisite without changing frontend ownership**
 
-From the dedicated `task-static-jar-integration` worktree and branch created from the latest `origin/main`, verify all backend task PRs and the frontend prerequisite are merged, then inspect the merged frontend manifest. Require `next` exactly `16.2.9`, React `19.2.x`, strict TypeScript, Tailwind CSS 4, Motion, `output: 'export'`, output `out/`, a package-manager declaration with exactly one matching lockfile, a static-safe build script, and passing frontend tests. Stop and return to the Codex-owned frontend task if any fact is absent or contradictory; do not choose a package manager or output convention on its behalf.
+From the dedicated `task-static-jar-integration` worktree and branch created from the latest `origin/main`, verify all backend task PRs and the frontend prerequisite are merged, then inspect the merged frontend manifest. Require `next` exactly `16.2.11`, React `19.2.x`, strict TypeScript, Tailwind CSS 4, Motion, `output: 'export'`, output `out/`, a package-manager declaration with exactly one matching lockfile, a static-safe build script, and passing frontend tests. Stop and return to the Codex-owned frontend task if any fact is absent or contradictory; do not choose a package manager or output convention on its behalf.
 
 - [ ] **Step 2: RED — write the JAR-content integration test before build integration**
 
@@ -194,11 +194,11 @@ Do not track `frontend/out/`; keep it ignored by the merged frontend rules.
 In `.github/workflows/ci.yml`, insert this step in both `verify` and `java-security`, immediately before their Maven build command; Docker is already required for PostgreSQL Testcontainers:
 
 ```yaml
-      - name: Test and export frontend with Node 24.18.0
+      - name: Test and export frontend with Node 24.14.0
         run: |
           docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp \
             --env COREPACK_HOME=/tmp/corepack \
-            --volume "$PWD:/workspace" --workdir /workspace node:24.18.0 \
+            --volume "$PWD:/workspace" --workdir /workspace node:24.14.0 \
             bash scripts/build-frontend.sh
 ```
 
@@ -207,12 +207,12 @@ Run:
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp \
   --env COREPACK_HOME=/tmp/corepack \
-  --volume "$PWD:/workspace" --workdir /workspace node:24.18.0 \
+  --volume "$PWD:/workspace" --workdir /workspace node:24.14.0 \
   bash scripts/build-frontend.sh
 ./mvnw -B verify
 ```
 
-Expected: the disposable builder uses Node `v24.18.0`; the merged frontend tests/build PASS; Maven PASS; `StaticJarIT` finds HTML and hashed JS and no `node_modules`.
+Expected: the disposable builder uses Node `v24.14.0`; the merged frontend tests/build PASS; Maven PASS; `StaticJarIT` finds HTML and hashed JS and no `node_modules`.
 
 - [ ] **Step 4: REFACTOR and commit the build boundary**
 
@@ -379,7 +379,7 @@ Expected: PASS for home, nested page, hashed asset, missing page, and API isolat
 Replace the deploy-stub Dockerfile with the complete three-stage build:
 
 ```dockerfile
-FROM node:24.18.0 AS frontend-build
+FROM node:24.14.0 AS frontend-build
 WORKDIR /workspace
 ENV COREPACK_HOME=/tmp/corepack
 COPY frontend frontend
