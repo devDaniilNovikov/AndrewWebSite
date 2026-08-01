@@ -19,8 +19,11 @@ This handoff details the implementation of a stable, optimized, and secure `Fron
    - *Correction:* Moved `cd frontend` before `actual_pm=$(corepack pnpm --version)` to ensure pnpm is verified inside the correct workspace context.
 3. **Transient Network Failures (Head 779218a):**
    - *Observation:* While `Frontend quality`, `Repository policy`, `verify`, `dependency-security`, `Semgrep`, and `Snyk` all passed successfully, the push-triggered `java-security` job failed because Maven Central returned an HTTP 429 Too Many Requests error while trying to download `apache-maven-3.9.16-bin.zip`. This is an external network/infrastructure issue, and the next exact head will rerun.
-4. **Attribution and Footers:**
-   - *Observation:* Head `779218a` and all previous Jules commits contain the human `Co-authored-by` footer as part of source-history/platform attribution. This is recorded truthfully as history. Codex will correct and consolidate compliant agent attribution in the final squash commit before merge.
+4. **All-zero Push Base Shallow Checkout Risk (Head 16f9900):**
+   - *Observation:* A depth-limited fetch in the all-zero `PUSH_BEFORE_SHA` new-branch path could shallow an otherwise full checkout and cause `git merge-base` to fail, resulting in fallback behavior.
+   - *Correction:* Replaced the depth-limited fetch with a full-history, no-tags fetch `git fetch --no-tags origin "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"` and added a strict `exit 1` guard if `merge-base` cannot be established.
+5. **Attribution and Footers:**
+   - *Observation:* Head `779218a`, `16f9900`, and all previous Jules commits contain the human `Co-authored-by` footer as part of source-history/platform attribution. This is recorded truthfully as history. Codex will correct and consolidate compliant agent attribution in the final squash commit before merge.
 
 ## Verification Evidence
 

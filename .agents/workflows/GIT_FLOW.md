@@ -97,11 +97,3 @@ Any exception requires an explicit user decision and a synchronized update to
 this document in the same change. Security, secret scanning, input
 validation, and review requirements cannot be waived — by anyone, for any
 reason.
-
-For the F1A recovery authorized on 2026-08-01, the native Jules GitHub App may
-publish one generated implementation branch after the retained
-`task-frontend-ci-gates` controller branch recorded a failed custom dispatch.
-Before the single F1A pull request becomes Ready, merge the controller branch
-into that implementation branch without rebasing, force-pushing, or deleting
-either ref. The generated branch is then the only F1A pull-request branch;
-this exception does not apply to any later task.

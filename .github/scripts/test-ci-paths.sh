@@ -134,7 +134,23 @@ if echo "$FRONTEND_JOB_BLOCK" | grep -q "npm exec corepack"; then
   exit 1
 fi
 
-# 7. Check Node and Playwright chromium run assertions
+# 7. Check for robust full-history default-branch fetch and strict merge-base check
+if echo "$FRONTEND_JOB_BLOCK" | grep -E "git fetch.*--depth|git fetch.*-depth"; then
+  echo "Error: Depth-limited fetch is forbidden in default-branch fetch." >&2
+  exit 1
+fi
+
+if ! echo "$FRONTEND_JOB_BLOCK" | grep -q 'git fetch --no-tags origin "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"'; then
+  echo "Error: Missing explicit full-history default-branch ref update." >&2
+  exit 1
+fi
+
+if ! echo "$FRONTEND_JOB_BLOCK" | grep -A 10 "merge-base" | grep -q "exit 1"; then
+  echo "Error: Missing strict merge-base failure guard (must exit 1 on failure)." >&2
+  exit 1
+fi
+
+# 8. Check Node and Playwright chromium run assertions
 if ! echo "$FRONTEND_JOB_BLOCK" | grep -q 'actual_node=$(node --version)'; then
   echo "Error: Missing node version assertion." >&2
   exit 1

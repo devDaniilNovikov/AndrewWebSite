@@ -16,17 +16,6 @@ the merged F1 manifest without changing frontend product behavior.
   [Jules automation](../.agents/workflows/JULES_AUTOMATION.md), and
   [Git Flow](../.agents/workflows/GIT_FLOW.md).
 
-## Authorized recovery path
-
-- Issue #61 uses the mutually exclusive native `jules` label after the failed
-  custom action label is removed; never apply both labels.
-- If native Jules publishes a generated branch, it becomes the only F1A PR
-  branch. Merge the retained controller history into it before Ready without
-  rebase, force-push, or branch deletion.
-- Codex owns the sequential controller merge, final metadata, branch
-  protection, Ready transition, and user-authorized squash merge. Jules still
-  owns the CI implementation and may never merge.
-
 ## Tasks
 
 1. Install Node 24 and invoke the manifest-declared pnpm through Corepack with

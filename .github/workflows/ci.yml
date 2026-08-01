@@ -186,11 +186,14 @@ jobs:
             DIFF_RANGE="$PR_BASE_SHA...$PR_HEAD_SHA"
           elif [ "$EVENT_NAME" = "push" ]; then
             if [ -z "$PUSH_BEFORE_SHA" ] || [[ "$PUSH_BEFORE_SHA" =~ ^0+$ ]]; then
-              git fetch origin "$DEFAULT_BRANCH" --depth=1 || true
+              # Full-history, no-tags fetch explicitly refreshing refs/remotes/origin/$DEFAULT_BRANCH
+              git fetch --no-tags origin "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
               MERGE_BASE=$(git merge-base "origin/$DEFAULT_BRANCH" "$PUSH_AFTER_SHA" || echo "")
-              if [ -n "$MERGE_BASE" ]; then
-                DIFF_RANGE="$MERGE_BASE...$PUSH_AFTER_SHA"
+              if [ -z "$MERGE_BASE" ]; then
+                echo "Error: Could not establish merge-base with origin/$DEFAULT_BRANCH for push $PUSH_AFTER_SHA" >&2
+                exit 1
               fi
+              DIFF_RANGE="$MERGE_BASE...$PUSH_AFTER_SHA"
             else
               DIFF_RANGE="$PUSH_BEFORE_SHA..$PUSH_AFTER_SHA"
             fi
@@ -205,7 +208,8 @@ jobs:
               any_relevant=true
             fi
           else
-            any_relevant=true
+            echo "Error: Empty diff range is unexpected." >&2
+            exit 1
           fi
 
           if [ "$any_relevant" = true ]; then
