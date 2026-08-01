@@ -14,7 +14,9 @@ This handoff details the implementation of a stable, optimized, and secure `Fron
 1. **Corepack version mismatch:**
    - *Failure:* The setup-node v4.4.0 action for Node 24.14.0 bundles Corepack 0.34.6 by default. Assertions on the expected `0.34.5` version failed during the initial run.
    - *Correction:* Implemented a secure, job-local bootstrap routine. Corepack 0.34.5 is retrieved via `npm pack corepack@0.34.5 --ignore-scripts` into `RUNNER_TEMP`, verified against its exact SHA-512 integrity hash from the committed lockfile (`G+ui7ZUxTzgwRc45pi7OhOybKFnGpxVDp0khf+eFdw/gcQmZfme4nUh4Z4URY9YPoaZYP86zNZmqV/T2Bf5/rA==`), and executed through a local shell function. No global installation is done, and `corepack enable` is not used.
-2. **Commit Attributions:**
+2. **Transient Network Failures:**
+   - *Observation:* The `java-security` job experienced a transient `HTTP 429 Too Many Requests` error from `repo.maven.apache.org` while downloading `apache-maven-3.9.16-bin.zip`. This is an external infrastructure issue and unrelated to the frontend quality gate modifications.
+3. **Commit Attributions:**
    - Refrained from adding any human `Co-authored-by` footers to ensure completely compliant machine commits.
 
 ## Verification Evidence
