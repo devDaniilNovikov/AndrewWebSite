@@ -140,3 +140,94 @@ jobs:
         run: ./mvnw -B -DskipTests package
       - name: Analyze
         uses: github/codeql-action/analyze@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3.37.1
+
+  frontend-quality:
+    name: Frontend quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check changed files
+        id: filter
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Determine the base commit for git diff.
+          # If we are on main branch, we compare HEAD with its parent HEAD~1.
+          # On any other branch or PR, we compare with origin/main.
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            if git rev-parse HEAD~1 >/dev/null 2>&1; then
+              BASE_COMMIT="HEAD~1"
+            else
+              BASE_COMMIT="HEAD"
+            fi
+          else
+            BASE_COMMIT="origin/main"
+          fi
+
+          echo "Comparing HEAD against $BASE_COMMIT"
+
+          # Use git diff -z to get NUL-separated filenames, then pipe to our verification script.
+          # We run the script to see if the changes are "relevant" or "skip".
+          # Since the script is in our repository, we execute it directly.
+          # Note: if BASE_COMMIT equals HEAD, git diff is empty, which is handled correctly.
+          RESULT=$(git diff --name-only -z "$BASE_COMMIT"...HEAD | .github/scripts/verify-ci-paths.sh)
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Workflow dispatched manually. Forcing full run."
+            RESULT="relevant"
+          fi
+
+          if [ "$RESULT" = "relevant" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Frontend-relevant changes detected. Full quality run required."
+          else
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No frontend-relevant changes detected. Returning success check early."
+          fi
+
+      - name: Set up Node.js 24.14.0
+        if: steps.filter.outputs.skip != 'true'
+        uses: actions/setup-node@39225d617d30d94d110d79d83c3e7cf24127ae8b # v4.1.0
+        with:
+          node-version: '24.14.0'
+
+      - name: Enable Corepack and manifest-declared package manager
+        if: steps.filter.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install -g corepack@0.34.5
+          corepack enable
+
+      - name: Install dependencies with frozen lockfile
+        if: steps.filter.outputs.skip != 'true'
+        working-directory: frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium browser only
+        if: steps.filter.outputs.skip != 'true'
+        working-directory: frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec playwright install chromium
+
+      - name: Run complete frontend verification contract
+        if: steps.filter.outputs.skip != 'true'
+        working-directory: frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run verify
