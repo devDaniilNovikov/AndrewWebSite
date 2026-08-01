@@ -224,13 +224,47 @@ jobs:
 
       - name: Assert exact versions and execute frontend quality gate
         if: steps.filter.outputs.skip != 'true'
+        env:
+          BOOTSTRAP_TEMP: ${{ runner.temp }}
+          WORKSPACE_DIR: ${{ github.workspace }}
         shell: bash
         run: |
           set -euo pipefail
 
-          # Define corepack function to use the exact Corepack 0.34.5 version via npx
+          # Bootstrap Corepack 0.34.5 in RUNNER_TEMP only
+          BOOTSTRAP_DIR="$BOOTSTRAP_TEMP/corepack-bootstrap"
+          mkdir -p "$BOOTSTRAP_DIR"
+
+          # Fetch the exact corepack package into BOOTSTRAP_DIR
+          cd "$BOOTSTRAP_DIR"
+          npm pack corepack@0.34.5 --ignore-scripts
+
+          # Calculate and verify SHA-512 integrity
+          TARBALL="$BOOTSTRAP_DIR/corepack-0.34.5.tgz"
+          EXPECTED_HASH="G+ui7ZUxTzgwRc45pi7OhOybKFnGpxVDp0khf+eFdw/gcQmZfme4nUh4Z4URY9YPoaZYP86zNZmqV/T2Bf5/rA=="
+          ACTUAL_HASH=$(openssl dgst -sha512 -binary "$TARBALL" | base64 | tr -d '\n')
+
+          if [ "$ACTUAL_HASH" != "$EXPECTED_HASH" ]; then
+            echo "Error: corepack@0.34.5 integrity verification failed!" >&2
+            echo "Expected: $EXPECTED_HASH" >&2
+            echo "Actual:   $ACTUAL_HASH" >&2
+            exit 1
+          fi
+          echo "Corepack tarball integrity verified successfully."
+
+          # Extract the verified package
+          tar -xzf "$TARBALL" -C "$BOOTSTRAP_DIR"
+
+          # Set COREPACK_HOME under RUNNER_TEMP
+          export COREPACK_HOME="$BOOTSTRAP_DIR/corepack-home"
+          mkdir -p "$COREPACK_HOME"
+
+          # Return to the workspace root directory
+          cd "$WORKSPACE_DIR"
+
+          # Define local corepack command/function to execute the bootstrap version
           corepack() {
-            npx corepack@0.34.5 "$@"
+            node "$BOOTSTRAP_DIR/package/dist/corepack.js" "$@"
           }
 
           # Assert exact Node version

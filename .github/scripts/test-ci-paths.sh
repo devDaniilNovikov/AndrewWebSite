@@ -79,6 +79,11 @@ if echo "$FRONTEND_JOB_BLOCK" | grep -E "\bpnpm\b" | grep -v "corepack pnpm"; th
 fi
 
 # 6. Check for missing exact assertions, frozen install, with-deps chromium, full corepack pnpm run verify
+if ! echo "$FRONTEND_JOB_BLOCK" | grep -q 'G+ui7ZUxTzgwRc45pi7OhOybKFnGpxVDp0khf+eFdw/gcQmZfme4nUh4Z4URY9YPoaZYP86zNZmqV/T2Bf5/rA=='; then
+  echo "Error: Missing exact Corepack integrity hash assertion." >&2
+  exit 1
+fi
+
 if ! echo "$FRONTEND_JOB_BLOCK" | grep -q 'actual_node=$(node --version)'; then
   echo "Error: Missing node version assertion." >&2
   exit 1
