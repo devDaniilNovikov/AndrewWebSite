@@ -7,8 +7,8 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 ## Active chain
 
 | Task | Chain (chronological) | State | Topics |
-| `task-frontend-foundation` | `2026-08-01-144453-task-frontend-foundation-handoff.md` → `2026-08-01-164024-task-frontend-foundation-draft-handoff.md` → `2026-08-01-164505-task-frontend-foundation-ready-handoff.md` | ready metadata; final exact-head CI required before Ready transition and merge | frontend, security, testing, ci |
-| `task-frontend-foundation` | `2026-08-01-144453-task-frontend-foundation-handoff.md` → `2026-08-01-164024-task-frontend-foundation-draft-handoff.md` | draft_pr; Draft PR #60 open; exact-head CI pending | frontend, security, testing, ci |
+| --- | --- | --- | --- |
+| `task-frontend-ci-gates` | `2026-08-01-165805-task-frontend-ci-gates-dispatch-handoff.md` → `2026-08-01-170547-task-frontend-ci-gates-blocked-handoff.md` → `2026-08-01-174120-task-frontend-ci-gates-native-dispatch-handoff.md` | in_progress; native Jules recovery and single-PR branch consolidation authorized | frontend, ci, testing, tracker, incident |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -55,6 +55,7 @@ design.
 | `fix-sec-04-send-retention-race` | 4 | `2026-07-27-055657-fix-sec-04-send-retention-race-ready-handoff.md` | merged as `6d800ec`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green | backend, privacy, telegram, security, tracker |
 | `fix-sec-05-retention-skip-locked-heartbeat` | 4 | `2026-07-27-061908-fix-sec-05-retention-skip-locked-heartbeat-ready-handoff.md` | merged as `90698e1`; retained source branch; post-merge CI, Dependency Submission, Semgrep, and subsequent scheduled Semgrep green | backend, privacy, security, tracker |
 | `fix-frontend-track-preview-replacement` | 3 | `2026-08-01-111916-fix-frontend-track-preview-replacement-ready-handoff.md` | merged as `2e51f44`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, product, tracker, memory |
+| `task-frontend-foundation` | 3 | `2026-08-01-164505-task-frontend-foundation-ready-handoff.md` | merged as `d0346b7`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, security, testing, ci |
 
 ## Rules
 
