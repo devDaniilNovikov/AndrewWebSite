@@ -120,8 +120,8 @@ async function installApiMock(
   return requests;
 }
 
-async function openEnabledForm(page: Page) {
-  await page.goto('/');
+async function openEnabledForm(page: Page, path = '/') {
+  await page.goto(path);
 
   const form = page.getByRole('form', { name: 'Форма заявки' });
   await expect(form).toBeVisible();
@@ -214,6 +214,39 @@ test('submits the exact OpenAPI payload on loopback and keeps synthetic lead dat
   }));
   for (const value of Object.values(SYNTHETIC_LEAD)) {
     expect(browserUrl).not.toContain(value);
+    expect(JSON.stringify(persistence)).not.toContain(value);
+  }
+  expect(persistence).toEqual({
+    cacheNames: [],
+    cookie: '',
+    databaseNames: [],
+    local: [],
+    session: [],
+  });
+});
+
+test('derives sourcePath from a product pathname without query or fragment data', async ({
+  page,
+}) => {
+  const requests = await installApiMock(page, () => ({ status: 202 }));
+  await openEnabledForm(page, '/kontakty?preview=1#contact');
+  const { submit } = await fillSyntheticLead(page);
+
+  await submit.click();
+
+  await expect.poll(() => requests.length).toBe(1);
+  expect(requests[0]?.body.sourcePath).toBe('/kontakty');
+  expect(JSON.stringify(requests[0]?.body)).not.toContain('preview=1');
+  expect(JSON.stringify(requests[0]?.body)).not.toContain('#contact');
+
+  const persistence = await page.evaluate(async () => ({
+    cacheNames: await caches.keys(),
+    cookie: document.cookie,
+    databaseNames: (await indexedDB.databases()).map(({ name }) => name),
+    local: Object.entries(localStorage),
+    session: Object.entries(sessionStorage),
+  }));
+  for (const value of Object.values(SYNTHETIC_LEAD)) {
     expect(JSON.stringify(persistence)).not.toContain(value);
   }
   expect(persistence).toEqual({

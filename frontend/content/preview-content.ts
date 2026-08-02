@@ -1,10 +1,18 @@
+export type PreviewHref = `#${string}` | `/${string}`;
+
+export type NavigationItem = Readonly<{
+  href: PreviewHref;
+  label: string;
+}>;
+
 export const navigationItems = [
-  { href: '#equipment', label: 'Оборудование' },
-  { href: '#works', label: 'Работы' },
-  { href: '#pricing', label: 'Цены' },
-  { href: '#about', label: 'О компании' },
-  { href: '#contact', label: 'Контакты' },
-] as const;
+  { href: '/#equipment', label: 'Оборудование' },
+  { href: '/uslugi', label: 'Услуги' },
+  { href: '/raboty', label: 'Работы' },
+  { href: '/tseny', label: 'Цены' },
+  { href: '/o-kompanii', label: 'О компании' },
+  { href: '/kontakty', label: 'Контакты' },
+] as const satisfies readonly NavigationItem[];
 
 export const benefitItems = [
   {
@@ -34,31 +42,37 @@ export const equipmentItems = [
     icon: 'snowflake',
     title: 'Холодильные шкафы',
     text: 'Коммерческое оборудование для хранения продуктов.',
+    href: '/remont-torgovogo-holodilnogo-oborudovaniya',
   },
   {
     icon: 'store',
     title: 'Витрины и горки',
     text: 'Торговое холодильное оборудование для залов и выкладки.',
+    href: '/remont-torgovogo-holodilnogo-oborudovaniya',
   },
   {
     icon: 'ice',
     title: 'Льдогенераторы',
     text: 'Профессиональное оборудование для заведений и производств.',
+    href: '/remont-ledogeneratorov',
   },
   {
     icon: 'box',
     title: 'Морозильные лари',
     text: 'Категория показана как демонстрационная структура каталога.',
+    href: '/remont-torgovogo-holodilnogo-oborudovaniya',
   },
   {
     icon: 'fan',
     title: 'Холодильные системы',
     text: 'Точный перечень обслуживаемых систем ожидает подтверждения.',
+    href: '/uslugi',
   },
   {
     icon: 'cabinet',
     title: 'Шкафы и столы',
     text: 'Профессиональное оборудование кухонь и торговых объектов.',
+    href: '/remont-torgovogo-holodilnogo-oborudovaniya',
   },
 ] as const;
 
@@ -173,7 +187,7 @@ export const maintenanceItems = [
     points: [
       'Описать объект',
       'Указать тип оборудования',
-      'Дождаться подключения формы F5',
+      'Перейти к общей форме заявки',
     ],
   },
 ] as const;

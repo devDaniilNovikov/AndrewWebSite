@@ -43,6 +43,13 @@ const allowedAppFiles = new Set([
   'app/layout.tsx',
   'app/not-found.tsx',
   'app/page.tsx',
+  'app/kontakty/page.tsx',
+  'app/o-kompanii/page.tsx',
+  'app/raboty/page.tsx',
+  'app/remont-ledogeneratorov/page.tsx',
+  'app/remont-torgovogo-holodilnogo-oborudovaniya/page.tsx',
+  'app/tseny/page.tsx',
+  'app/uslugi/page.tsx',
 ]);
 
 async function pathExists(path) {

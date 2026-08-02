@@ -78,6 +78,38 @@ describe('static frontend boundary', () => {
     ]);
   });
 
+  it('allows only the seven declared provisional product page routes', async () => {
+    const fixture = await createFixture();
+    await writeFixtureFile(
+      fixture,
+      'next.config.mjs',
+      "export default { output: 'export', images: { unoptimized: true } };",
+    );
+
+    const productPageFiles = [
+      'app/uslugi/page.tsx',
+      'app/remont-torgovogo-holodilnogo-oborudovaniya/page.tsx',
+      'app/remont-ledogeneratorov/page.tsx',
+      'app/o-kompanii/page.tsx',
+      'app/raboty/page.tsx',
+      'app/tseny/page.tsx',
+      'app/kontakty/page.tsx',
+    ] as const;
+
+    await Promise.all(
+      productPageFiles.map((path) =>
+        writeFixtureFile(fixture, path, 'export {};'),
+      ),
+    );
+
+    await expect(findStaticBoundaryViolations(fixture)).resolves.toEqual([]);
+
+    await writeFixtureFile(fixture, 'app/unapproved/page.tsx', 'export {};');
+    await expect(findStaticBoundaryViolations(fixture)).resolves.toContain(
+      'app/unapproved/page.tsx: additional route surface',
+    );
+  });
+
   it('rejects a second fetch surface outside the canonical transport', async () => {
     const fixture = await createFixture();
     await writeFixtureFile(

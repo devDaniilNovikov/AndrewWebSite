@@ -31,8 +31,8 @@ export function AboutSection() {
         <Reveal className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
           <SectionHeading eyebrow="О компании" title="Команда мастеров" />
           <p className="mt-4 text-sm leading-6 text-slate-600">
-            Профессиональная команда для задач коммерческого холодильного
-            оборудования.
+            Описание команды и её компетенций будет добавлено после
+            подтверждения.
           </p>
           <p className="mt-3 text-xs leading-5 text-slate-500">
             Имена, опыт, роли и фотографии специалистов будут опубликованы
@@ -185,7 +185,7 @@ export function ContactSection() {
             </div>
             <div className="grid gap-1 py-3 sm:grid-cols-[8rem_1fr]">
               <dt className="font-semibold text-navy">Регион</dt>
-              <dd className="text-slate-600">Москва и ближайшее Подмосковье</dd>
+              <dd className="text-slate-600">Регион выезда уточняется</dd>
             </div>
             <div className="grid gap-1 py-3 sm:grid-cols-[8rem_1fr]">
               <dt className="font-semibold text-navy">График</dt>
