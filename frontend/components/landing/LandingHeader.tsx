@@ -7,7 +7,7 @@ export function LandingHeader() {
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-[0_1px_0_rgba(15,23,42,0.02)] backdrop-blur-md lg:static">
       <div className="mx-auto flex min-h-18 w-full max-w-[72rem] items-center gap-3 px-5 sm:gap-4 sm:px-7 lg:px-8">
         <a
-          aria-label="На главную"
+          aria-label="Название компании уточняется — на главную"
           className="flex min-w-0 items-center gap-3 text-navy"
           href="#main-content"
         >
@@ -60,7 +60,7 @@ export function LandingHeader() {
         </div>
 
         <a
-          aria-label="Оставить заявку — мобильная версия"
+          aria-label="Заявка — оставить заявку, мобильная версия"
           className="ml-auto inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 lg:hidden"
           href="#contact"
         >

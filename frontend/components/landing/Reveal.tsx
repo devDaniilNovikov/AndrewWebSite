@@ -1,7 +1,9 @@
 'use client';
 
-import { motion, useReducedMotion } from 'motion/react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+
+type RevealStyle = CSSProperties & Readonly<{ '--reveal-delay': string }>;
 
 type RevealProps = Readonly<{
   children: ReactNode;
@@ -10,25 +12,47 @@ type RevealProps = Readonly<{
 }>;
 
 export function Reveal({ children, className, delay = 0 }: RevealProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const elementRef = useRef<HTMLDivElement>(null);
 
-  if (shouldReduceMotion) {
-    return <div className={className}>{children}</div>;
-  }
+  useEffect(() => {
+    const element = elementRef.current;
+    const reduceMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    if (!element || reduceMotion || !('IntersectionObserver' in window)) {
+      return;
+    }
+
+    const viewportThreshold = window.innerHeight * 0.9;
+    if (element.getBoundingClientRect().top <= viewportThreshold) {
+      return;
+    }
+
+    element.dataset.revealState = 'pending';
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          element.dataset.revealState = 'visible';
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px', threshold: 0.05 },
+    );
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <motion.div
+    <div
       className={className}
-      data-reveal="motion"
-      initial={{
-        opacity: 'var(--reveal-initial-opacity)',
-        y: 'var(--reveal-initial-offset)',
-      }}
-      transition={{ duration: 0.42, delay, ease: [0.22, 1, 0.36, 1] }}
-      viewport={{ amount: 0.15, once: true }}
-      whileInView={{ opacity: 1, y: 0 }}
+      data-reveal="css"
+      data-reveal-state="visible"
+      ref={elementRef}
+      style={{ '--reveal-delay': `${delay}s` } as RevealStyle}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

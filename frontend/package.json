@@ -24,11 +24,13 @@
     "test:coverage": "vitest run --coverage --reporter=default",
     "serve:preview": "serve out --listen tcp://127.0.0.1:4173 --no-clipboard",
     "test:e2e": "playwright test",
+    "test:lighthouse": "node scripts/test-lighthouse.mjs",
     "verify:static-boundary": "node scripts/verify-static-boundary.mjs",
+    "verify:visual-contract": "node scripts/verify-visual-contract.mjs",
     "verify:production-gate": "node scripts/verify-production-gate.mjs",
     "verify:export": "node scripts/verify-export.mjs",
     "audit": "pnpm audit --audit-level high",
-    "verify": "pnpm run verify:toolchain && pnpm run format:check && pnpm run verify:api-types && pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run verify:static-boundary && pnpm run verify:production-gate && pnpm run verify:export && pnpm run test:e2e && pnpm run audit"
+    "verify": "pnpm run verify:toolchain && pnpm run format:check && pnpm run verify:api-types && pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run verify:static-boundary && pnpm run verify:visual-contract && pnpm run verify:production-gate && pnpm run verify:export && pnpm run test:lighthouse && pnpm run test:e2e && pnpm run audit"
   },
   "dependencies": {
     "inter-ui": "4.1.1",
@@ -50,11 +52,13 @@
     "@types/react-dom": "19.2.4",
     "@vitejs/plugin-react": "6.0.5",
     "@vitest/coverage-v8": "4.1.10",
+    "chrome-launcher": "1.2.1",
     "corepack": "0.34.5",
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.11",
     "jest-axe": "11.0.0",
     "jsdom": "29.1.1",
+    "lighthouse": "13.4.1",
     "openapi-typescript": "7.13.0",
     "prettier": "3.9.6",
     "serve": "14.2.6",

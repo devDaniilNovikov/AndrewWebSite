@@ -9,7 +9,8 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm run build:preview && pnpm run serve:preview',
+    command:
+      'node scripts/verify-toolchain.mjs && pnpm run build:preview && pnpm run serve:preview',
     env: {
       NEXT_PUBLIC_PREVIEW_API_ORIGIN: 'http://127.0.0.1:4174',
     },

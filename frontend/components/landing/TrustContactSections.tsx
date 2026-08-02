@@ -17,6 +17,7 @@ export function AboutSection() {
   return (
     <section
       className="scroll-mt-24 border-y border-slate-200 bg-surface py-8 sm:py-10"
+      data-section="about"
       id="about"
     >
       <Container className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1.15fr_0.85fr_0.62fr_0.62fr] lg:items-stretch">
@@ -66,7 +67,7 @@ export function AboutSection() {
 
 export function MaintenanceSection() {
   return (
-    <section className="bg-white py-8 sm:py-10">
+    <section className="bg-white py-8 sm:py-10" data-section="maintenance">
       <Container>
         <Reveal>
           <SectionHeading
@@ -120,7 +121,10 @@ export function MaintenanceSection() {
 
 export function ReviewsSection() {
   return (
-    <section className="border-y border-slate-200 bg-surface py-8 sm:py-10">
+    <section
+      className="border-y border-slate-200 bg-surface py-8 sm:py-10"
+      data-section="reviews"
+    >
       <Container>
         <Reveal>
           <SectionHeading title="Отзывы клиентов" />
@@ -158,7 +162,11 @@ export function ReviewsSection() {
 
 export function ContactSection() {
   return (
-    <section className="scroll-mt-24 bg-white py-8 sm:py-10" id="contact">
+    <section
+      className="scroll-mt-24 bg-white py-8 sm:py-10"
+      data-section="contact"
+      id="contact"
+    >
       <Container className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-stretch">
         <Reveal className="flex flex-col justify-center">
           <PlaceholderBadge>Контакты уточняются</PlaceholderBadge>

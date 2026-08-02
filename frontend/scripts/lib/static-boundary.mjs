@@ -37,6 +37,8 @@ const forbiddenRuntimePatterns = [
 const nativeFetchPattern = /\b(?:(?:globalThis|window)\.)?fetch\b/u;
 const allowedFetchFiles = new Set(['lib/leads/transport.ts']);
 const allowedAppFiles = new Set([
+  'app/InterVariable-cyrillic.woff2',
+  'app/fonts.ts',
   'app/globals.css',
   'app/layout.tsx',
   'app/not-found.tsx',
@@ -61,21 +63,22 @@ async function walk(directory, rootDirectory) {
   const files = [];
 
   for (const entry of entries) {
-    if (generatedDirectories.has(entry.name)) {
+    const absolutePath = resolve(directory, entry.name);
+    const relativePath = relative(rootDirectory, absolutePath).replaceAll(
+      '\\',
+      '/',
+    );
+
+    if (entry.isDirectory() && generatedDirectories.has(relativePath)) {
       continue;
     }
-
-    const absolutePath = resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
       files.push(...(await walk(absolutePath, rootDirectory)));
     } else if (entry.isFile()) {
       files.push({
         absolutePath,
-        relativePath: relative(rootDirectory, absolutePath).replaceAll(
-          '\\',
-          '/',
-        ),
+        relativePath,
       });
     }
   }

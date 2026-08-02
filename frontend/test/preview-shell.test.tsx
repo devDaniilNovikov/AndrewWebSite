@@ -24,7 +24,7 @@ describe('PreviewShell', () => {
     ).toBeInTheDocument();
     expect(
       within(screen.getByRole('banner')).getByRole('link', {
-        name: 'Оставить заявку — мобильная версия',
+        name: 'Заявка — оставить заявку, мобильная версия',
       }),
     ).toHaveAttribute('href', '#contact');
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
@@ -83,6 +83,12 @@ describe('PreviewShell', () => {
       screen.getAllByText('Название компании уточняется').length,
     ).toBeGreaterThan(0);
     expect(container.querySelector('img')).not.toBeInTheDocument();
+    expect(
+      container.querySelectorAll('[data-media-slot="placeholder"]').length,
+    ).toBeGreaterThan(0);
+    expect(
+      container.querySelector('[data-media-slot="verified"]'),
+    ).not.toBeInTheDocument();
     expect(container.querySelector('a[href^="tel:"]')).not.toBeInTheDocument();
     expect(container.querySelector('a[href^="http"]')).not.toBeInTheDocument();
   });
@@ -143,6 +149,7 @@ describe('PreviewShell', () => {
       'Ремонт коммерческого холодильного оборудования — демонстрация',
     );
     expect(metadata.robots).toMatchObject({ index: false, follow: false });
+    expect(metadata.icons).toEqual({ icon: 'data:,' });
   });
 
   it('has no WCAG A or AA accessibility violations', async () => {
@@ -157,6 +164,10 @@ describe('MediaSlot', () => {
     const { rerender } = render(<MediaSlot />);
 
     expect(screen.getByText('Фото будет добавлено')).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'data-media-slot',
+      'placeholder',
+    );
     expect(
       screen.queryByRole('img', { name: 'Мастер у оборудования' }),
     ).not.toBeInTheDocument();
@@ -173,6 +184,11 @@ describe('MediaSlot', () => {
     expect(
       screen.getByRole('img', { name: 'Мастер у оборудования' }),
     ).toHaveAttribute('src', '/media/verified/hero.webp');
+    expect(
+      screen
+        .getByRole('img', { name: 'Мастер у оборудования' })
+        .closest('[data-media-slot]'),
+    ).toHaveAttribute('data-media-slot', 'verified');
     expect(screen.queryByText('Фото будет добавлено')).not.toBeInTheDocument();
   });
 });

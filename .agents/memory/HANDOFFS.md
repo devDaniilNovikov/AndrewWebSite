@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-frontend-openapi-ci-path` | `2026-08-02-081723-task-frontend-openapi-ci-path-draft-handoff.md` | Draft PR #66; independent reviews complete; controller metadata exact-head CI pending | frontend, ci, openapi, testing, incident, tracker |
+| `task-frontend-quality-hardening` | `2026-08-02-083927-task-frontend-quality-hardening-handoff.md` → `2026-08-02-092854-task-frontend-quality-hardening-draft-handoff.md` → `2026-08-02-114416-task-frontend-quality-hardening-ready-handoff.md` | Ready and squash-merge authorized; Ready metadata-head CI pending | frontend, performance, accessibility, testing, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -59,6 +59,7 @@ design.
 | `task-frontend-ci-gates` | 5 | `2026-08-01-191251-task-frontend-ci-gates-ready-handoff.md` | merged as `b4a5e1c`; Issue #61 closed; controller and generated branches retained; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, ci, testing, security, tracker, incident |
 | `task-frontend-landing-page` | 3 | `2026-08-02-033637-task-frontend-landing-page-ready-handoff.md` | merged as `6477af1`; source branch retained; post-merge CI, Dependency Submission, and Semgrep green; Timeweb/CD deferred; no deployment | frontend, design, accessibility, testing, security, tracker |
 | `task-frontend-lead-form` | 3 | `2026-08-02-073618-task-frontend-lead-form-ready-handoff.md` | merged as `781ff1c`; source branch retained; post-merge CI and security checks green; no deployment | frontend, api, accessibility, privacy, testing, security, tracker |
+| `task-frontend-openapi-ci-path` | 1 | `2026-08-02-081723-task-frontend-openapi-ci-path-draft-handoff.md` | merged as `1372bbd`; Issue #65 closed; native Jules branch retained; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, ci, openapi, testing, incident, tracker |
 
 ## Rules
 

@@ -13,9 +13,11 @@ export default defineConfig({
       include: [
         'components/**/*.tsx',
         'lib/leads/**/*.ts',
+        'scripts/lib/lighthouse-runner.mjs',
         'scripts/lib/preview-api-origin.mjs',
         'scripts/lib/production-readiness.mjs',
         'scripts/lib/static-boundary.mjs',
+        'scripts/lib/visual-contract.mjs',
       ],
       reporter: ['text', 'json-summary', 'lcov'],
       thresholds: {
