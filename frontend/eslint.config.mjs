@@ -8,6 +8,7 @@ const config = [
     ignores: [
       '.next/**',
       'coverage/**',
+      'generated/openapi.ts',
       'out/**',
       'playwright-report/**',
       'test-results/**',

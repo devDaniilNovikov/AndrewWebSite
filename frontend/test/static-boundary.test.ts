@@ -32,9 +32,95 @@ afterEach(async () => {
 });
 
 describe('static frontend boundary', () => {
-  it('accepts the foundation tree with no runtime server or network surface', async () => {
+  it('accepts the application tree with only the allowlisted lead transport', async () => {
     await expect(findStaticBoundaryViolations(resolve('.'))).resolves.toEqual(
       [],
+    );
+  });
+
+  it('allows native fetch only in the canonical lead transport', async () => {
+    const fixture = await createFixture();
+    await writeFixtureFile(
+      fixture,
+      'next.config.mjs',
+      "export default { output: 'export', images: { unoptimized: true } };",
+    );
+    await writeFixtureFile(
+      fixture,
+      'lib/leads/transport.ts',
+      [
+        'export async function submitLead(endpoint: string, body: string) {',
+        "  return fetch(endpoint, { method: 'POST', body });",
+        '}',
+      ].join('\n'),
+    );
+
+    await expect(findStaticBoundaryViolations(fixture)).resolves.toEqual([]);
+  });
+
+  it('rejects a second fetch surface outside the canonical transport', async () => {
+    const fixture = await createFixture();
+    await writeFixtureFile(
+      fixture,
+      'next.config.mjs',
+      "export default { output: 'export', images: { unoptimized: true } };",
+    );
+    await writeFixtureFile(
+      fixture,
+      'lib/leads/transport.ts',
+      'export const submitLead = (endpoint: string) => fetch(endpoint);',
+    );
+    await writeFixtureFile(
+      fixture,
+      'lib/leads/secondary-transport.ts',
+      "export const retryElsewhere = () => fetch('/api/leads');",
+    );
+    const violations = await findStaticBoundaryViolations(fixture);
+
+    expect(violations).toContain(
+      'lib/leads/secondary-transport.ts: runtime network client',
+    );
+    expect(violations).not.toContain(
+      'lib/leads/transport.ts: runtime network client',
+    );
+  });
+
+  it('rejects external URL literals throughout runtime code', async () => {
+    const fixture = await createFixture();
+    await writeFixtureFile(
+      fixture,
+      'next.config.mjs',
+      "export default { output: 'export', images: { unoptimized: true } };",
+    );
+    await writeFixtureFile(
+      fixture,
+      'lib/leads/config.ts',
+      "export const remote = 'https://example.invalid/api/leads';",
+    );
+
+    await expect(findStaticBoundaryViolations(fixture)).resolves.toContain(
+      'lib/leads/config.ts: external runtime URL',
+    );
+  });
+
+  it('rejects non-fetch network clients even in the allowlisted transport', async () => {
+    const fixture = await createFixture();
+    await writeFixtureFile(
+      fixture,
+      'next.config.mjs',
+      "export default { output: 'export', images: { unoptimized: true } };",
+    );
+    await writeFixtureFile(
+      fixture,
+      'lib/leads/transport.ts',
+      [
+        "import axios from 'axios';",
+        "export const stream = () => new WebSocket('/api/leads');",
+      ].join('\n'),
+    );
+
+    await expect(findStaticBoundaryViolations(fixture)).resolves.toContain(
+      'lib/leads/transport.ts: runtime network client',
     );
   });
 

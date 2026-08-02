@@ -13,6 +13,9 @@
     "build": "pnpm run build:preview",
     "build:preview": "node scripts/build.mjs preview",
     "build:production": "node scripts/build.mjs production",
+    "generate:api": "openapi-typescript ../docs/backend/openapi.yaml --output generated/openapi.ts --immutable --alphabetize --export-type",
+    "verify:api-types": "openapi-typescript ../docs/backend/openapi.yaml --output generated/openapi.ts --immutable --alphabetize --export-type --check",
+    "verify:toolchain": "node scripts/verify-toolchain.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
@@ -25,7 +28,7 @@
     "verify:production-gate": "node scripts/verify-production-gate.mjs",
     "verify:export": "node scripts/verify-export.mjs",
     "audit": "pnpm audit --audit-level high",
-    "verify": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run verify:static-boundary && pnpm run verify:production-gate && pnpm run verify:export && pnpm run test:e2e && pnpm run audit"
+    "verify": "pnpm run verify:toolchain && pnpm run format:check && pnpm run verify:api-types && pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run verify:static-boundary && pnpm run verify:production-gate && pnpm run verify:export && pnpm run test:e2e && pnpm run audit"
   },
   "dependencies": {
     "inter-ui": "4.1.1",
@@ -37,10 +40,10 @@
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
     "@playwright/test": "1.62.1",
+    "@tailwindcss/postcss": "4.3.3",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
-    "@tailwindcss/postcss": "4.3.3",
     "@types/jsdom": "28.0.3",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
@@ -52,6 +55,7 @@
     "eslint-config-next": "16.2.11",
     "jest-axe": "11.0.0",
     "jsdom": "29.1.1",
+    "openapi-typescript": "7.13.0",
     "prettier": "3.9.6",
     "serve": "14.2.6",
     "tailwindcss": "4.3.3",

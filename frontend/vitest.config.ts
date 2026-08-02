@@ -12,6 +12,8 @@ export default defineConfig({
       provider: 'v8',
       include: [
         'components/**/*.tsx',
+        'lib/leads/**/*.ts',
+        'scripts/lib/preview-api-origin.mjs',
         'scripts/lib/production-readiness.mjs',
         'scripts/lib/static-boundary.mjs',
       ],

@@ -7,3 +7,4 @@ test-results
 pnpm-lock.yaml
 LICENSES/Inter-OFL-1.1.txt
 next-env.d.ts
+generated/openapi.ts

@@ -3,6 +3,7 @@ import {
   navigationItems,
   reviewPlaceholders,
 } from '../../content/preview-content';
+import { LeadForm } from '../leads/LeadForm';
 import {
   Container,
   LineIcon,
@@ -165,8 +166,9 @@ export function ContactSection() {
             Опишите поломку — свяжемся и уточним детали
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
-            В демонстрационной версии данные не отправляются. Проверенные
-            контакты и рабочая форма появятся на следующих этапах.
+            В опубликованной демонстрации данные не отправляются. Локальная
+            тестовая форма принимает только синтетические данные, а проверенные
+            контакты появятся после согласования.
           </p>
           <dl className="mt-5 divide-y divide-slate-200 border-y border-slate-200 text-sm">
             <div className="grid gap-1 py-3 sm:grid-cols-[8rem_1fr]">
@@ -185,51 +187,7 @@ export function ContactSection() {
         </Reveal>
 
         <Reveal className="rounded-xl bg-navy p-4 text-white shadow-[0_18px_50px_rgba(11,18,32,0.18)] sm:p-5">
-          <form aria-label="Форма заявки недоступна в демонстрации">
-            <div className="flex flex-col gap-2 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-xl font-semibold">Оставить заявку</h3>
-              <PlaceholderBadge inverse>Отправка отключена</PlaceholderBadge>
-            </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className="text-sm font-semibold text-slate-200">
-                Имя
-                <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-white/15 bg-white/7 px-3 text-white disabled:cursor-not-allowed disabled:opacity-75"
-                  disabled
-                  placeholder="Поле будет подключено"
-                  type="text"
-                />
-              </label>
-              <label className="text-sm font-semibold text-slate-200">
-                Телефон
-                <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-white/15 bg-white/7 px-3 text-white disabled:cursor-not-allowed disabled:opacity-75"
-                  disabled
-                  placeholder="Номер не сохраняется"
-                  type="tel"
-                />
-              </label>
-            </div>
-            <label className="mt-4 block text-sm font-semibold text-slate-200">
-              Комментарий
-              <textarea
-                className="mt-2 min-h-16 w-full resize-none rounded-md border border-white/15 bg-white/7 p-3 text-white disabled:cursor-not-allowed disabled:opacity-75"
-                disabled
-                placeholder="Опишите задачу после подключения формы"
-              />
-            </label>
-            <button
-              className="mt-4 min-h-11 w-full rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
-              disabled
-              type="button"
-            >
-              Отправить заявку
-            </button>
-            <p className="mt-3 text-xs leading-5 text-slate-300" role="status">
-              Отправка данных будет подключена на этапе F5. Юридические тексты
-              проходят проверку.
-            </p>
-          </form>
+          <LeadForm />
         </Reveal>
       </Container>
     </section>
