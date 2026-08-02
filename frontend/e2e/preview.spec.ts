@@ -114,7 +114,7 @@ test('serves the complete accessible, network-isolated landing preview', async (
   if (page.viewportSize()!.width < 1024) {
     await expect(
       page.getByRole('link', {
-        name: 'Оставить заявку — мобильная версия',
+        name: 'Заявка — оставить заявку, мобильная версия',
       }),
     ).toBeVisible();
     await expect(
@@ -126,7 +126,7 @@ test('serves the complete accessible, network-isolated landing preview', async (
   } else {
     await expect(
       page.getByRole('link', {
-        name: 'Оставить заявку — мобильная версия',
+        name: 'Заявка — оставить заявку, мобильная версия',
       }),
     ).not.toBeVisible();
     await expect(
@@ -201,7 +201,9 @@ test('mobile drawer closes on Escape and restores trigger focus', async ({
   await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
 });
 
-test('uses the restrained default reveal path', async ({ page }, testInfo) => {
+test('uses the progressive CSS reveal path below the fold', async ({
+  page,
+}, testInfo) => {
   test.skip(
     testInfo.project.name !== 'desktop-chromium',
     'One Chromium viewport is sufficient for the default reveal contract.',
@@ -209,7 +211,7 @@ test('uses the restrained default reveal path', async ({ page }, testInfo) => {
 
   await page.goto('/');
 
-  const reveal = page.locator('#about > div > div').first();
+  const reveal = page.locator('#about [data-reveal="css"]').first();
   await expect(reveal).toHaveCSS('opacity', '0');
   await expect(reveal).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 16)');
 
@@ -236,7 +238,7 @@ test('honors the reduced-motion preference', async ({ page }, testInfo) => {
     ),
   ).toBe(true);
   const revealStates = await page
-    .locator('main [data-reveal="motion"]')
+    .locator('main [data-reveal="css"]')
     .evaluateAll((nodes) =>
       nodes.map((node) => ({
         opacity: getComputedStyle(node).opacity,

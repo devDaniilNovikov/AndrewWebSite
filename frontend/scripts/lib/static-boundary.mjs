@@ -37,6 +37,8 @@ const forbiddenRuntimePatterns = [
 const nativeFetchPattern = /\b(?:(?:globalThis|window)\.)?fetch\b/u;
 const allowedFetchFiles = new Set(['lib/leads/transport.ts']);
 const allowedAppFiles = new Set([
+  'app/InterVariable-cyrillic.woff2',
+  'app/fonts.ts',
   'app/globals.css',
   'app/layout.tsx',
   'app/not-found.tsx',

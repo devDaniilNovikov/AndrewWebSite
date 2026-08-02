@@ -14,7 +14,11 @@ import { Reveal } from './Reveal';
 
 export function WorksSection() {
   return (
-    <section className="scroll-mt-24 bg-white py-10 sm:py-12" id="works">
+    <section
+      className="scroll-mt-24 bg-white py-10 sm:py-12"
+      data-section="works"
+      id="works"
+    >
       <Container>
         <Reveal>
           <SectionHeading
@@ -85,6 +89,7 @@ export function RepairCallout() {
     <section
       className="bg-white pb-10 sm:pb-12"
       aria-label="Связаться по другой неисправности"
+      data-section="repair"
     >
       <Container>
         <Reveal className="flex flex-col gap-6 rounded-xl bg-navy px-6 py-7 text-white shadow-[0_18px_50px_rgba(11,18,32,0.2)] md:flex-row md:items-center md:justify-between lg:px-9">
@@ -124,6 +129,7 @@ export function PricingSection() {
   return (
     <section
       className="scroll-mt-24 bg-white pb-10 text-white sm:pb-12"
+      data-section="pricing"
       id="pricing"
     >
       <Container>
@@ -174,7 +180,7 @@ export function PricingSection() {
 
 export function ProcessSection() {
   return (
-    <section className="bg-white py-8 sm:py-10">
+    <section className="bg-white py-8 sm:py-10" data-section="process">
       <Container>
         <Reveal>
           <SectionHeading center title="Как проходит заявка" />

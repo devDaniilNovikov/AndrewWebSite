@@ -58,6 +58,26 @@ describe('static frontend boundary', () => {
     await expect(findStaticBoundaryViolations(fixture)).resolves.toEqual([]);
   });
 
+  it('allows only the declared local font files inside app', async () => {
+    const fixture = await createFixture();
+    await writeFixtureFile(
+      fixture,
+      'next.config.mjs',
+      "export default { output: 'export', images: { unoptimized: true } };",
+    );
+    await writeFixtureFile(fixture, 'app/fonts.ts', 'export const font = {};');
+    await writeFixtureFile(
+      fixture,
+      'app/InterVariable-cyrillic.woff2',
+      'font fixture',
+    );
+    await writeFixtureFile(fixture, 'app/unverified-font.woff2', 'unexpected');
+
+    await expect(findStaticBoundaryViolations(fixture)).resolves.toEqual([
+      'app/unverified-font.woff2: additional route surface',
+    ]);
+  });
+
   it('rejects a second fetch surface outside the canonical transport', async () => {
     const fixture = await createFixture();
     await writeFixtureFile(

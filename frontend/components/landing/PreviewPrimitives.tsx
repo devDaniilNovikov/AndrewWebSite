@@ -257,6 +257,7 @@ export function MediaPlaceholder({
     <div
       aria-label={`Демонстрационный медиаблок: ${label}`}
       className={`placeholder-media flex min-h-40 flex-col items-center justify-center gap-3 overflow-hidden bg-slate-100 px-5 text-center text-slate-500 ${className}`}
+      data-media-slot="placeholder"
       role="img"
     >
       <span className="grid h-12 w-12 place-items-center rounded-full border border-slate-300 bg-white/80 text-primary-ink">
@@ -287,7 +288,10 @@ export function MediaSlot({
   }
 
   return (
-    <div className={`relative min-h-40 overflow-hidden ${className}`}>
+    <div
+      className={`relative min-h-40 overflow-hidden ${className}`}
+      data-media-slot="verified"
+    >
       <Image
         alt={photo.alt}
         className="object-cover"

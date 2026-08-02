@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { interVariable } from './fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -9,6 +10,9 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
+  icons: {
+    icon: 'data:,',
+  },
 };
 
 export default function RootLayout({
@@ -17,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html className={interVariable.variable} lang="ru">
       <body className="bg-surface text-navy antialiased">{children}</body>
     </html>
   );

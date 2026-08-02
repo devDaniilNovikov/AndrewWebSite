@@ -14,7 +14,10 @@ import { Reveal } from './Reveal';
 
 export function HeroSection() {
   return (
-    <section className="overflow-hidden border-b border-slate-200 bg-white">
+    <section
+      className="overflow-hidden border-b border-slate-200 bg-white"
+      data-section="hero"
+    >
       <Container className="grid gap-7 py-8 lg:grid-cols-2 lg:items-stretch lg:gap-0 lg:py-0">
         <div className="flex flex-col justify-center lg:py-8 lg:pr-8 xl:pr-10">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-ink">
@@ -45,7 +48,7 @@ export function HeroSection() {
           </div>
         </div>
 
-        <Reveal className="relative min-h-[22rem] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 lg:min-h-[31rem] lg:rounded-none lg:border-y-0 lg:border-r-0">
+        <div className="relative min-h-[22rem] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 lg:min-h-[31rem] lg:rounded-none lg:border-y-0 lg:border-r-0">
           <MediaSlot
             className="h-full min-h-[22rem] lg:min-h-[31rem]"
             icon="snowflake"
@@ -58,7 +61,7 @@ export function HeroSection() {
               команды.
             </p>
           </div>
-        </Reveal>
+        </div>
       </Container>
     </section>
   );
@@ -69,6 +72,7 @@ export function BenefitStrip() {
     <section
       aria-label="Преимущества"
       className="border-b border-slate-200 bg-white"
+      data-section="benefits"
     >
       <Container>
         <ul className="grid sm:grid-cols-2 lg:grid-cols-4">
@@ -98,7 +102,11 @@ export function BenefitStrip() {
 
 export function EquipmentSection() {
   return (
-    <section className="scroll-mt-24 bg-white py-10 sm:py-12" id="equipment">
+    <section
+      className="scroll-mt-24 bg-white py-10 sm:py-12"
+      data-section="equipment"
+      id="equipment"
+    >
       <Container>
         <Reveal>
           <SectionHeading
@@ -106,40 +114,45 @@ export function EquipmentSection() {
             title="Оборудование, с которым мы работаем"
           />
         </Reveal>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          data-grid="equipment"
+        >
           {equipmentItems.map((item, index) => (
-            <Reveal className="h-full" delay={index * 0.035} key={item.title}>
-              <article className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,0.05)]">
-                <MediaSlot
-                  className="min-h-36 border-b border-slate-200"
-                  icon={item.icon}
-                />
-                <div className="flex flex-1 flex-col p-3.5">
-                  <h3 className="text-base font-semibold tracking-[-0.025em] text-navy">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1.5 flex-1 text-xs leading-5 text-slate-600">
-                    {item.text}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-[0.68rem] font-semibold text-primary-ink">
-                    <a
-                      className="inline-flex items-center gap-1"
-                      href="#contact"
-                    >
-                      Описать неисправность{' '}
-                      <LineIcon className="h-4 w-4" name="arrow" />
-                    </a>
-                    <a
-                      className="inline-flex items-center gap-1"
-                      href="#contact"
-                    >
-                      Оставить заявку{' '}
-                      <LineIcon className="h-4 w-4" name="arrow" />
-                    </a>
+            <div className="h-full" data-grid-item key={item.title}>
+              <Reveal className="h-full" delay={index * 0.035}>
+                <article className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,0.05)]">
+                  <MediaSlot
+                    className="min-h-36 border-b border-slate-200"
+                    icon={item.icon}
+                  />
+                  <div className="flex flex-1 flex-col p-3.5">
+                    <h3 className="text-base font-semibold tracking-[-0.025em] text-navy">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1.5 flex-1 text-xs leading-5 text-slate-600">
+                      {item.text}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-[0.68rem] font-semibold text-primary-ink">
+                      <a
+                        className="inline-flex items-center gap-1"
+                        href="#contact"
+                      >
+                        Описать неисправность{' '}
+                        <LineIcon className="h-4 w-4" name="arrow" />
+                      </a>
+                      <a
+                        className="inline-flex items-center gap-1"
+                        href="#contact"
+                      >
+                        Оставить заявку{' '}
+                        <LineIcon className="h-4 w-4" name="arrow" />
+                      </a>
+                    </div>
                   </div>
-                </div>
-              </article>
-            </Reveal>
+                </article>
+              </Reveal>
+            </div>
           ))}
         </div>
       </Container>
@@ -149,7 +162,10 @@ export function EquipmentSection() {
 
 export function ServicesSection() {
   return (
-    <section className="border-y border-slate-200 bg-surface py-8 sm:py-10">
+    <section
+      className="border-y border-slate-200 bg-surface py-8 sm:py-10"
+      data-section="services"
+    >
       <Container>
         <Reveal>
           <SectionHeading title="Услуги" />
