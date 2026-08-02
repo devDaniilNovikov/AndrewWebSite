@@ -2,7 +2,11 @@ import { spawnSync } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parsePreviewApiOrigin } from './lib/preview-api-origin.mjs';
 import { createSourceFingerprint } from './lib/source-fingerprint.mjs';
+import { assertPinnedNodeVersion } from './lib/toolchain.mjs';
+
+assertPinnedNodeVersion();
 
 const frontendDirectory = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -36,6 +40,18 @@ if (mode === 'production') {
   }
 }
 
+let previewApiOrigin;
+
+try {
+  previewApiOrigin = parsePreviewApiOrigin(
+    mode,
+    process.env.NEXT_PUBLIC_PREVIEW_API_ORIGIN,
+  );
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(2);
+}
+
 const sourceFingerprint = await createSourceFingerprint(frontendDirectory);
 const nextBinary = resolve(
   frontendDirectory,
@@ -48,6 +64,7 @@ const build = spawnSync(process.execPath, [nextBinary, 'build'], {
     ...process.env,
     ANDREW_BUILD_ID: `andrew-${sourceFingerprint.slice(0, 24)}`,
     NEXT_PUBLIC_BUILD_MODE: mode,
+    NEXT_PUBLIC_PREVIEW_API_ORIGIN: previewApiOrigin ?? '',
     NEXT_TELEMETRY_DISABLED: '1',
     SOURCE_DATE_EPOCH: '0',
     TZ: 'UTC',

@@ -10,6 +10,9 @@ export default defineConfig({
   },
   webServer: {
     command: 'pnpm run build:preview && pnpm run serve:preview',
+    env: {
+      NEXT_PUBLIC_PREVIEW_API_ORIGIN: 'http://127.0.0.1:4174',
+    },
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
     timeout: 120000,

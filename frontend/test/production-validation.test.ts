@@ -98,10 +98,15 @@ describe('production content validation', () => {
       ['scripts/build.mjs', 'production'],
       {
         encoding: 'utf8',
+        env: {
+          ...process.env,
+          NEXT_PUBLIC_PREVIEW_API_ORIGIN: 'http://127.0.0.1:4174',
+        },
       },
     );
 
     expect(result.status).toBe(1);
     expect(existsSync(outputDirectory)).toBe(false);
+    expect(result.stderr.trim().split('\n')).toEqual(blockerIds);
   });
 });

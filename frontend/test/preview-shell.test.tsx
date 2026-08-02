@@ -87,11 +87,11 @@ describe('PreviewShell', () => {
     expect(container.querySelector('a[href^="http"]')).not.toBeInTheDocument();
   });
 
-  it('renders a labelled, inert form shell for the later F5 integration', () => {
+  it('keeps the lead form inert when preview submission is not configured', () => {
     render(<PreviewShell />);
 
     const form = screen.getByRole('form', {
-      name: 'Форма заявки недоступна в демонстрации',
+      name: 'Форма заявки',
     });
     expect(within(form).getByLabelText('Имя')).toBeDisabled();
     expect(within(form).getByLabelText('Телефон')).toBeDisabled();
@@ -100,7 +100,7 @@ describe('PreviewShell', () => {
       within(form).getByRole('button', { name: 'Отправить заявку' }),
     ).toBeDisabled();
     expect(within(form).getByRole('status')).toHaveTextContent(
-      'Отправка данных будет подключена на этапе F5',
+      'Отправка заявок в опубликованной демонстрации отключена.',
     );
   });
 

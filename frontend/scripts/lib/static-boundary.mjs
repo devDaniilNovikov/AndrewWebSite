@@ -23,14 +23,19 @@ const forbiddenRuntimePatterns = [
   ['Next server API import', /from\s+['"]next\/(?:headers|server)['"]/u],
   [
     'runtime network client',
-    /\b(?:EventSource|WebSocket|XMLHttpRequest|fetch)\s*\(|navigator\.sendBeacon\s*\(|from\s+['"]axios['"]/u,
+    /\b(?:EventSource|WebSocket|XMLHttpRequest)\b|navigator\.sendBeacon\b|(?:from\s+|require\s*\(\s*)['"](?:axios|got|ky|ofetch)['"]/u,
   ],
-  ['external runtime URL', /(?:https?:)?\/\//u],
+  [
+    'external runtime URL',
+    /['"`]\s*(?:https?:)?\/\/(?:[A-Za-z0-9]|\[)|url\(\s*['"]?(?:https?:)?\/\/(?:[A-Za-z0-9]|\[)/u,
+  ],
   [
     'dynamic rendering configuration',
     /export\s+const\s+(?:dynamic|revalidate|runtime)\s*=/u,
   ],
 ];
+const nativeFetchPattern = /\b(?:(?:globalThis|window)\.)?fetch\b/u;
+const allowedFetchFiles = new Set(['lib/leads/transport.ts']);
 const allowedAppFiles = new Set([
   'app/globals.css',
   'app/layout.tsx',
@@ -112,7 +117,14 @@ export async function findStaticBoundaryViolations(rootDirectory) {
     }
   }
 
-  const runtimeDirectories = ['app', 'components', 'src/app', 'src/components'];
+  const runtimeDirectories = [
+    'app',
+    'components',
+    'lib',
+    'src/app',
+    'src/components',
+    'src/lib',
+  ];
   const runtimeFiles = (
     await Promise.all(
       runtimeDirectories.map((directory) =>
@@ -125,6 +137,13 @@ export async function findStaticBoundaryViolations(rootDirectory) {
 
   for (const file of runtimeFiles) {
     const contents = await readFile(file.absolutePath, 'utf8');
+
+    if (
+      nativeFetchPattern.test(contents) &&
+      !allowedFetchFiles.has(file.relativePath)
+    ) {
+      violations.push(`${file.relativePath}: runtime network client`);
+    }
 
     for (const [label, pattern] of forbiddenRuntimePatterns) {
       if (pattern.test(contents)) {
