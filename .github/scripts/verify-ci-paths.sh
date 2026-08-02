@@ -11,6 +11,10 @@ is_frontend_relevant() {
   if [[ "$file" =~ ^frontend/ ]]; then
     return 0
   fi
+  # OpenAPI file
+  if [[ "$file" == "docs/backend/openapi.yaml" ]]; then
+    return 0
+  fi
   # CI workflow itself
   if [[ "$file" == ".github/workflows/ci.yml" ]]; then
     return 0

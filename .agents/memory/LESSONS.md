@@ -21,14 +21,14 @@ LES-20260725-013 [active] process: separate current defects from unstarted roadm
 LES-20260726-014 [active] process: reconcile squash attribution and tracker state after merge → merge 0b0a62a
 LES-20260726-015 [active] deploy: mount PostgreSQL 18 container data at its parent directory → replacement smoke 3e3eb33
 LES-20260726-016 [active] process: close reconciliation once instead of recursively tracking its transport → PR #50
-LES-20260801-017 [active] ci: composite action boolean inputs are strings; verify false gates before relying on them → run 30709431088
+LES-20260801-017 [active] ci: composite action boolean inputs are strings; verify false gates before relying on them → runs 30709431088/30738727842
 ```
 
 ## Records
 
 ## LES-20260801-017 — Composite action boolean inputs require explicit string comparison
 
-`LES-20260801-017 [active] ci: composite action boolean inputs are strings; verify false gates before relying on them → run 30709431088`
+`LES-20260801-017 [active] ci: composite action boolean inputs are strings; verify false gates before relying on them → runs 30709431088/30738727842`
 
 - **Date:** 2026-08-01
 - **Lesson:** GitHub composite-action inputs are exposed as strings even when
@@ -36,13 +36,18 @@ LES-20260801-017 [active] ci: composite action boolean inputs are strings; verif
   optional context steps with the raw non-empty string `false`, so both steps
   ran. Its later `jq --arg "$(cat prompt.txt)"` placed the large F1 commit in
   one process argument and exceeded the operating-system argument limit before
-  any Jules API request. Test false-path behavior against the pinned action
-  implementation, and use explicit string comparison plus file-based payload
-  ingestion for potentially large context.
-- **Evidence:** failed guarded dispatch
-  [run 30709431088](https://github.com/devDaniilNovikov/AndrewWebSite/actions/runs/30709431088),
-  owner-authored [Issue #61](https://github.com/devDaniilNovikov/AndrewWebSite/issues/61),
-  and the [incident handoff](../../docs/handoffs/2026-08-01-170547-task-frontend-ci-gates-blocked-handoff.md).
+  any Jules API request. The same failure recurred during F5A guarded dispatch,
+  confirming that the pinned action remains unsafe for this repository rather
+  than exposing a token or Jules API failure. Test false-path behavior against
+  the pinned action implementation, and use explicit string comparison plus
+  file-based payload ingestion for potentially large context.
+- **Evidence:** failed guarded dispatches
+  [run 30709431088](https://github.com/devDaniilNovikov/AndrewWebSite/actions/runs/30709431088)
+  and [run 30738727842](https://github.com/devDaniilNovikov/AndrewWebSite/actions/runs/30738727842),
+  owner-authored [Issue #61](https://github.com/devDaniilNovikov/AndrewWebSite/issues/61)
+  and [Issue #65](https://github.com/devDaniilNovikov/AndrewWebSite/issues/65),
+  the [F1A incident handoff](../../docs/handoffs/2026-08-01-170547-task-frontend-ci-gates-blocked-handoff.md),
+  and the [F5A recovery handoff](../../docs/handoffs/2026-08-02-081723-task-frontend-openapi-ci-path-draft-handoff.md).
 - **Applicability:** composite actions with boolean-like inputs or shell
   payload assembly from repository diffs, logs, issue bodies, or generated
   files.
