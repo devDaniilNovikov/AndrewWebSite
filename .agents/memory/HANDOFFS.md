@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-frontend-product-pages` | `2026-08-02-123351-task-frontend-product-pages-handoff.md` | In progress; placeholder-only routes and Draft publication authorized | frontend, product, accessibility, testing, security, tracker |
+| `task-frontend-product-pages` | `2026-08-02-123351-task-frontend-product-pages-handoff.md` → `2026-08-02-133229-task-frontend-product-pages-draft-handoff.md` | Draft PR #68; local verification and independent reviews green; exact-head CI pending | frontend, product, accessibility, testing, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
