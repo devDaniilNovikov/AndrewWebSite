@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-frontend-landing-page` | `2026-08-02-022059-task-frontend-landing-page-handoff.md` → `2026-08-02-032725-task-frontend-landing-page-draft-handoff.md` | draft_pr; placeholder-only landing preview published as Draft PR #63; Ready and merge remain unauthorized | frontend, design, accessibility, testing, security, tracker |
+| `task-frontend-landing-page` | `2026-08-02-022059-task-frontend-landing-page-handoff.md` → `2026-08-02-032725-task-frontend-landing-page-draft-handoff.md` → `2026-08-02-033637-task-frontend-landing-page-ready-handoff.md` | ready; exact Draft head green and independently reviewed; Ready and squash-merge authorized; Timeweb hosting deferred | frontend, design, accessibility, testing, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
