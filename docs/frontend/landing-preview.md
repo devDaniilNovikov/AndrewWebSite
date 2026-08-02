@@ -3,17 +3,16 @@
 ## Status and authority
 
 This contract records the user's 2026-08-01 decision for the first frontend
-delivery. It is a preview slice of the broader product brief, not a promotion
-of any unverified recommendation, assumption, or example into production
-content.
+delivery and their corrected visual-reference decision later that day. It is
+a preview slice of the broader product brief, not a promotion of any
+unverified recommendation, assumption, or example into production content.
 
-The canonical visual reference is
-[`reference/landing-ui-2026-08-01.jpg`](reference/landing-ui-2026-08-01.jpg),
-SHA-256
-`d79cae4ea8647b6a4f81975debd3ce96b229b468b6f9a37f1a4a6184d1e8af35`.
-The user authorized preserving this supplied image in the repository. Its
-visible phone, prices, cases, review, hours, logo, and wording are design-only
-examples and are never business facts.
+The canonical visual reference is the user's external Telegram attachment
+`tg_image_2961269225.jpeg`, a 724 by 2172 image with SHA-256
+`6ee924016b146c528c1f72118aab7f5a0260d15369af07e0da9892308b76ecbc`.
+The image itself is intentionally not stored in the repository. Its visible
+phone, prices, cases, reviews, hours, logo, staff identities, imagery, and
+wording are design-only examples and are never business facts.
 
 ## Delivery slice
 
@@ -22,13 +21,16 @@ examples and are never business facts.
   and `contact`.
 - Defer the product brief's multi-page routes and verified trust-content
   population until separately authorized follow-up tasks.
-- Keep the backend and its OpenAPI contract unchanged. The lead form calls
-  the browser-facing API client defined by the canonical OpenAPI source.
+- Keep the backend and its OpenAPI contract unchanged. F2 renders only a
+  non-submitting form shell; F5 later connects the browser-facing API client
+  defined by the canonical OpenAPI source.
 
-The page order is header, hero, benefit strip, equipment grid, completed-work
-placeholders, pricing placeholders, company section, review placeholder,
-contact and lead form, then footer. The dark popover visible over the reference
-pricing section is a screenshot artifact and is not part of the product.
+The page order is header, hero, benefit strip, equipment grid, services,
+completed-work placeholders, repair CTA, pricing placeholders, request
+process, team/company section, planned-maintenance section, review
+placeholders, contact and form shell, then footer. The cookie banner and any
+analytics UI visible in the reference are design artifacts and are not part of
+the preview while the analytics vendor and legal text remain unresolved.
 
 ## Visual system
 
@@ -42,10 +44,10 @@ pricing section is a screenshot artifact and is not part of the product.
 
 - Use a locally bundled Inter Variable font and no remote font request.
 - Preserve the reference's compact corporate rhythm, thin dividers, small
-  radii, dark hero/price bands, blue calls to action, and light gray media
-  placeholders.
+  radii, light split hero, dark CTA/price bands, blue calls to action, and
+  light gray media placeholders.
 - Match composition, palette, rhythm, and information density rather than
-  attempting a pixel diff against the 439 by 1280 reference export.
+  attempting a pixel diff against the 724 by 2172 reference export.
 - Do not add GSAP, 3D, glassmorphism, parallax, scroll hijacking, or continuous
   expensive animation.
 - Restrained reveals move no more than 16 px and complete in roughly 420 ms;
