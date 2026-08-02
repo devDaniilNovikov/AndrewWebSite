@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-frontend-ci-gates` | `2026-08-01-165805-task-frontend-ci-gates-dispatch-handoff.md` → `2026-08-01-170547-task-frontend-ci-gates-blocked-handoff.md` → `2026-08-01-174120-task-frontend-ci-gates-native-dispatch-handoff.md` → `2026-08-01-182056-task-frontend-ci-gates-handoff.md` → `2026-08-01-191251-task-frontend-ci-gates-ready-handoff.md` | ready metadata; Draft PR #62 remains pending protected exact-head checks before Ready and squash merge | frontend, ci, testing, security, tracker, incident |
+| `task-frontend-landing-page` | `2026-08-02-022059-task-frontend-landing-page-handoff.md` → `2026-08-02-032725-task-frontend-landing-page-draft-handoff.md` → `2026-08-02-033637-task-frontend-landing-page-ready-handoff.md` | ready; exact Draft head green and independently reviewed; Ready and squash-merge authorized; Timeweb hosting deferred | frontend, design, accessibility, testing, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -56,6 +56,7 @@ design.
 | `fix-sec-05-retention-skip-locked-heartbeat` | 4 | `2026-07-27-061908-fix-sec-05-retention-skip-locked-heartbeat-ready-handoff.md` | merged as `90698e1`; retained source branch; post-merge CI, Dependency Submission, Semgrep, and subsequent scheduled Semgrep green | backend, privacy, security, tracker |
 | `fix-frontend-track-preview-replacement` | 3 | `2026-08-01-111916-fix-frontend-track-preview-replacement-ready-handoff.md` | merged as `2e51f44`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, product, tracker, memory |
 | `task-frontend-foundation` | 3 | `2026-08-01-164505-task-frontend-foundation-ready-handoff.md` | merged as `d0346b7`; retained source branch; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, security, testing, ci |
+| `task-frontend-ci-gates` | 5 | `2026-08-01-191251-task-frontend-ci-gates-ready-handoff.md` | merged as `b4a5e1c`; Issue #61 closed; controller and generated branches retained; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, ci, testing, security, tracker, incident |
 
 ## Rules
 
