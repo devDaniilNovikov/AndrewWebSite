@@ -203,8 +203,10 @@ async function runAuditAttempt(url, runNumber, attemptNumber) {
     );
     return scores;
   } finally {
-    activeChrome = undefined;
     await chrome.kill();
+    if (activeChrome === chrome) {
+      activeChrome = undefined;
+    }
   }
 }
 

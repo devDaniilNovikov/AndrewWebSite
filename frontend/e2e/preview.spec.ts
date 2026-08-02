@@ -171,7 +171,7 @@ test('keeps navigation and landing CTAs on verified in-page anchors', async ({
   await expect(page.locator('#contact')).toBeInViewport();
 });
 
-test('mobile drawer closes on Escape and restores trigger focus', async ({
+test('mobile drawer closes through keyboard, controls, and anchors', async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -198,6 +198,18 @@ test('mobile drawer closes on Escape and restores trigger focus', async ({
   await expect(dialog).not.toBeVisible();
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(trigger).toBeFocused();
+  await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
+
+  await trigger.click();
+  await page.getByRole('button', { name: 'Закрыть меню' }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await dialog.getByRole('link', { name: 'Цены' }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page).toHaveURL(/#pricing$/);
+  await expect(page.locator('#pricing')).toBeInViewport();
   await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
 });
 

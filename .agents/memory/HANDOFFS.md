@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-frontend-quality-hardening` | `2026-08-02-083927-task-frontend-quality-hardening-handoff.md` | Fresh F6 worktree; startup reconciliation in progress | frontend, performance, accessibility, testing, security, tracker |
+| `task-frontend-quality-hardening` | `2026-08-02-083927-task-frontend-quality-hardening-handoff.md` → `2026-08-02-092854-task-frontend-quality-hardening-draft-handoff.md` | Draft PR #67 published; waiting for Ready authorization after CI/review | frontend, performance, accessibility, testing, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
