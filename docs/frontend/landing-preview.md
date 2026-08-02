@@ -1,11 +1,12 @@
-# Single-page frontend preview contract
+# Placeholder-first frontend preview contract
 
 ## Status and authority
 
 This contract records the user's 2026-08-01 decision for the first frontend
-delivery and their corrected visual-reference decision later that day. It is
-a preview slice of the broader product brief, not a promotion of any
-unverified recommendation, assumption, or example into production content.
+delivery, their corrected visual-reference decision later that day, and the
+2026-08-02 authorization to extend that composition into provisional product
+pages. It is a preview slice of the broader product brief, not a promotion of
+any unverified recommendation, assumption, or example into production content.
 
 The canonical visual reference is the user's external Telegram attachment
 `tg_image_2961269225.jpeg`, a 724 by 2172 image with SHA-256
@@ -16,21 +17,32 @@ wording are design-only examples and are never business facts.
 
 ## Delivery slice
 
-- Export exactly one public product route, `/`, plus a real static 404.
-- Use in-page navigation anchors: `equipment`, `works`, `pricing`, `about`,
-  and `contact`.
-- Defer the product brief's multi-page routes and verified trust-content
-  population until separately authorized follow-up tasks.
-- Keep the backend and its OpenAPI contract unchanged. F2 renders only a
-  non-submitting form shell; F5 later connects the browser-facing API client
-  defined by the canonical OpenAPI source.
+- Export `/` plus `/uslugi`,
+  `/remont-torgovogo-holodilnogo-oborudovaniya`,
+  `/remont-ledogeneratorov`, `/o-kompanii`, `/raboty`, `/tseny`, and
+  `/kontakty`, plus a real static 404.
+- Keep the home-page anchors `equipment`, `works`, `pricing`, `about`, and
+  `contact`; shared navigation may link to the exact product routes while
+  page-level request actions target the local `contact` section.
+- Product pages are provisional structures. Verified trust-content population
+  remains deferred to F4, and every missing production fact remains an
+  explicit placeholder.
+- Keep the backend and its OpenAPI contract unchanged. The existing F5 lead
+  client derives `sourcePath` from the current browser pathname, remains usable
+  only for explicitly configured loopback preview, and stays disabled on a
+  hosted preview.
 
-The page order is header, hero, benefit strip, equipment grid, services,
+The home-page order is header, hero, benefit strip, equipment grid, services,
 completed-work placeholders, repair CTA, pricing placeholders, request
 process, team/company section, planned-maintenance section, review
 placeholders, contact and form shell, then footer. The cookie banner and any
 analytics UI visible in the reference are design artifacts and are not part of
 the preview while the analytics vendor and legal text remain unresolved.
+
+Product pages reuse the same demonstration banner, header, compact split hero,
+light card grids, dark information bands, contact section, and footer. They do
+not duplicate every home-page section or invent route-specific business facts
+to fill space.
 
 ## Visual system
 
