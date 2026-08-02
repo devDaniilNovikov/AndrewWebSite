@@ -19,24 +19,26 @@
 - Removed the hero media reveal wrapper.
 - Bundled only upright local Inter Variable through `frontend/app/InterVariable-cyrillic.woff2`, a 56KB Latin/Cyrillic subset derived from the exact `inter-ui@4.1.1` source font. The full source font remains in `node_modules`; no remote font request is used.
 - Added behavior-only visual-contract E2E coverage at 390×844, 768×1024, and 1440×900 for section order, responsive equipment grid, overflow, anchors, drawer, skip-link, reduced motion, metadata, 404, hosted-preview form restrictions, placeholders, and absence of real photos.
-- Added a repository visual contract checker that forbids screenshot baselines, browser screenshot capture, and published image/media files outside `/public/media/verified/`.
+- Added a repository visual contract checker that forbids screenshot baselines, browser screenshot capture, and every published asset outside `/public/media/verified/`; common browser, JPEG-family, and RAW image formats are also rejected elsewhere in the tree.
+- Limited generated-directory exclusions in both the visual and static-boundary walkers to root-relative build paths, preventing nested directory names from bypassing media, route, or runtime-network checks.
 - Preserved the placeholder media path and the existing `MediaSlot`/verified-photo contract for future user-provided licensed photos.
 
 ## Verification
 
-- RED was reproduced for missing Lighthouse/visual gate contracts and for real Lighthouse Performance below the F6 threshold before the font/reveal hardening.
+- RED was reproduced for missing Lighthouse/visual gate contracts, for real Lighthouse Performance below the F6 threshold before the font/reveal hardening, and for nested generated-directory plus uncommon-image-extension policy bypasses before both walkers were hardened.
 - `pnpm run verify` passed:
   - pinned Node runtime `24.14.0`;
   - format check;
   - OpenAPI type drift check;
   - ESLint;
   - strict typecheck;
-  - Vitest coverage: statements 93.37%, branches 90.76%, functions 93.23%, lines 93.66%;
+  - Vitest: 135 tests passed;
+  - coverage: statements 93.43%, branches 90.86%, functions 93.23%, lines 93.72%;
   - static boundary;
   - visual contract;
   - production gate refusal with the canonical blocker IDs;
   - deterministic static export;
-  - Lighthouse medians: Performance 98, Accessibility 100, Best Practices 100;
+  - Lighthouse medians: Performance 99, Accessibility 100, Best Practices 100;
   - Playwright E2E: 22 passed, 20 expected skips;
   - `pnpm audit --audit-level high`: no known vulnerabilities.
 - `./mvnw -B verify` passed 660 tests and all configured coverage checks.
@@ -47,8 +49,8 @@
 ## Reviews
 
 - Specification review: F6 requirements are represented by explicit package scripts, unit tests, visual-contract E2E tests, Lighthouse runner assertions, static boundary rules, and production gate refusal.
-- Code/correctness review: no actionable correctness finding remained after stabilizing the Lighthouse Chrome cleanup and expanding drawer keyboard/control/anchor assertions.
-- Security/privacy review: no real photos were added, no screenshot baselines were added, no external runtime font/media requests were introduced, no backend/API/CI/deployment path changed, and the lead form remains disabled for hosted preview.
+- Code/correctness review: no actionable finding remained after stabilizing Lighthouse Chrome cleanup, expanding drawer keyboard/control/anchor assertions, and closing the uncommon-image-extension gap.
+- Security/privacy review: no blocking or important finding remained after closing nested generated-directory bypasses in both repository walkers; no real photos, screenshot baselines, external runtime font/media requests, backend/API/CI/deployment changes, secrets, or PII were introduced, and the hosted-preview lead form remains fail-closed.
 
 ## Next
 
