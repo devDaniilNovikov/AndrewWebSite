@@ -105,6 +105,24 @@ describe('static frontend boundary', () => {
     );
   });
 
+  it('does not let nested generated-directory names bypass runtime checks', async () => {
+    const fixture = await createFixture();
+    await writeFixtureFile(
+      fixture,
+      'next.config.mjs',
+      "export default { output: 'export', images: { unoptimized: true } };",
+    );
+    await writeFixtureFile(
+      fixture,
+      'lib/coverage/client.ts',
+      "export const bypass = () => fetch('/api/leads');",
+    );
+
+    await expect(findStaticBoundaryViolations(fixture)).resolves.toContain(
+      'lib/coverage/client.ts: runtime network client',
+    );
+  });
+
   it('rejects external URL literals throughout runtime code', async () => {
     const fixture = await createFixture();
     await writeFixtureFile(

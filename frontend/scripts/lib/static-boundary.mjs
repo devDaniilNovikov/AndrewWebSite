@@ -63,21 +63,22 @@ async function walk(directory, rootDirectory) {
   const files = [];
 
   for (const entry of entries) {
-    if (generatedDirectories.has(entry.name)) {
+    const absolutePath = resolve(directory, entry.name);
+    const relativePath = relative(rootDirectory, absolutePath).replaceAll(
+      '\\',
+      '/',
+    );
+
+    if (entry.isDirectory() && generatedDirectories.has(relativePath)) {
       continue;
     }
-
-    const absolutePath = resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
       files.push(...(await walk(absolutePath, rootDirectory)));
     } else if (entry.isFile()) {
       files.push({
         absolutePath,
-        relativePath: relative(rootDirectory, absolutePath).replaceAll(
-          '\\',
-          '/',
-        ),
+        relativePath,
       });
     }
   }

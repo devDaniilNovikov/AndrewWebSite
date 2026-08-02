@@ -10,7 +10,39 @@ const ignoredDirectories = new Set([
   'playwright-report',
   'test-results',
 ]);
-const imageExtensions = new Set(['.jpeg', '.jpg', '.png', '.svg', '.webp']);
+const imageExtensions = new Set([
+  '.apng',
+  '.arw',
+  '.avif',
+  '.bmp',
+  '.cr2',
+  '.dib',
+  '.dng',
+  '.gif',
+  '.heic',
+  '.heif',
+  '.ico',
+  '.jfi',
+  '.jfif',
+  '.jif',
+  '.jpe',
+  '.jpeg',
+  '.jpg',
+  '.jxl',
+  '.nef',
+  '.orf',
+  '.pjp',
+  '.pjpeg',
+  '.png',
+  '.qoi',
+  '.raf',
+  '.raw',
+  '.rw2',
+  '.svg',
+  '.tif',
+  '.tiff',
+  '.webp',
+]);
 const sourceExtensions = new Set(['.js', '.jsx', '.mjs', '.ts', '.tsx']);
 
 async function walk(directory, rootDirectory) {
@@ -28,21 +60,22 @@ async function walk(directory, rootDirectory) {
   const files = [];
 
   for (const entry of entries) {
-    if (entry.isDirectory() && ignoredDirectories.has(entry.name)) {
+    const absolutePath = resolve(directory, entry.name);
+    const relativePath = relative(rootDirectory, absolutePath).replaceAll(
+      '\\',
+      '/',
+    );
+
+    if (entry.isDirectory() && ignoredDirectories.has(relativePath)) {
       continue;
     }
-
-    const absolutePath = resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
       files.push(...(await walk(absolutePath, rootDirectory)));
     } else if (entry.isFile()) {
       files.push({
         absolutePath,
-        relativePath: relative(rootDirectory, absolutePath).replaceAll(
-          '\\',
-          '/',
-        ),
+        relativePath,
       });
     }
   }
@@ -62,18 +95,21 @@ export async function findVisualContractViolations(rootDirectory) {
 
   for (const file of files) {
     const extension = extname(file.relativePath).toLowerCase();
+    const isPublishedAsset = file.relativePath.startsWith('public/');
+    const isVerifiedMedia = file.relativePath.startsWith(
+      'public/media/verified/',
+    );
+
+    if (isPublishedAsset && !isVerifiedMedia) {
+      violations.push(
+        `${file.relativePath}: published media must use public/media/verified/`,
+      );
+    }
 
     if (imageExtensions.has(extension)) {
       if (isBaselinePath(file.relativePath)) {
         violations.push(`${file.relativePath}: image baseline is forbidden`);
-      } else if (
-        file.relativePath.startsWith('public/') &&
-        !file.relativePath.startsWith('public/media/verified/')
-      ) {
-        violations.push(
-          `${file.relativePath}: published media must use public/media/verified/`,
-        );
-      } else if (!file.relativePath.startsWith('public/media/verified/')) {
+      } else if (!isPublishedAsset && !isVerifiedMedia) {
         violations.push(
           `${file.relativePath}: media asset is outside the verified local path`,
         );

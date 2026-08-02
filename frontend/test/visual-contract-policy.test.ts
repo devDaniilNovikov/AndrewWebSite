@@ -78,6 +78,31 @@ describe('behavior-only visual contract policy', () => {
     ]);
   });
 
+  it('does not let nested generated-directory names or modern formats bypass the policy', async () => {
+    const fixture = await createFixture();
+    await writeFixtureFile(
+      fixture,
+      ['public', 'test-results', ['unverified', 'avif'].join('.')].join('/'),
+      'unverified photo',
+    );
+    await writeFixtureFile(
+      fixture,
+      ['public', ['unverified', 'jxl'].join('.')].join('/'),
+      'unverified image',
+    );
+    await writeFixtureFile(
+      fixture,
+      ['assets', ['unverified', 'jfif'].join('.')].join('/'),
+      'unverified image',
+    );
+
+    await expect(findVisualContractViolations(fixture)).resolves.toEqual([
+      'assets/unverified.jfif: media asset is outside the verified local path',
+      'public/test-results/unverified.avif: published media must use public/media/verified/',
+      'public/unverified.jxl: published media must use public/media/verified/',
+    ]);
+  });
+
   it('reserves public/media/verified for later provenance-approved photos', async () => {
     const fixture = await createFixture();
     await writeFixtureFile(
