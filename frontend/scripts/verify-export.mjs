@@ -4,6 +4,15 @@ import { resolve } from 'node:path';
 import { createFileManifest, hashFileManifest } from './lib/file-manifest.mjs';
 
 const outputDirectory = resolve('out');
+const requiredProductFiles = [
+  'uslugi.html',
+  'remont-torgovogo-holodilnogo-oborudovaniya.html',
+  'remont-ledogeneratorov.html',
+  'o-kompanii.html',
+  'raboty.html',
+  'tseny.html',
+  'kontakty.html',
+];
 
 function runPreviewBuild() {
   const result = spawnSync(process.execPath, ['scripts/build.mjs', 'preview'], {
@@ -23,7 +32,10 @@ const secondManifest = await createFileManifest(outputDirectory);
 const requiredFilesExist =
   existsSync(resolve(outputDirectory, 'index.html')) &&
   existsSync(resolve(outputDirectory, '404.html')) &&
-  existsSync(resolve(outputDirectory, '_next/static'));
+  existsSync(resolve(outputDirectory, '_next/static')) &&
+  requiredProductFiles.every((file) =>
+    existsSync(resolve(outputDirectory, file)),
+  );
 const outputIsIgnored =
   spawnSync('git', ['check-ignore', '--quiet', 'out/']).status === 0;
 

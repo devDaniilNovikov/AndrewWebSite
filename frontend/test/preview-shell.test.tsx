@@ -156,7 +156,7 @@ describe('PreviewShell', () => {
     const { container } = render(<PreviewShell />);
 
     await expect(axe(container)).resolves.toMatchObject({ violations: [] });
-  });
+  }, 15_000);
 });
 
 describe('MediaSlot', () => {

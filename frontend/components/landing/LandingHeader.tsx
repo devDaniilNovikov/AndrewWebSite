@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { navigationItems } from '../../content/preview-content';
 import { MobileNavigation } from './MobileNavigation';
 import { LineIcon } from './PreviewPrimitives';
@@ -6,10 +7,10 @@ export function LandingHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-[0_1px_0_rgba(15,23,42,0.02)] backdrop-blur-md lg:static">
       <div className="mx-auto flex min-h-18 w-full max-w-[72rem] items-center gap-3 px-5 sm:gap-4 sm:px-7 lg:px-8">
-        <a
+        <Link
           aria-label="Название компании уточняется — на главную"
           className="flex min-w-0 items-center gap-3 text-navy"
-          href="#main-content"
+          href="/"
         >
           <span className="grid size-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary-ink">
             <LineIcon name="snowflake" />
@@ -22,7 +23,7 @@ export function LandingHeader() {
               Ремонт холодильного оборудования
             </span>
           </span>
-        </a>
+        </Link>
 
         <nav
           aria-label="Основная навигация"
@@ -31,12 +32,12 @@ export function LandingHeader() {
           <ul className="flex items-center gap-6 text-xs font-semibold text-slate-600">
             {navigationItems.map((item) => (
               <li key={item.href}>
-                <a
+                <Link
                   className="inline-flex min-h-11 items-center transition-colors hover:text-primary-ink"
                   href={item.href}
                 >
                   {item.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

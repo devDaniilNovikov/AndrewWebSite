@@ -21,7 +21,7 @@ export function HeroSection() {
       <Container className="grid gap-7 py-8 lg:grid-cols-2 lg:items-stretch lg:gap-0 lg:py-0">
         <div className="flex flex-col justify-center lg:py-8 lg:pr-8 xl:pr-10">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-ink">
-            Москва и ближайшее Подмосковье
+            Регион выезда уточняется
           </p>
           <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.02] tracking-[-0.052em] text-navy sm:text-5xl lg:text-[3rem] xl:text-[3.15rem]">
             Ремонт коммерческого холодильного оборудования
@@ -136,10 +136,9 @@ export function EquipmentSection() {
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-[0.68rem] font-semibold text-primary-ink">
                       <a
                         className="inline-flex items-center gap-1"
-                        href="#contact"
+                        href={item.href}
                       >
-                        Описать неисправность{' '}
-                        <LineIcon className="h-4 w-4" name="arrow" />
+                        Подробнее <LineIcon className="h-4 w-4" name="arrow" />
                       </a>
                       <a
                         className="inline-flex items-center gap-1"

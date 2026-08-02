@@ -31,6 +31,15 @@ const SECTION_ANCHORS = [
   '#contact',
 ] as const;
 
+const PRIMARY_NAVIGATION = [
+  { label: 'Оборудование', path: '/#equipment' },
+  { label: 'Услуги', path: '/uslugi' },
+  { label: 'Работы', path: '/raboty' },
+  { label: 'Цены', path: '/tseny' },
+  { label: 'О компании', path: '/o-kompanii' },
+  { label: 'Контакты', path: '/kontakty' },
+] as const;
+
 function captureNetworkOrigins(page: Page) {
   const origins = new Set<string>();
 
@@ -142,17 +151,17 @@ test('serves the complete accessible, network-isolated landing preview', async (
   await expectOnlyPreviewOrigin(networkOrigins, baseURL);
 });
 
-test('keeps navigation and landing CTAs on verified in-page anchors', async ({
+test('keeps navigation internal and landing CTAs on verified anchors', async ({
   page,
 }) => {
   await page.goto('/');
 
-  for (const anchor of SECTION_ANCHORS) {
+  for (const item of PRIMARY_NAVIGATION) {
     await expect(
-      page.locator(
-        `header nav[aria-label="Основная навигация"] a[href="${anchor}"]`,
-      ),
-    ).toHaveCount(1);
+      page
+        .locator('header nav[aria-label="Основная навигация"] a')
+        .filter({ hasText: item.label }),
+    ).toHaveAttribute('href', item.path);
   }
 
   const requestLinks = page.getByRole('link', { name: 'Оставить заявку' });
@@ -208,8 +217,10 @@ test('mobile drawer closes through keyboard, controls, and anchors', async ({
   await trigger.click();
   await dialog.getByRole('link', { name: 'Цены' }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page).toHaveURL(/#pricing$/);
-  await expect(page.locator('#pricing')).toBeInViewport();
+  await expect(page).toHaveURL(/\/tseny$/);
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Цены' }),
+  ).toBeVisible();
   await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
 });
 

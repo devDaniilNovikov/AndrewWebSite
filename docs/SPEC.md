@@ -20,10 +20,10 @@ invented and remain launch blockers until verified.
 ## Frontend preview
 
 Canonical: [`frontend/landing-preview.md`](frontend/landing-preview.md) — the
-user-approved single-page preview slice, visual reference, responsive and
-motion behavior, placeholder policy, and preview-versus-production boundary.
-This slice ships `/` first and defers, rather than deletes, the product brief's
-multi-page delivery. The screenshot is never a source of business facts.
+user-approved placeholder-first preview, visual reference, route set,
+responsive and motion behavior, placeholder policy, and
+preview-versus-production boundary. The screenshot is never a source of
+business facts.
 
 ## Architecture
 

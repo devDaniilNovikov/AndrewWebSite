@@ -1,40 +1,52 @@
-# F3 — Product pages
+# F3 — Provisional product pages
 
 ## Objective
 
-Implement the confirmed product routes and page content from the canonical
-brief without converting recommendations, assumptions, or open questions into
-approved claims.
+Extend the approved placeholder-first frontend preview with the user-selected
+product route set while keeping every unverified business fact visibly
+non-production.
 
 ## Ownership and prerequisites
 
-- **Owner:** Codex when separately authorized.
-- **Prerequisite:** preview F6 merged; multi-page expansion separately
-  authorized; route slugs, page copy, prices, legal text, and required assets
-  verified in canonical product sources.
-- **Owned paths:** `frontend/**` and the task-specific handoff.
+- **Owner:** Codex under the user's 2026-08-02 authorization.
+- **Prerequisite:** preview F6 merged as `6511017`; the exact route set,
+  placeholder-only content policy, and Draft publication are authorized.
+  Verified production copy, prices, legal text, proof, and media remain
+  deferred blockers rather than prerequisites for this preview task.
+- **Owned paths:** `frontend/**`, this task brief, the frontend preview
+  contract and canonical index, plus task-specific tracker and handoff
+  metadata.
 - **Sources:** [product brief](../docs/product/technical-brief.ru.md),
   [SPEC](../docs/SPEC.md), and [Git Flow](../.agents/workflows/GIT_FLOW.md).
 
 ## Tasks
 
-1. Implement the confirmed page and route set with semantic heading structure,
-   reusable content sections, navigation integration, and intentional 404
-   behavior.
-2. Render only verified business claims, pricing, geography, guarantees,
-   requisites, and legal copy. Stop on missing required content; never invent
-   production text.
-3. Add route, content-status, link, component, accessibility, and critical
-   navigation E2E tests; verify the production export.
+1. Export `/uslugi`, `/remont-torgovogo-holodilnogo-oborudovaniya`,
+   `/remont-ledogeneratorov`, `/o-kompanii`, `/raboty`, `/tseny`, and
+   `/kontakty` with reusable semantic sections, shared navigation, and the
+   existing custom 404 behavior.
+2. Use only confirmed general service categories from the product brief.
+   Render missing prices, guarantees, requisites, cases, reviews, staff facts,
+   contacts, and media as explicit placeholders; never promote reference-image
+   examples into business facts.
+3. Preserve the verified-local-media and static-export boundaries. Add route,
+   content-status, link, component, accessibility, export, and critical
+   navigation E2E tests before Draft publication.
 
 ## Acceptance
 
-- Every shipped route and production claim traces to a confirmed canonical
-  source; recommendations remain non-binding.
-- No fabricated prices, guarantees, service areas, legal text, or company
-  facts appear in the output.
-- Format, lint, strict typecheck, tests, build, secret scan, required CI, and
-  Codex content/specification review pass.
-- The PR stops at Ready and requires separate merge authorization.
-- This deferred task is not a prerequisite for the approved single-page
-  preview or its F6 hardening task.
+- All seven routes export deterministically, keep one `h1`, inherit
+  `noindex, nofollow`, remain same-origin only, and preserve the real static
+  404.
+- No fabricated phone, price, guarantee, service-area detail, legal text,
+  company fact, case, review, staff identity, or photograph appears.
+- Every media location remains a `MediaSlot`; future photographs are accepted
+  only through `VerifiedLocalPhoto` under `/media/verified/*` after provenance
+  and alt text are confirmed.
+- The production-readiness manifest remains unchanged and production export
+  continues to fail closed on every missing blocker.
+- Format, lint, strict typecheck, coverage, tests, preview build, Lighthouse,
+  dependency audit, Maven verify, secret/media scans, required CI, and Codex
+  specification/code/security reviews pass.
+- The PR remains Draft. Ready, merge, F4, JAR integration, and deployment each
+  require separate authorization.

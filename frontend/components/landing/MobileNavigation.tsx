@@ -9,12 +9,8 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from 'react';
+import type { NavigationItem } from '../../content/preview-content';
 import { LineIcon } from './PreviewPrimitives';
-
-type NavigationItem = Readonly<{
-  href: `#${string}`;
-  label: string;
-}>;
 
 type MobileNavigationProps = Readonly<{
   items: readonly NavigationItem[];
