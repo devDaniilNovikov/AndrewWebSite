@@ -201,11 +201,13 @@ is_run_paths "frontend/package.json\0"
 is_run_paths "frontend/app/page.tsx\0pom.xml\0"
 is_run_paths ".github/workflows/ci.yml\0"
 is_run_paths ".github/scripts/verify-ci-paths.sh\0"
+is_run_paths "docs/backend/openapi.yaml\0"
 
 is_skip_paths "src/main/java/ru/andrew/website/AndrewWebsiteApplication.java\0"
 is_skip_paths "pom.xml\0"
 is_skip_paths "docs/SPEC.md\0README.md\0"
 is_skip_paths "src/test/java/ru/andrew/website/web/ProblemResponseTest.java\0CHANGELOG.md\0"
 is_skip_paths "frontend-tasks/F1A-frontend-ci-gates.md\0"
+is_skip_paths "docs/backend/architecture.md\0"
 
 echo "All CI Policy Compliance Tests Passed successfully!"
