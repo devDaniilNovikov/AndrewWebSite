@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `task-frontend-lead-form` | `2026-08-02-041333-task-frontend-lead-form-handoff.md` → `2026-08-02-050534-task-frontend-lead-form-draft-handoff.md` | Draft PR #64; locally verified final implementation and metadata-head CI pending | frontend, api, accessibility, privacy, testing, security, tracker |
+| `task-frontend-lead-form` | `2026-08-02-041333-task-frontend-lead-form-handoff.md` → `2026-08-02-050534-task-frontend-lead-form-draft-handoff.md` → `2026-08-02-073618-task-frontend-lead-form-ready-handoff.md` | Ready transition authorized; exact Draft head green and Ready metadata-head CI pending | frontend, api, accessibility, privacy, testing, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
