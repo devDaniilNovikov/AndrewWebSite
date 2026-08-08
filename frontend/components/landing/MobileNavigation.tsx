@@ -19,27 +19,56 @@ type MobileNavigationProps = Readonly<{
 export function MobileNavigation({ items }: MobileNavigationProps) {
   const dialogId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const previousBodyOverflowRef = useRef<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const finishClose = useCallback(() => {
-    setIsOpen(false);
-
-    if (triggerRef.current?.isConnected) {
-      triggerRef.current.focus();
+  const lockBodyScroll = useCallback(() => {
+    if (previousBodyOverflowRef.current === null) {
+      previousBodyOverflowRef.current = document.body.style.overflow;
     }
+
+    document.body.style.overflow = 'hidden';
   }, []);
 
-  const closeDialog = useCallback(() => {
-    const dialog = dialogRef.current;
-
-    if (dialog?.open) {
-      dialog.close();
+  const unlockBodyScroll = useCallback(() => {
+    if (previousBodyOverflowRef.current === null) {
       return;
     }
 
-    finishClose();
-  }, [finishClose]);
+    document.body.style.overflow = previousBodyOverflowRef.current;
+    previousBodyOverflowRef.current = null;
+  }, []);
+
+  const finishClose = useCallback(
+    (restoreFocus: boolean) => {
+      unlockBodyScroll();
+      setIsOpen(false);
+
+      if (restoreFocus && triggerRef.current?.isConnected) {
+        triggerRef.current.focus();
+      }
+    },
+    [unlockBodyScroll],
+  );
+
+  const handleNativeClose = useCallback(() => {
+    unlockBodyScroll();
+    setIsOpen(false);
+  }, [unlockBodyScroll]);
+
+  const closeDialog = useCallback(
+    (restoreFocus = true) => {
+      const dialog = dialogRef.current;
+
+      if (dialog?.open) {
+        dialog.close();
+      }
+
+      finishClose(restoreFocus);
+    },
+    [finishClose],
+  );
 
   const openDialog = () => {
     const dialog = dialogRef.current;
@@ -57,13 +86,52 @@ export function MobileNavigation({ items }: MobileNavigationProps) {
       return;
     }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
 
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
+    return unlockBodyScroll;
+  }, [isOpen, lockBodyScroll, unlockBodyScroll]);
+
+  const navigateToAnchor = useCallback((href: string) => {
+    const destination = new URL(href, window.location.href);
+    const destinationPath = `${destination.pathname}${destination.search}`;
+    const currentPath = `${window.location.pathname}${window.location.search}`;
+
+    if (
+      destination.origin !== window.location.origin ||
+      destinationPath !== currentPath ||
+      !destination.hash
+    ) {
+      window.location.assign(
+        `${destination.pathname}${destination.search}${destination.hash}`,
+      );
+      return;
+    }
+
+    const target = document.getElementById(
+      decodeURIComponent(destination.hash.slice(1)),
+    );
+
+    if (window.location.hash !== destination.hash) {
+      window.history.pushState(
+        null,
+        '',
+        `${destinationPath}${destination.hash}`,
+      );
+    }
+
+    if (typeof target?.scrollIntoView === 'function') {
+      target.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }
+  }, []);
+
+  const handleNavigationClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    event.preventDefault();
+    closeDialog(false);
+    navigateToAnchor(href);
+  };
 
   const handleDialogKeyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
     if (event.key === 'Escape') {
@@ -102,7 +170,7 @@ export function MobileNavigation({ items }: MobileNavigationProps) {
           closeDialog();
         }}
         onClick={handleOverlayClick}
-        onClose={finishClose}
+        onClose={handleNativeClose}
         onKeyDown={handleDialogKeyDown}
         ref={dialogRef}
       >
@@ -112,7 +180,7 @@ export function MobileNavigation({ items }: MobileNavigationProps) {
             <button
               aria-label="Закрыть меню"
               className="grid size-11 place-items-center rounded-md border border-slate-300 bg-white transition-colors duration-200 hover:border-primary hover:text-primary-ink"
-              onClick={closeDialog}
+              onClick={() => closeDialog()}
               type="button"
             >
               <LineIcon name="close" />
@@ -126,7 +194,7 @@ export function MobileNavigation({ items }: MobileNavigationProps) {
                   <a
                     className="flex min-h-11 items-center rounded-md px-3 py-2 text-base font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary-ink"
                     href={item.href}
-                    onClick={closeDialog}
+                    onClick={(event) => handleNavigationClick(event, item.href)}
                   >
                     {item.label}
                   </a>
@@ -138,7 +206,7 @@ export function MobileNavigation({ items }: MobileNavigationProps) {
           <a
             className="mt-auto inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
             href="#contact"
-            onClick={closeDialog}
+            onClick={(event) => handleNavigationClick(event, '#contact')}
           >
             Оставить заявку
           </a>

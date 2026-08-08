@@ -17,11 +17,11 @@ const PRODUCT_PAGES = [
 ] as const;
 
 const PRIMARY_NAVIGATION = [
-  { label: 'Услуги', path: '/uslugi' },
-  { label: 'Работы', path: '/raboty' },
-  { label: 'Цены', path: '/tseny' },
-  { label: 'О компании', path: '/o-kompanii' },
-  { label: 'Контакты', path: '/kontakty' },
+  { label: 'Услуги', path: '/#services' },
+  { label: 'Работы', path: '/#works' },
+  { label: 'Цены', path: '/#pricing' },
+  { label: 'О компании', path: '/#about' },
+  { label: 'Контакты', path: '/#contact' },
 ] as const;
 
 function captureHttpOrigins(page: Page) {
@@ -139,10 +139,8 @@ test('keeps product navigation internal and preserves the custom static 404', as
   }
 
   await navigation.getByRole('link', { name: 'Контакты', exact: true }).click();
-  await expect(page).toHaveURL(new URL('/kontakty', baseURL!).toString());
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Контакты' }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(new URL('/#contact', baseURL!).toString());
+  await expect(page.locator('#contact')).toBeInViewport();
 
   const response = await page.goto('/missing-product-route');
   expect(response?.status()).toBe(404);

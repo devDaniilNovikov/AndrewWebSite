@@ -162,8 +162,9 @@ export function EquipmentSection() {
 export function ServicesSection() {
   return (
     <section
-      className="border-y border-slate-200 bg-surface py-8 sm:py-10"
+      className="scroll-mt-24 border-y border-slate-200 bg-surface py-8 sm:py-10"
       data-section="services"
+      id="services"
     >
       <Container>
         <Reveal>
