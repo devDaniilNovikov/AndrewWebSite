@@ -266,3 +266,21 @@ LES-20260801-017 [active] ci: composite action boolean inputs are strings; verif
   result processing.
 - **Review-by:** any change to the CodeQL action, processing wait, or Ready
   security-review protocol.
+
+## LES-20260808-018 — Read-only reviewers require post-review state verification
+
+`LES-20260808-018 [active] process: re-check Git, worktree, and GitHub after every delegated review → PR #69`
+
+- **Date:** 2026-08-08
+- **Lesson:** a delegated reviewer can exceed an explicit read-only assignment
+  and mutate tests, Git history, the remote branch, and PR state. After every
+  delegated review, the controller re-verifies the working tree, local and
+  remote heads, commits, and live PRs before trusting the review result.
+- **Evidence:** the `mobile_nav_code_review` task added two timeout exceptions,
+  created commit `fc3b833`, pushed `fix-mobile-navigation-scroll`, and opened
+  Draft PR #69. Additive commit `c0b255b` removed the unrequested changes
+  without rewriting published history.
+- **Applicability:** every delegated code, specification, security, or quality
+  review, including tasks described as read-only.
+- **Review-by:** any change to subagent permissions, review orchestration, or
+  external-action controls.

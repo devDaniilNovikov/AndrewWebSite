@@ -7,11 +7,11 @@ export type NavigationItem = Readonly<{
 
 export const navigationItems = [
   { href: '/#equipment', label: 'Оборудование' },
-  { href: '/uslugi', label: 'Услуги' },
-  { href: '/raboty', label: 'Работы' },
-  { href: '/tseny', label: 'Цены' },
-  { href: '/o-kompanii', label: 'О компании' },
-  { href: '/kontakty', label: 'Контакты' },
+  { href: '/#services', label: 'Услуги' },
+  { href: '/#works', label: 'Работы' },
+  { href: '/#pricing', label: 'Цены' },
+  { href: '/#about', label: 'О компании' },
+  { href: '/#contact', label: 'Контакты' },
 ] as const satisfies readonly NavigationItem[];
 
 export const benefitItems = [

@@ -1,11 +1,27 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { axe } from 'jest-axe';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { metadata } from '../app/layout';
 import { PreviewShell } from '../components/PreviewShell';
 import { MediaSlot } from '../components/landing/PreviewPrimitives';
 
-const sectionIds = ['equipment', 'works', 'pricing', 'about', 'contact'];
+const sectionIds = [
+  'equipment',
+  'services',
+  'works',
+  'pricing',
+  'about',
+  'contact',
+];
+
+const primaryNavigation = [
+  ['Оборудование', '/#equipment'],
+  ['Услуги', '/#services'],
+  ['Работы', '/#works'],
+  ['Цены', '/#pricing'],
+  ['О компании', '/#about'],
+  ['Контакты', '/#contact'],
+] as const;
 
 describe('PreviewShell', () => {
   it('renders the corrected full-page composition as a marked preview', () => {
@@ -93,6 +109,22 @@ describe('PreviewShell', () => {
     expect(container.querySelector('a[href^="http"]')).not.toBeInTheDocument();
   });
 
+  it('keeps primary navigation within the scrollable landing composition', () => {
+    const { container } = render(<PreviewShell />);
+    const navigation = screen.getByRole('navigation', {
+      name: 'Основная навигация',
+    });
+
+    for (const [label, href] of primaryNavigation) {
+      expect(
+        within(navigation).getByRole('link', { name: label }),
+      ).toHaveAttribute('href', href);
+      expect(
+        container.querySelector(href.replace('/#', '#')),
+      ).toBeInTheDocument();
+    }
+  });
+
   it('keeps the lead form inert when preview submission is not configured', () => {
     render(<PreviewShell />);
 
@@ -127,6 +159,66 @@ describe('PreviewShell', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(document.body).not.toHaveStyle({ overflow: 'hidden' });
     expect(trigger).toHaveFocus();
+  });
+
+  it('does not restore trigger focus when a drawer link controls scrolling', () => {
+    render(<PreviewShell />);
+
+    const trigger = screen.getByRole('button', { name: 'Открыть меню' });
+    fireEvent.click(trigger);
+
+    const drawer = screen.getByRole('dialog', { name: 'Мобильная навигация' });
+    const servicesLink = within(drawer).getByRole('link', { name: 'Услуги' });
+    servicesLink.focus();
+    fireEvent.click(servicesLink);
+
+    expect(drawer).not.toHaveAttribute('open');
+    expect(trigger).not.toHaveFocus();
+  });
+
+  it('uses explicit same-page anchor scrolling from the mobile drawer', () => {
+    const scrollOverflowStates: string[] = [];
+    const scrollIntoView = vi.fn(() => {
+      scrollOverflowStates.push(document.body.style.overflow);
+    });
+    const originalClose = HTMLDialogElement.prototype.close;
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      configurable: true,
+      value(this: HTMLDialogElement) {
+        this.removeAttribute('open');
+      },
+    });
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    window.history.replaceState(null, '', '/');
+
+    try {
+      render(<PreviewShell />);
+
+      const trigger = screen.getByRole('button', { name: 'Открыть меню' });
+      fireEvent.click(trigger);
+
+      const drawer = screen.getByRole('dialog', {
+        name: 'Мобильная навигация',
+      });
+      fireEvent.click(within(drawer).getByRole('link', { name: 'О компании' }));
+
+      expect(drawer).not.toHaveAttribute('open');
+      expect(window.location.hash).toBe('#about');
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'auto',
+        block: 'start',
+      });
+      expect(scrollOverflowStates).toEqual(['']);
+      expect(document.body).not.toHaveStyle({ overflow: 'hidden' });
+    } finally {
+      Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+        configurable: true,
+        value: originalClose,
+      });
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+      window.history.replaceState(null, '', '/');
+    }
   });
 
   it('routes every request CTA to the contact shell', () => {

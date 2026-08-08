@@ -25,6 +25,7 @@ const MAIN_SECTION_HEADINGS = [
 
 const SECTION_ANCHORS = [
   '#equipment',
+  '#services',
   '#works',
   '#pricing',
   '#about',
@@ -33,11 +34,11 @@ const SECTION_ANCHORS = [
 
 const PRIMARY_NAVIGATION = [
   { label: 'Оборудование', path: '/#equipment' },
-  { label: 'Услуги', path: '/uslugi' },
-  { label: 'Работы', path: '/raboty' },
-  { label: 'Цены', path: '/tseny' },
-  { label: 'О компании', path: '/o-kompanii' },
-  { label: 'Контакты', path: '/kontakty' },
+  { label: 'Услуги', path: '/#services' },
+  { label: 'Работы', path: '/#works' },
+  { label: 'Цены', path: '/#pricing' },
+  { label: 'О компании', path: '/#about' },
+  { label: 'Контакты', path: '/#contact' },
 ] as const;
 
 function captureNetworkOrigins(page: Page) {
@@ -188,7 +189,7 @@ test('mobile drawer closes through keyboard, controls, and anchors', async ({
     'The drawer interaction contract is exercised at the mobile viewport.',
   );
 
-  await page.goto('/');
+  await page.goto('/uslugi');
 
   const trigger = page.getByRole('button', { name: 'Открыть меню' });
   const dialog = page.getByRole('dialog', { name: 'Мобильная навигация' });
@@ -217,11 +218,70 @@ test('mobile drawer closes through keyboard, controls, and anchors', async ({
   await trigger.click();
   await dialog.getByRole('link', { name: 'Цены' }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page).toHaveURL(/\/tseny$/);
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Цены' }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/#pricing$/);
+  await expect(page.locator('#pricing')).toBeInViewport();
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
   await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
+
+  for (const [label, hash] of [
+    ['Услуги', 'services'],
+    ['О компании', 'about'],
+    ['Работы', 'works'],
+  ] as const) {
+    await trigger.click();
+    await dialog.getByRole('link', { name: label }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/#${hash}$`));
+    await expect(page.locator(`#${hash}`)).toBeInViewport();
+    await expect
+      .poll(() =>
+        page
+          .locator(`#${hash}`)
+          .evaluate((element) =>
+            Math.round(element.getBoundingClientRect().top),
+          ),
+      )
+      .toBeGreaterThanOrEqual(0);
+    await expect
+      .poll(() =>
+        page
+          .locator(`#${hash}`)
+          .evaluate((element) =>
+            Math.round(element.getBoundingClientRect().top),
+          ),
+      )
+      .toBeLessThan(300);
+    await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
+  }
+
+  await page.locator('#contact').scrollIntoViewIfNeeded();
+  await trigger.click();
+  await dialog.getByRole('link', { name: 'Работы' }).click();
+  await expect(page).toHaveURL(/\/#works$/);
+  await expect
+    .poll(() =>
+      page
+        .locator('#works')
+        .evaluate((element) => Math.round(element.getBoundingClientRect().top)),
+    )
+    .toBeGreaterThanOrEqual(0);
+  await expect
+    .poll(() =>
+      page
+        .locator('#works')
+        .evaluate((element) => Math.round(element.getBoundingClientRect().top)),
+    )
+    .toBeLessThan(300);
+
+  await page.evaluate(() => window.scrollTo({ behavior: 'auto', top: 0 }));
+  await expect(
+    page.getByRole('heading', {
+      level: 1,
+      name: 'Ремонт коммерческого холодильного оборудования',
+    }),
+  ).toBeInViewport();
 });
 
 test('uses the progressive CSS reveal path below the fold', async ({
