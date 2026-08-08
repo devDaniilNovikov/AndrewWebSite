@@ -80,7 +80,7 @@ describe('PreviewShell', () => {
     expect(
       screen.getByRole('heading', { name: 'Отзывы клиентов' }),
     ).toBeInTheDocument();
-  }, 10_000);
+  });
 
   it('keeps every blocked business fact visibly placeholder-only', () => {
     const { container } = render(<PreviewShell />);

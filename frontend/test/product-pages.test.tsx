@@ -129,5 +129,5 @@ describe('ProvisionalProductPage', () => {
     );
 
     await expect(axe(container)).resolves.toMatchObject({ violations: [] });
-  }, 10_000);
+  });
 });
