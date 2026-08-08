@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-mobile-navigation-scroll` | `2026-08-08-060621-fix-mobile-navigation-scroll-handoff.md` → `2026-08-08-062129-fix-mobile-navigation-scroll-draft-handoff.md` | Draft PR #69 published; additive correction and controller metadata push pending | frontend, accessibility, testing, security, tracker, incident |
+| `fix-mobile-navigation-scroll` | `2026-08-08-060621-fix-mobile-navigation-scroll-handoff.md` → `2026-08-08-062129-fix-mobile-navigation-scroll-draft-handoff.md` → `2026-08-08-063036-fix-mobile-navigation-scroll-ready-handoff.md` | Ready and squash-merge authorized for PR #69; exact-head checks required after metadata push | frontend, accessibility, testing, security, tracker, incident |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
