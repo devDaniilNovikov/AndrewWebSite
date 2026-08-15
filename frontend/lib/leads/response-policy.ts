@@ -10,6 +10,7 @@ const messages: Readonly<Record<LeadResponseKind, string>> = {
   unsupported_media_type: 'Форма сейчас не может отправить заявку.',
   rate_limited: 'Слишком много попыток. Повторите отправку позже.',
   unavailable: 'Сервис временно недоступен. Повторите отправку.',
+  offline: 'Нет соединения. Введённые данные сохранены.',
   network_error: 'Нет соединения с сервисом. Повторите отправку.',
   timeout: 'Сервис не ответил вовремя. Повторите отправку.',
   unexpected: 'Не удалось отправить заявку.',
@@ -45,9 +46,14 @@ export function classifyLeadResponse(
   status: number,
   retryAfterHeader: string | null,
 ): LeadResponseOutcome {
+  if (status >= 200 && status <= 299) {
+    return outcome('accepted', false, false);
+  }
+  if (status >= 500 && status <= 599) {
+    return outcome('unavailable', true, false);
+  }
+
   switch (status) {
-    case 202:
-      return outcome('accepted', false, false);
     case 400:
     case 413:
       return outcome('invalid_request', false, false);
@@ -62,15 +68,13 @@ export function classifyLeadResponse(
         false,
         parseRetryAfterSeconds(retryAfterHeader),
       );
-    case 503:
-      return outcome('unavailable', true, false);
     default:
       return outcome('unexpected', false, false);
   }
 }
 
 export function classifyLeadFailure(
-  kind: 'network_error' | 'timeout',
+  kind: 'network_error' | 'offline' | 'timeout',
 ): LeadResponseOutcome {
   return outcome(kind, true, false);
 }

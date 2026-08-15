@@ -17,10 +17,15 @@ import {
   RepairCallout,
   WorksSection,
 } from './landing/WorkPricingSections';
+import { SectionViewAnalytics } from './analytics/SectionViewAnalytics';
+import { DeepLinkController } from './landing/DeepLinkController';
+import { MobileStickyCta } from './landing/MobileStickyCta';
 
 export function PreviewShell() {
   return (
     <PreviewSiteFrame>
+      <SectionViewAnalytics />
+      <DeepLinkController />
       <main id="main-content" tabIndex={-1}>
         <HeroSection />
         <BenefitStrip />
@@ -35,6 +40,7 @@ export function PreviewShell() {
         <ReviewsSection />
         <ContactSection />
       </main>
+      <MobileStickyCta />
     </PreviewSiteFrame>
   );
 }

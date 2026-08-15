@@ -7,7 +7,7 @@ import type {
   LegitimateLeadDraft,
 } from './domain-types';
 
-const PHONE_FORMAT = /^[+0-9(). -]+$/u;
+const PHONE_CHARACTERS = /^[+0-9(). -]+$/u;
 
 function unicodeLength(value: string): number {
   return Array.from(value).length;
@@ -24,6 +24,66 @@ function isSafeSourcePath(sourcePath: string): boolean {
   );
 }
 
+function formatCanonicalRussianPhone(digits: string): string {
+  return `+7 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(
+    7,
+    9,
+  )}-${digits.slice(9, 11)}`;
+}
+
+function normalizeRussianPhone(value: string): string | null {
+  if (!PHONE_CHARACTERS.test(value)) {
+    return null;
+  }
+
+  const inputDigits = value.replace(/\D/gu, '');
+  if (inputDigits.length !== 11) {
+    return null;
+  }
+
+  const digits = inputDigits.startsWith('8')
+    ? `7${inputDigits.slice(1)}`
+    : inputDigits;
+  return digits.startsWith('7') ? formatCanonicalRussianPhone(digits) : null;
+}
+
+export function formatRussianPhoneInput(value: string): string {
+  const inputDigits = value.replace(/\D/gu, '');
+  if (inputDigits.length === 0) {
+    return '';
+  }
+  if (inputDigits.length > 11) {
+    return inputDigits;
+  }
+
+  const digits = inputDigits.startsWith('8')
+    ? `7${inputDigits.slice(1)}`
+    : inputDigits;
+  if (!digits.startsWith('7')) {
+    return digits;
+  }
+
+  const national = digits.slice(1);
+  let formatted = '+7';
+  if (national.length > 0) {
+    formatted += ` (${national.slice(0, 3)}`;
+  }
+  if (national.length >= 3) {
+    formatted += ')';
+  }
+  if (national.length > 3) {
+    formatted += ` ${national.slice(3, 6)}`;
+  }
+  if (national.length > 6) {
+    formatted += `-${national.slice(6, 8)}`;
+  }
+  if (national.length > 8) {
+    formatted += `-${national.slice(8, 10)}`;
+  }
+
+  return formatted;
+}
+
 export function validateLeadForm(
   values: LeadFormValues,
   sourcePath: string,
@@ -33,40 +93,33 @@ export function validateLeadForm(
   }
 
   const name = values.name.trim().normalize('NFC');
-  const phone = values.phone.trim().normalize('NFC');
+  const phoneInput = values.phone.trim().normalize('NFC');
+  const phone = normalizeRussianPhone(phoneInput);
   const comment = values.comment.trim().normalize('NFC');
   const errors: Partial<Record<LeadValidationField, LeadValidationErrorCode>> =
     {};
 
   if (name.length === 0) {
     errors.name = 'name_required';
-  } else if (unicodeLength(name) < 2 || unicodeLength(name) > 100) {
+  } else if (unicodeLength(name) < 2 || unicodeLength(name) > 50) {
     errors.name = 'name_length';
   }
 
-  if (phone.length === 0) {
+  if (phoneInput.length === 0) {
     errors.phone = 'phone_required';
-  } else if (unicodeLength(phone) < 7 || unicodeLength(phone) > 32) {
-    errors.phone = 'phone_length';
-  } else if (!PHONE_FORMAT.test(phone)) {
+  } else if (phone === null) {
     errors.phone = 'phone_format';
-  } else {
-    const digitCount = phone.replace(/\D/gu, '').length;
-    if (digitCount < 7 || digitCount > 15) {
-      errors.phone = 'phone_length';
-    }
   }
 
-  if (unicodeLength(comment) > 1000) {
+  if (
+    comment.length > 0 &&
+    (unicodeLength(comment) < 10 || unicodeLength(comment) > 1000)
+  ) {
     errors.comment = 'comment_length';
   }
 
   if (values.intent !== 'repair' && values.intent !== 'maintenance') {
     errors.intent = 'intent_invalid';
-  }
-
-  if (values.consent !== true) {
-    errors.consent = 'consent_required';
   }
 
   if (!isSafeSourcePath(sourcePath)) {
@@ -79,7 +132,7 @@ export function validateLeadForm(
 
   const draft: LegitimateLeadDraft = {
     name,
-    phone,
+    phone: phone as string,
     sourcePath,
     intent: values.intent,
     consent: true,

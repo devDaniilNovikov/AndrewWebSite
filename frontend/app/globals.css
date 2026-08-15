@@ -8,6 +8,9 @@
   --color-accent: #28b8d5;
   --color-slate-500: #5f7089;
   --font-sans: var(--font-inter-variable), ui-sans-serif, system-ui, sans-serif;
+  --font-heading:
+    'Manrope Variable', var(--font-inter-variable), ui-sans-serif, system-ui,
+    sans-serif;
   --container-preview: 72rem;
 }
 
@@ -21,17 +24,26 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 6rem;
+  scroll-padding-top: 5rem;
 }
 
 body {
   margin: 0;
   min-width: 20rem;
   overflow-x: clip;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 * {
   box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+.font-heading {
+  font-family: var(--font-heading);
 }
 
 *:focus-visible {
@@ -104,6 +116,22 @@ body {
 dialog::backdrop {
   background: rgb(11 18 32 / 0.7);
   backdrop-filter: blur(2px);
+}
+
+[data-deep-link-highlight='true'] {
+  animation: deep-link-highlight 650ms ease-out;
+}
+
+@keyframes deep-link-highlight {
+  0%,
+  100% {
+    outline-color: transparent;
+  }
+
+  20% {
+    outline: 3px solid rgb(23 107 255 / 0.38);
+    outline-offset: -3px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

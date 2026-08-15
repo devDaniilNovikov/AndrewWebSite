@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CookieConsent } from './privacy/CookieConsent';
 import { LandingHeader } from './landing/LandingHeader';
 import { LandingFooter } from './landing/TrustContactSections';
 
@@ -12,16 +13,17 @@ export function PreviewSiteFrame({
       </a>
 
       <div
-        className="border-b border-blue-200 bg-blue-50 px-5 py-2 text-center text-xs font-semibold text-blue-950"
+        className="border-b border-blue-200 bg-blue-50 px-5 py-2 text-center text-sm font-semibold leading-5 text-blue-950"
         role="status"
       >
-        Демонстрационная версия · контакты, цены, отзывы и фотографии заменены
-        плейсхолдерами
+        Предпубликационная версия · непроверенные контакты и коммерческие данные
+        не используются
       </div>
 
       <LandingHeader />
       {children}
       <LandingFooter />
+      <CookieConsent />
     </>
   );
 }

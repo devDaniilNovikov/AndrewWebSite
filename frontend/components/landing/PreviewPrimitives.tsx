@@ -53,19 +53,19 @@ export function SectionHeading({
     <div className={`max-w-3xl ${center ? 'mx-auto text-center' : ''}`}>
       {eyebrow ? (
         <p
-          className={`text-xs font-semibold uppercase tracking-[0.16em] ${inverse ? 'text-blue-200' : 'text-primary-ink'}`}
+          className={`text-[0.8125rem] font-semibold uppercase leading-[1.125rem] tracking-[0.14em] ${inverse ? 'text-blue-200' : 'text-primary-ink'}`}
         >
           {eyebrow}
         </p>
       ) : null}
       <h2
-        className={`mt-2 text-2xl font-semibold tracking-[-0.035em] sm:text-3xl ${inverse ? 'text-white' : 'text-navy'}`}
+        className={`mt-2 text-[1.75rem] font-bold leading-tight tracking-[-0.035em] sm:text-3xl lg:text-4xl ${inverse ? 'text-white' : 'text-navy'}`}
       >
         {title}
       </h2>
       {description ? (
         <p
-          className={`mt-3 max-w-2xl text-sm leading-6 sm:text-base ${center ? 'mx-auto' : ''} ${inverse ? 'text-slate-300' : 'text-slate-600'}`}
+          className={`mt-4 max-w-2xl text-base leading-6 ${center ? 'mx-auto' : ''} ${inverse ? 'text-slate-300' : 'text-slate-600'}`}
         >
           {description}
         </p>
@@ -249,13 +249,13 @@ export function LineIcon({
 }
 
 export function MediaPlaceholder({
-  label = 'Фото будет добавлено',
+  label = 'Иллюстрация раздела',
   icon = 'image',
   className = '',
 }: Readonly<{ label?: string; icon?: PreviewIcon; className?: string }>) {
   return (
     <div
-      aria-label={`Демонстрационный медиаблок: ${label}`}
+      aria-label={`Графический блок: ${label}`}
       className={`placeholder-media flex min-h-40 flex-col items-center justify-center gap-3 overflow-hidden bg-slate-100 px-5 text-center text-slate-500 ${className}`}
       data-media-slot="placeholder"
       role="img"
@@ -272,7 +272,7 @@ export function MediaPlaceholder({
 
 export function MediaSlot({
   photo,
-  label = 'Фото будет добавлено',
+  label = 'Иллюстрация раздела',
   icon = 'image',
   className = '',
   sizes = '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',

@@ -10,7 +10,12 @@ const sectionIds = [
   'services',
   'works',
   'pricing',
+  'process',
   'about',
+  'maintenance',
+  'reviews',
+  'request',
+  'contacts',
   'contact',
 ];
 
@@ -20,14 +25,16 @@ const primaryNavigation = [
   ['Работы', '/#works'],
   ['Цены', '/#pricing'],
   ['О компании', '/#about'],
-  ['Контакты', '/#contact'],
+  ['Контакты', '/#request'],
 ] as const;
 
 describe('PreviewShell', () => {
   it('renders the corrected full-page composition as a marked preview', () => {
     const { container } = render(<PreviewShell />);
 
-    expect(screen.getByText('Демонстрационная версия')).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/Предпубликационная версия/iu).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByRole('heading', {
         level: 1,
@@ -42,7 +49,7 @@ describe('PreviewShell', () => {
       within(screen.getByRole('banner')).getByRole('link', {
         name: 'Заявка — оставить заявку, мобильная версия',
       }),
-    ).toHaveAttribute('href', '#contact');
+    ).toHaveAttribute('href', '#request');
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(
@@ -70,7 +77,9 @@ describe('PreviewShell', () => {
       screen.getByRole('heading', { name: 'Как проходит заявка' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: 'Команда мастеров' }),
+      screen.getByRole('heading', {
+        name: 'Команда мастеров с техническим контролем каждой заявки',
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
@@ -78,25 +87,33 @@ describe('PreviewShell', () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: 'Отзывы клиентов' }),
+      screen.queryByRole('heading', { name: 'Отзывы клиентов' }),
+    ).not.toBeInTheDocument();
+    expect(container.querySelector('#reviews')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {
+        name: 'Опишите неисправность — уточним задачу и доступность мастера',
+      }),
     ).toBeInTheDocument();
   });
 
   it('keeps every blocked business fact visibly placeholder-only', () => {
     const { container } = render(<PreviewShell />);
 
-    expect(screen.getAllByText('Фото будет добавлено').length).toBeGreaterThan(
-      0,
-    );
-    expect(screen.getAllByText('Цена уточняется').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Фото будет добавлено')).not.toBeInTheDocument();
+    expect(screen.queryByText('Цена уточняется')).not.toBeInTheDocument();
     expect(
-      screen.getAllByText('Отзыв ожидает подтверждения').length,
-    ).toBeGreaterThan(0);
+      screen.queryByText('Отзыв ожидает подтверждения'),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getAllByText('Телефон будет добавлен').length,
-    ).toBeGreaterThan(0);
+      screen.queryByText('Телефон будет добавлен'),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getAllByText('Название компании уточняется').length,
+      screen.queryByText('Название компании уточняется'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Телефон не опубликован')).toBeInTheDocument();
+    expect(
+      screen.getAllByText('Данные не опубликованы.').length,
     ).toBeGreaterThan(0);
     expect(container.querySelector('img')).not.toBeInTheDocument();
     expect(
@@ -133,12 +150,12 @@ describe('PreviewShell', () => {
     });
     expect(within(form).getByLabelText('Имя')).toBeDisabled();
     expect(within(form).getByLabelText('Телефон')).toBeDisabled();
-    expect(within(form).getByLabelText('Комментарий')).toBeDisabled();
+    expect(within(form).getByLabelText('Опишите неисправность')).toBeDisabled();
     expect(
       within(form).getByRole('button', { name: 'Отправить заявку' }),
     ).toBeDisabled();
     expect(within(form).getByRole('status')).toHaveTextContent(
-      'Отправка заявок в опубликованной демонстрации отключена.',
+      'Backend формы не подключён к этому предпросмотру.',
     );
   });
 
@@ -221,7 +238,7 @@ describe('PreviewShell', () => {
     }
   });
 
-  it('routes every request CTA to the contact shell', () => {
+  it('routes every request CTA to the request form and preserves maintenance intent', () => {
     render(<PreviewShell />);
 
     const requestLinks = screen.getAllByRole('link', {
@@ -229,16 +246,19 @@ describe('PreviewShell', () => {
     });
     expect(requestLinks.length).toBeGreaterThan(1);
     for (const link of requestLinks) {
-      expect(link).toHaveAttribute('href', '#contact');
+      expect(link).toHaveAttribute('href', '#request');
     }
     expect(
-      screen.getByRole('link', { name: 'Обсудить обслуживание объекта' }),
-    ).toHaveAttribute('href', '#contact');
+      screen.getByRole('link', { name: 'Запросить обслуживание' }),
+    ).toHaveAttribute('href', '#request');
+    expect(
+      screen.getByRole('link', { name: 'Запросить обслуживание' }),
+    ).toHaveAttribute('data-lead-intent', 'maintenance');
   });
 
   it('publishes noindex and nofollow metadata', () => {
     expect(metadata.title).toBe(
-      'Ремонт коммерческого холодильного оборудования — демонстрация',
+      'Ремонт коммерческого холодильного оборудования для бизнеса',
     );
     expect(metadata.robots).toMatchObject({ index: false, follow: false });
     expect(metadata.icons).toEqual({ icon: 'data:,' });
@@ -255,7 +275,7 @@ describe('MediaSlot', () => {
   it('keeps a placeholder by default and accepts a verified local photo later', () => {
     const { rerender } = render(<MediaSlot />);
 
-    expect(screen.getByText('Фото будет добавлено')).toBeInTheDocument();
+    expect(screen.getByText('Иллюстрация раздела')).toBeInTheDocument();
     expect(screen.getByRole('img')).toHaveAttribute(
       'data-media-slot',
       'placeholder',
@@ -281,6 +301,6 @@ describe('MediaSlot', () => {
         .getByRole('img', { name: 'Мастер у оборудования' })
         .closest('[data-media-slot]'),
     ).toHaveAttribute('data-media-slot', 'verified');
-    expect(screen.queryByText('Фото будет добавлено')).not.toBeInTheDocument();
+    expect(screen.queryByText('Иллюстрация раздела')).not.toBeInTheDocument();
   });
 });

@@ -33,6 +33,7 @@
     "verify": "pnpm run verify:toolchain && pnpm run format:check && pnpm run verify:api-types && pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run verify:static-boundary && pnpm run verify:visual-contract && pnpm run verify:production-gate && pnpm run verify:export && pnpm run test:lighthouse && pnpm run test:e2e && pnpm run audit"
   },
   "dependencies": {
+    "@fontsource-variable/manrope": "5.3.0",
     "inter-ui": "4.1.1",
     "motion": "12.43.0",
     "next": "16.2.11",

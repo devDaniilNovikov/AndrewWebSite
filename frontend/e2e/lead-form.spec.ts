@@ -13,8 +13,15 @@ const HOSTED_PREVIEW_URL = 'http://preview.invalid:4173/';
 const SYNTHETIC_LEAD = {
   comment: 'Synthetic equipment failure',
   name: 'Test Operator',
-  phone: '+70000000000',
+  phone: '+7 (999) 000-00-00',
+  phoneInput: '89990000000',
 } as const;
+const SUCCESS_MESSAGE =
+  'Заявка принята. Свяжемся с вами в рабочее время после проверки доступности мастера.';
+const FIRST_ERROR_MESSAGE =
+  'Не удалось отправить заявку. Проверьте соединение и попробуйте ещё раз.';
+const SECOND_ERROR_MESSAGE =
+  'Заявка не отправлена. Попробуйте ещё раз или позвоните нам.';
 
 type CapturedRequest = {
   body: Record<string, unknown>;
@@ -130,11 +137,9 @@ async function openEnabledForm(page: Page, path = '/') {
   );
   await expect(form.getByLabel('Имя')).toBeEnabled();
   await expect(form.getByLabel('Телефон')).toBeEnabled();
-  await expect(form.getByLabel('Комментарий')).toBeEnabled();
-  await expect(form.getByRole('radio', { name: 'Ремонт' })).toBeEnabled();
-  await expect(
-    form.getByRole('radio', { name: 'Плановое обслуживание' }),
-  ).toBeEnabled();
+  await expect(form.getByLabel('Опишите неисправность')).toBeEnabled();
+  await expect(form.getByRole('radio')).toHaveCount(0);
+  await expect(form.getByRole('checkbox')).toHaveCount(0);
 
   return form;
 }
@@ -142,10 +147,9 @@ async function openEnabledForm(page: Page, path = '/') {
 async function fillSyntheticLead(page: Page, comment = SYNTHETIC_LEAD.comment) {
   const form = page.getByRole('form', { name: 'Форма заявки' });
   await form.getByLabel('Имя').fill(SYNTHETIC_LEAD.name);
-  await form.getByLabel('Телефон').fill(SYNTHETIC_LEAD.phone);
-  await form.getByLabel('Комментарий').fill(comment);
-  await form.getByRole('radio', { name: 'Ремонт' }).check();
-  await form.getByRole('checkbox').check();
+  await form.getByLabel('Телефон').fill(SYNTHETIC_LEAD.phoneInput);
+  await expect(form.getByLabel('Телефон')).toHaveValue(SYNTHETIC_LEAD.phone);
+  await form.getByLabel('Опишите неисправность').fill(comment);
 
   const submit = form.getByRole('button');
   await expect(submit).toHaveAccessibleName('Отправить заявку');
@@ -170,12 +174,15 @@ test('submits the exact OpenAPI payload on loopback and keeps synthetic lead dat
   const origins = captureHttpOrigins(page);
   const requests = await installApiMock(page, () => ({ status: 202 }));
   await openEnabledForm(page);
-  const { status, submit } = await fillSyntheticLead(page);
+  const { submit } = await fillSyntheticLead(page);
 
   await submit.click();
 
   await expect.poll(() => requests.length).toBe(1);
-  await expect(status).toContainText(/заявк.*(?:принят|отправлен|получен)/iu);
+  await expect(page.getByText(SUCCESS_MESSAGE)).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Заявка принята' }),
+  ).toBeFocused();
   const [request] = requests;
   expect(request).toMatchObject({
     contentType: 'application/json',
@@ -269,7 +276,7 @@ test('retries an unchanged payload with the same UUID', async ({ page }) => {
       : { status: 202 },
   );
   await openEnabledForm(page);
-  const { status, submit } = await fillSyntheticLead(page);
+  const { submit } = await fillSyntheticLead(page);
 
   await submit.click();
   await expect.poll(() => requests.length).toBe(1);
@@ -277,7 +284,7 @@ test('retries an unchanged payload with the same UUID', async ({ page }) => {
   await submit.click();
 
   await expect.poll(() => requests.length).toBe(2);
-  await expect(status).toContainText(/заявк.*(?:принят|отправлен|получен)/iu);
+  await expect(page.getByText(SUCCESS_MESSAGE)).toBeVisible();
   expect(requests[1]?.body).toEqual(requests[0]?.body);
   expect(requests[1]?.body.requestId).toMatch(UUID_V4);
 });
@@ -301,7 +308,7 @@ test('creates a new UUID after the user edits a failed payload', async ({
   await expect.poll(() => requests.length).toBe(1);
   await expect(submit).toBeEnabled();
   await form
-    .getByLabel('Комментарий')
+    .getByLabel('Опишите неисправность')
     .fill('Synthetic equipment failure, edited');
   await submit.click();
 
@@ -322,7 +329,7 @@ test('creates a new UUID for a manual retry after a 409 response', async ({
 
   await submit.click();
   await expect.poll(() => requests.length).toBe(1);
-  await expect(status).toContainText(/повтор/iu);
+  await expect(status).toHaveText(FIRST_ERROR_MESSAGE);
   await expect(submit).toBeEnabled();
   await submit.click();
 
@@ -357,11 +364,112 @@ test('honors Retry-After cooldown after a 429 response', async ({ page }) => {
   await submit.click();
 
   await expect.poll(() => requests.length).toBe(1);
-  await expect(status).toContainText(/подожд|повтор/iu);
+  await expect(status).toHaveText(FIRST_ERROR_MESSAGE);
   await expect(submit).toBeDisabled();
   await expect(submit).toBeEnabled({ timeout: 3000 });
   await submit.click();
   await expect.poll(() => requests.length).toBe(2);
+});
+
+test('shows exact validation and retry states without losing the draft', async ({
+  page,
+}) => {
+  const requests = await installApiMock(page, () => ({ status: 503 }));
+  const form = await openEnabledForm(page);
+
+  await form.getByRole('button', { name: 'Отправить заявку' }).click();
+  await expect(form.getByLabel('Имя')).toBeFocused();
+  await expect(form.getByLabel('Имя')).toHaveAccessibleDescription(
+    'Укажите имя длиной от 2 до 50 символов',
+  );
+  await expect(form.getByLabel('Телефон')).toHaveAccessibleDescription(
+    /Введите номер телефона/u,
+  );
+
+  const { status, submit } = await fillSyntheticLead(page);
+  await submit.click();
+  await expect.poll(() => requests.length).toBe(1);
+  await expect(status).toHaveText(FIRST_ERROR_MESSAGE);
+  await expect(form.getByLabel('Телефон')).toHaveValue(SYNTHETIC_LEAD.phone);
+  await expect(submit).toHaveText('Попробовать ещё раз');
+
+  await submit.click();
+  await expect.poll(() => requests.length).toBe(2);
+  await expect(status).toHaveText(SECOND_ERROR_MESSAGE);
+  await expect(form.getByText('Телефон не опубликован')).toBeVisible();
+  await expect(form.getByRole('link', { name: /Позвонить/u })).toHaveCount(0);
+  expect(requests[1]?.body).toEqual(requests[0]?.body);
+});
+
+test('uses safe CTA context only in intent and PII-free analytics', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const analytics: unknown[] = [];
+    Object.assign(window, { __andrewAnalytics: analytics });
+    window.addEventListener('andrew:analytics-request', (event) => {
+      analytics.push((event as CustomEvent).detail);
+    });
+  });
+  const requests = await installApiMock(page, () => ({ status: 202 }));
+  await openEnabledForm(page);
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('andrew:lead-context', {
+        detail: { intent: 'maintenance', sourceSection: 'maintenance' },
+      }),
+    );
+  });
+  const { submit } = await fillSyntheticLead(page);
+
+  await submit.click();
+
+  await expect.poll(() => requests.length).toBe(1);
+  await expect(page.getByText(SUCCESS_MESSAGE)).toBeVisible();
+  expect(requests[0]?.body.intent).toBe('maintenance');
+  expect(requests[0]?.body).not.toHaveProperty('sourceSection');
+  const analytics = await page.evaluate(
+    () =>
+      (
+        window as typeof window & {
+          __andrewAnalytics: Array<Record<string, unknown>>;
+        }
+      ).__andrewAnalytics,
+  );
+  const formAnalytics = analytics.filter(({ name }) =>
+    typeof name === 'string' ? name.startsWith('form_') : false,
+  );
+  expect(formAnalytics).toEqual([
+    { name: 'form_start', sourceSection: 'maintenance' },
+    { name: 'form_submit', sourceSection: 'maintenance' },
+    { name: 'form_success', sourceSection: 'maintenance' },
+  ]);
+  expect(JSON.stringify(formAnalytics)).not.toContain(SYNTHETIC_LEAD.name);
+  expect(JSON.stringify(formAnalytics)).not.toContain(SYNTHETIC_LEAD.phone);
+});
+
+test('keeps entered values in memory while offline', async ({
+  context,
+  page,
+}) => {
+  const requests = await installApiMock(page, () => ({ status: 202 }));
+  await openEnabledForm(page);
+  const { form, submit, status } = await fillSyntheticLead(page);
+
+  await context.setOffline(true);
+  try {
+    await submit.click();
+
+    await expect(status).toHaveText(
+      'Нет соединения. Введённые данные сохранены.',
+    );
+    await expect(form.getByLabel('Имя')).toHaveValue(SYNTHETIC_LEAD.name);
+    await expect(form.getByLabel('Телефон')).toHaveValue(SYNTHETIC_LEAD.phone);
+    await expect(form.getByText('Телефон не опубликован')).toBeVisible();
+    expect(requests).toHaveLength(0);
+  } finally {
+    await context.setOffline(false);
+  }
 });
 
 test('aborts a stalled request after the 15-second client timeout', async ({
@@ -378,7 +486,7 @@ test('aborts a stalled request after the 15-second client timeout', async ({
   await submit.click();
 
   await expect.poll(() => requests.length).toBe(1);
-  await expect(status).toContainText(/врем|не удалось|повтор/iu, {
+  await expect(status).toHaveText(FIRST_ERROR_MESSAGE, {
     timeout: 18000,
   });
   await expect(submit).toBeEnabled();
@@ -400,12 +508,12 @@ test('keeps a non-loopback hosted preview fail-closed', async ({ page }) => {
   await expect(form).toBeVisible();
   await expect(form.getByLabel('Имя')).toBeDisabled();
   await expect(form.getByLabel('Телефон')).toBeDisabled();
-  await expect(form.getByLabel('Комментарий')).toBeDisabled();
+  await expect(form.getByLabel('Опишите неисправность')).toBeDisabled();
   await expect(
     form.getByRole('button', { name: 'Отправить заявку' }),
   ).toBeDisabled();
   await expect(form.getByRole('status')).toHaveText(
-    'Отправка заявок в опубликованной демонстрации отключена.',
+    'Backend формы не подключён к этому предпросмотру.',
   );
   expect(apiRequests).toBe(0);
   expect([...origins]).toEqual([new URL(HOSTED_PREVIEW_URL).origin]);

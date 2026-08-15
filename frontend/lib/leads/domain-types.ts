@@ -22,22 +22,19 @@ export interface LeadFormValues {
   readonly phone: string;
   readonly comment: string;
   readonly intent: LeadIntent;
-  readonly consent: boolean;
   readonly website: string;
 }
 
 export type LeadValidationField =
-  'name' | 'phone' | 'comment' | 'intent' | 'consent' | 'sourcePath';
+  'name' | 'phone' | 'comment' | 'intent' | 'sourcePath';
 
 export type LeadValidationErrorCode =
   | 'name_required'
   | 'name_length'
   | 'phone_required'
-  | 'phone_length'
   | 'phone_format'
   | 'comment_length'
   | 'intent_invalid'
-  | 'consent_required'
   | 'source_path_invalid';
 
 export type LeadValidationErrors = Partial<
@@ -86,6 +83,7 @@ export type LeadResponseKind =
   | 'unsupported_media_type'
   | 'rate_limited'
   | 'unavailable'
+  | 'offline'
   | 'network_error'
   | 'timeout'
   | 'unexpected';
@@ -97,3 +95,16 @@ export interface LeadResponseOutcome {
   readonly invalidateAttempt: boolean;
   readonly retryAfterSeconds?: number;
 }
+
+export interface LeadContext {
+  readonly sourceSection: string;
+  readonly intent: LeadIntent;
+}
+
+export type LeadAnalyticsEventName =
+  | 'form_start'
+  | 'form_validation_error'
+  | 'form_submit'
+  | 'form_success'
+  | 'form_error'
+  | 'form_retry';

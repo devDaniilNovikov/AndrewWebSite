@@ -17,10 +17,9 @@ const MAIN_SECTION_HEADINGS = [
   'Не нашли похожую неисправность?',
   'Ориентиры по стоимости',
   'Как проходит заявка',
-  'Команда мастеров',
+  'Команда мастеров с техническим контролем каждой заявки',
   'Плановое обслуживание коммерческого холода',
-  'Отзывы клиентов',
-  'Опишите поломку — свяжемся и уточним детали',
+  'Опишите неисправность — уточним задачу и доступность мастера',
 ] as const;
 
 const SECTION_ANCHORS = [
@@ -29,7 +28,9 @@ const SECTION_ANCHORS = [
   '#works',
   '#pricing',
   '#about',
-  '#contact',
+  '#maintenance',
+  '#reviews',
+  '#request',
 ] as const;
 
 const PRIMARY_NAVIGATION = [
@@ -38,7 +39,7 @@ const PRIMARY_NAVIGATION = [
   { label: 'Работы', path: '/#works' },
   { label: 'Цены', path: '/#pricing' },
   { label: 'О компании', path: '/#about' },
-  { label: 'Контакты', path: '/#contact' },
+  { label: 'Контакты', path: '/#request' },
 ] as const;
 
 function captureNetworkOrigins(page: Page) {
@@ -98,7 +99,7 @@ test('serves the complete accessible, network-isolated landing preview', async (
   ).toBeVisible();
   await expect(
     page.locator('[role="status"]').filter({
-      hasText: 'Демонстрационная версия',
+      hasText: 'Предпубликационная версия',
     }),
   ).toBeVisible();
   await expect(page.locator('header')).toBeVisible();
@@ -165,20 +166,20 @@ test('keeps navigation internal and landing CTAs on verified anchors', async ({
     ).toHaveAttribute('href', item.path);
   }
 
-  const requestLinks = page.getByRole('link', { name: 'Оставить заявку' });
+  const requestLinks = page.locator('a[data-lead-source]');
   expect(await requestLinks.count()).toBeGreaterThan(5);
 
   for (const link of await requestLinks.all()) {
-    await expect(link).toHaveAttribute('href', '#contact');
+    await expect(link).toHaveAttribute('href', '#request');
   }
 
   await page
-    .locator('main a[href="#contact"]')
+    .locator('main a[href="#request"]')
     .filter({ hasText: 'Оставить заявку' })
     .first()
     .click();
-  await expect(page).toHaveURL(/#contact$/);
-  await expect(page.locator('#contact')).toBeInViewport();
+  await expect(page).toHaveURL(/#request$/);
+  await expect(page.locator('#request')).toBeInViewport();
 });
 
 test('mobile drawer closes through keyboard, controls, and anchors', async ({
@@ -256,7 +257,7 @@ test('mobile drawer closes through keyboard, controls, and anchors', async ({
     await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
   }
 
-  await page.locator('#contact').scrollIntoViewIfNeeded();
+  await page.locator('#request').scrollIntoViewIfNeeded();
   await trigger.click();
   await dialog.getByRole('link', { name: 'Работы' }).click();
   await expect(page).toHaveURL(/\/#works$/);
