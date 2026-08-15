@@ -13,6 +13,7 @@
     "build": "pnpm run build:preview",
     "build:preview": "node scripts/build.mjs preview",
     "build:production": "node scripts/build.mjs production",
+    "build:standalone": "node scripts/build.mjs preview && node scripts/build-standalone-html.mjs",
     "generate:api": "openapi-typescript ../docs/backend/openapi.yaml --output generated/openapi.ts --immutable --alphabetize --export-type",
     "verify:api-types": "openapi-typescript ../docs/backend/openapi.yaml --output generated/openapi.ts --immutable --alphabetize --export-type --check",
     "verify:toolchain": "node scripts/verify-toolchain.mjs",
@@ -27,10 +28,11 @@
     "test:lighthouse": "node scripts/test-lighthouse.mjs",
     "verify:static-boundary": "node scripts/verify-static-boundary.mjs",
     "verify:visual-contract": "node scripts/verify-visual-contract.mjs",
+    "verify:standalone": "node scripts/verify-standalone-html.mjs",
     "verify:production-gate": "node scripts/verify-production-gate.mjs",
     "verify:export": "node scripts/verify-export.mjs",
     "audit": "pnpm audit --audit-level high",
-    "verify": "pnpm run verify:toolchain && pnpm run format:check && pnpm run verify:api-types && pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run verify:static-boundary && pnpm run verify:visual-contract && pnpm run verify:production-gate && pnpm run verify:export && pnpm run test:lighthouse && pnpm run test:e2e && pnpm run audit"
+    "verify": "pnpm run verify:toolchain && pnpm run format:check && pnpm run verify:api-types && pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run verify:static-boundary && pnpm run verify:visual-contract && pnpm run verify:production-gate && pnpm run verify:export && pnpm run test:lighthouse && pnpm run test:e2e && pnpm run build:standalone && pnpm run verify:standalone && pnpm run audit"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "5.3.0",
