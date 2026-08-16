@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-frontend-tz-preview` | `2026-08-16-074143-fix-frontend-tz-preview-draft-handoff.md` | Draft publication, Ready transition, required CI, and squash merge explicitly authorized; PR pending | frontend, design, accessibility, privacy, testing, standalone-export |
+| `fix-frontend-tz-preview` | `2026-08-16-074143-fix-frontend-tz-preview-draft-handoff.md` → `2026-08-16-074633-fix-frontend-tz-preview-draft-published-handoff.md` | Draft PR #70 published; Ready transition, required CI, and squash merge explicitly authorized | frontend, design, accessibility, privacy, testing, standalone-export |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
