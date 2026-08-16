@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `integration-sentry` | `2026-08-16-161426-integration-sentry-handoff.md` → `2026-08-16-183625-integration-sentry-draft-published-handoff.md` | Draft PR #71 published from implementation checkpoint `dbf2825`; exact-head CI pending | backend, integration, observability, security, ci |
+| `integration-sentry` | `2026-08-16-161426-integration-sentry-handoff.md` → `2026-08-16-183625-integration-sentry-draft-published-handoff.md` → `2026-08-16-184622-integration-sentry-ready-handoff.md` | Exact Draft checkpoint `98f2b98` reviewed and green; Ready metadata successor pending publication | backend, integration, observability, security, ci |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
