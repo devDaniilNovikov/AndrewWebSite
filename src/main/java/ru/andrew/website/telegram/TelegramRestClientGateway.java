@@ -5,6 +5,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.OptionalLong;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -35,6 +36,7 @@ public final class TelegramRestClientGateway implements TelegramGateway {
         this.restClient = restClientBuilder
                 .baseUrl(properties.baseUrl().toString())
                 .observationRegistry(ObservationRegistry.NOOP)
+                .requestInterceptors(List::clear)
                 .build();
         this.properties = properties;
         this.formatter = formatter;

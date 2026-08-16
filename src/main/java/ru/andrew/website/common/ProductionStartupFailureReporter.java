@@ -85,6 +85,10 @@ public final class ProductionStartupFailureReporter implements
         }
     }
 
+    public boolean isProductionFailureReportingEnabled() {
+        return production;
+    }
+
     private static boolean includesProduction(String profiles) {
         if (!StringUtils.hasText(profiles)) {
             return false;

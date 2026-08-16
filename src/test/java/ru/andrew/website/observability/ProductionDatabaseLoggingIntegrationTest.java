@@ -14,6 +14,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.ErrorHandler;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
@@ -24,6 +25,8 @@ import ru.andrew.website.testing.PostgresTestConfiguration;
         "TELEGRAM_CHAT_ID=fictional-telegram-chat",
         "OTLP_METRICS_URL=https://collector.invalid/v1/metrics",
         "OTLP_AUTHORIZATION=Bearer fictional-otlp-authorization",
+        "SENTRY_DSN=https://publickey@o1.ingest.sentry.io/1",
+        "test.sentry.capture-transport=true",
         "logging.level.org.testcontainers=OFF",
         "logging.level.tc=OFF"
 })
@@ -34,6 +37,7 @@ import ru.andrew.website.testing.PostgresTestConfiguration;
 })
 @ExtendWith(OutputCaptureExtension.class)
 @Tag("database")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ProductionDatabaseLoggingIntegrationTest {
     @Autowired
     JdbcClient jdbc;

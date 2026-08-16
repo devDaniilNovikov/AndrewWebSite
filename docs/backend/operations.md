@@ -12,7 +12,7 @@ The application has a safe common configuration plus exactly three allowed profi
 | --- | --- | --- | --- |
 | `test` | PostgreSQL 18 Testcontainers and an in-process/fake Telegram server | no production outbound calls; scheduling disabled unless a focused test enables it | the only profile allowed to use a committed fixed non-production HMAC test key; no realistic token-shaped test data |
 | `local` | developer-supplied PostgreSQL 18 and fake Telegram endpoint by default | only explicitly configured loopback development CORS origins; forwarded client headers ignored | local untracked environment or approved developer secret store; never a tracked `.env` |
-| `prod` | Timeweb managed PostgreSQL 18, Telegram Bot API, and approved Grafana Cloud OTLP endpoint | same-origin public HTTP; Telegram and OTLP outbound HTTPS; forwarded client headers ignored until CIDR verification gate | orchestration-injected secret-store values only; fail fast when required bindings are absent or invalid |
+| `prod` | Timeweb managed PostgreSQL 18, Telegram Bot API, approved Grafana Cloud OTLP, and Sentry | same-origin public HTTP; Telegram, OTLP, and Sentry outbound HTTPS; forwarded client headers ignored until CIDR verification gate | orchestration-injected secret-store values only; fail fast when required bindings are absent or invalid |
 
 There is no `spring.profiles.default` and no implicit fallback. A startup guard rejects zero active profiles, multiple active profiles, or any profile outside `test|local|prod`; therefore every test or launch command activates exactly one profile explicitly. Production deployment sets `SPRING_PROFILES_ACTIVE=prod`, and no additional profile may accompany it. H2 and another database dialect are not used because migration, locking, idempotency, and queue tests require PostgreSQL semantics.
 
@@ -32,11 +32,12 @@ Environment variables are names, not storage. The approved platform secret store
 | `TELEGRAM_BASE_URL` | `app.telegram.base-url` | operational | `local` only; explicit `http` or `https` loopback host and port with no credentials, path, query, or fragment; production ignores this binding and uses the fixed Telegram API origin |
 | `OTLP_METRICS_URL` | `management.otlp.metrics.export.url` | operational | required only when production OTLP export is enabled; HTTPS |
 | `OTLP_AUTHORIZATION` | `management.otlp.metrics.export.headers.Authorization` | secret | required only when the collector requires it; no default |
+| `SENTRY_DSN` | `sentry.dsn` | secret | required in `prod`; the approved secret store must supply the HTTPS DSN for `rogaandkopyta-pz/java-spring-boot-q1`; no tracked default; startup fails if it is absent or malformed |
 | `LOCAL_CORS_ORIGINS` | `app.web.local-cors-origins` | operational | `local` only; explicit loopback HTTP origins; absent in `prod` |
 
 Non-secret application defaults are fixed in versioned configuration: lead request body 16 KiB; source path 2048 characters; global rolling limit of at most 60 admissions in every half-open `(t - 60 seconds, t]` interval; separate per-connection burst 5/refill 1 token per minute; bounded client bucket capacity; worker poll 15 seconds; claim batch 10; lease two minutes; retry 30 seconds through six hours; worker heartbeat stale after 45 seconds; retention run hourly; anonymization at 29 days; hard PII limit 30 days; retention heartbeat stale after two hours; and anonymized-row deletion after 12 months.
 
-`app.leads.fingerprint-key`, `app.telegram.bot-token`, `app.telegram.chat-id`, and OTLP authorization are declared as secret configuration. Configuration `toString`, failure analysis, actuator, and debug logging must redact their values. No secret property is exposed through a public endpoint.
+`app.leads.fingerprint-key`, `app.telegram.bot-token`, `app.telegram.chat-id`, OTLP authorization, and `sentry.dsn` are declared as secret or secret-adjacent configuration. Configuration `toString`, failure analysis, actuator, and debug logging must redact their values. All Sentry controls except the DSN are fixed in versioned configuration and cannot be weakened with runtime overrides. No secret property is exposed through a public endpoint.
 
 ## Startup and release failure conditions
 
@@ -49,7 +50,8 @@ The application process must fail startup before accepting traffic when any appl
 - production Telegram token or chat ID is missing or blank;
 - an unsafe public actuator exposure is configured;
 - production enables local CORS origins or forwarded-header trust without the verified proxy configuration;
-- production enables OTLP but its HTTPS endpoint or required authorization binding is absent.
+- production enables OTLP but its HTTPS endpoint or required authorization binding is absent;
+- production lacks a hosted HTTPS Sentry DSN, enables Sentry outside `prod`, or overrides any fixed Sentry privacy, sampling, logging, metric, profile, or trace-continuation invariant.
 
 The deployment/release gate must fail even if the process could technically start when any of these is unverified:
 
@@ -58,6 +60,7 @@ The deployment/release gate must fail even if the process could technically star
 - Telegram destination auto-delete is no more than 30 days;
 - the Timeweb proxy behavior remains unverified while forwarded-header trust is enabled;
 - OTLP telemetry has not been proven PII-free and deliverable;
+- the Sentry DSN has not been verified against `rogaandkopyta-pz/java-spring-boot-q1`, or the documented non-PII error/log/metric/transaction/profile canary has not passed;
 - the final static frontend prerequisite or required smoke checks are missing.
 
 Release-gate facts are operator attestations or platform checks; they are not guessed by application code.
@@ -120,11 +123,21 @@ When the queue grows:
 
 ## Telegram operations
 
-The gateway uses the fixed Telegram Bot API host and a Boot-managed synchronous `RestClient.Builder`; WebFlux/Reactor is not part of this delivery path. A request cannot supply a URL, bot token, or chat ID. The client connects within three seconds, reads within ten seconds, and does not follow redirects. Before handoff, the worker computes `min(lease_until, created_at + 29 days) - 13 seconds`; the gateway rechecks this absolute latest start after formatting and immediately before the HTTP call. Reaching it is fail-closed. Standard HTTP observations are disabled for this client because a Spring network exception can retain Telegram's credential-bearing request URI. The replacement `andrew.telegram.client` observation contains only the static token-free route, method, and bounded outcome, receives no raw exception, and framework body logging sees only a redacted request projection. Telegram 429 `parameters.retry_after` is read from a bounded response body, parsed only as positive integral seconds, and combined with exponential backoff under the six-hour cap. Network errors, timeouts, and 5xx retry; non-429 4xx block with a bounded technical status code; other statuses use the bounded `telegram_unexpected` retry code.
+The gateway uses the fixed Telegram Bot API host and a Boot-managed synchronous `RestClient.Builder`; WebFlux/Reactor is not part of this delivery path. A request cannot supply a URL, bot token, or chat ID. The client connects within three seconds, reads within ten seconds, and does not follow redirects. Before handoff, the worker computes `min(lease_until, created_at + 29 days) - 13 seconds`; the gateway rechecks this absolute latest start after formatting and immediately before the HTTP call. Reaching it is fail-closed. Standard HTTP observations are disabled and preconfigured request interceptors, including Sentry auto-instrumentation, are removed from this client because a Spring network exception or interceptor can retain Telegram's credential-bearing request URI. The replacement `andrew.telegram.client` observation contains only the static token-free route, method, and bounded outcome, receives no raw exception, and framework body logging sees only a redacted request projection. Telegram 429 `parameters.retry_after` is read from a bounded response body, parsed only as positive integral seconds, and combined with exponential backoff under the six-hour cap. Network errors, timeouts, and 5xx retry; non-429 4xx block with a bounded technical status code; other statuses use the bounded `telegram_unexpected` retry code.
 
 The recipient message is plain text without Telegram markup and contains necessary lead PII plus source, intent, UTC creation time, and `requestId`. Telegram destination auto-delete of no more than 30 days is therefore a mandatory production gate. Telegram request/response bodies are never logged. Delivery is at least once; the recipient uses `requestId` to recognize a possible duplicate after a post-send database crash.
 
 For 401/403 or sustained permanent failures, rotate or repair the credential only in the approved secret store, deploy/restart through the normal process, and verify with a fictional non-PII canary. Never paste a token, chat ID, full Telegram URL, response body, or lead message into a task, Issue, log, or chat.
+
+## Sentry operations
+
+Sentry is disabled and destination-free in `local` and `test`. Production accepts only `SENTRY_DSN`; it must be a hosted Sentry HTTPS DSN with a public key, supported ingest host, and numeric project path, without a password, port, query, or fragment. The operator must verify in Sentry that the secret-store value resolves to organization/project `rogaandkopyta-pz/java-spring-boot-q1`. Never paste the DSN into source, task text, logs, shell history, CI variables, or a PR.
+
+Production startup pins and validates environment `prod`, server name `andrew-website`, 10% transaction sampling, 100% continuous-profile session sampling with trace lifecycle, strict trace continuation, error monitoring, logs, and metrics. Default PII, request bodies, breadcrumbs, client reports, feature flags, OpenTelemetry event capture, database/cache/queue tracing, trace propagation, app-start/legacy profiling, SDK debug/spotlight output, pretty serialization, and automatic Logback forwarding remain disabled. Only `SENTRY_DSN` may come from an external Sentry property source; every other `SENTRY_*`, command-line/system Sentry option, or unknown versioned `sentry.*` key fails startup with a generic detail-free error. The supported executable-JAR/container deployment must not add JNDI or a custom non-enumerable Spring `PropertySource`; introducing one requires extending the fail-closed source guard and its tests first.
+
+Before export, error events lose request, user, messages, values, attributes, local variables, source context, absolute paths, and other unbounded data while retaining exception type and sanitized stack frame identity. The sampler returns 10% only for the exact canonical lead and health method/path pairs and zero for every other request before a transaction/profile can start, overriding even an inherited parent sampling request. A bounded `untracked` name lets rejected transactions finish and is never exported. Accepted transactions lose child spans, measurements, baggage, thread metadata, and all context except rebuilt trace/span/profiler identity plus bounded operation/status. The only accepted Sentry log and metric are the fixed successful-start signals `andrew.application.ready` and `andrew.application.startup=1`. The Telegram client independently removes Sentry's HTTP interceptor before construction.
+
+Repository verification uses a fictional hosted-format DSN and an in-memory capture transport; it proves SDK auto-configuration, envelope creation, sanitization, and zero network delivery. It does not prove access to the external Sentry tenant. The production release gate remains closed until an authorized operator injects the real DSN, deploys the reviewed artifact, confirms the fixed startup log/counter plus a canonical health transaction/profile in the intended project, and validates a controlled fictional exception canary without PII. Delete or resolve the canary issue according to the operational policy; do not add a public test-error endpoint.
 
 ## Retention operations
 
@@ -144,7 +157,7 @@ Privacy incident response:
 
 ## Health, telemetry, and alert intent
 
-Liveness is dependency-free. Readiness is `UP` only when PostgreSQL is available and a successful outbox poll occurred within 45 seconds after a 45-second startup grace. Both public responses contain only `status`; health details are never public. Every liveness/readiness response, whether `200` or `503`, has exactly `Cache-Control: no-store`; the foundation path-scoped filter and MockMvc tests for both paths are release contracts. Telegram and OTLP outages do not fail liveness or readiness because accepted leads remain durable.
+Liveness is dependency-free. Readiness is `UP` only when PostgreSQL is available and a successful outbox poll occurred within 45 seconds after a 45-second startup grace. Both public responses contain only `status`; health details are never public. Every liveness/readiness response, whether `200` or `503`, has exactly `Cache-Control: no-store`; the foundation path-scoped filter and MockMvc tests for both paths are release contracts. Telegram, OTLP, and Sentry outages do not fail liveness or readiness because accepted leads remain durable.
 
 Actuator and Micrometer exist from foundation, but production OTLP export is introduced only in `task-backend-observability`. Public exposure includes only health routing needed for liveness/readiness. There is no public `/actuator/metrics` or Prometheus endpoint and no self-hosted Prometheus/Grafana deployment.
 
@@ -160,20 +173,21 @@ Alert intent:
 | PII-bearing rows reach 29 days | critical pre-limit remediation |
 | any PII-bearing row reaches 30 days | privacy incident |
 | OTLP export failure | use local bounded platform signals; do not expose raw metrics publicly |
+| Sentry event/log/profile export failure | use SDK diagnostics only outside production or bounded platform delivery signals; never dump environment or event payloads |
 
-Cardinality is bounded to documented enums/status classes. Log levels cannot be changed to reveal bodies, SQL parameter values, Spring environment contents, or HTTP authorization data.
+Cardinality is bounded to documented enums/status classes. Sentry uses `send-default-pii=false` and `max-request-body-size=none`; log levels cannot be changed to reveal bodies, SQL parameter values, Spring environment contents, HTTP authorization data, Sentry DSNs, or event payloads.
 
 ## Safe diagnostics
 
-Allowed diagnostics are deployment SHA, process start time, minimal liveness/readiness, aggregate queue counts by state, bounded heartbeat ages, Flyway version/checksum state, database availability without URL, and bounded outcome counters.
+Allowed diagnostics are deployment SHA, process start time, minimal liveness/readiness, aggregate queue counts by state, bounded heartbeat ages, Flyway version/checksum state, database availability without URL, Sentry SDK enabled/destination-present booleans without DSN value, and bounded outcome counters.
 
-Forbidden diagnostics include raw request/response bodies, rejected values, name, phone, comment, request ID tags, canonical JSON, HMAC/fingerprint, Telegram message/body/full URL, bot token, chat ID, JDBC URL, database username/password, OTLP headers, full environment/configuration dumps, heap dumps, SQL with bound parameters, and public actuator detail. Shell history and command output must not expand secret environment variables.
+Forbidden diagnostics include raw request/response bodies, rejected values, name, phone, comment, request ID tags, canonical JSON, HMAC/fingerprint, Telegram message/body/full URL, bot token, chat ID, Sentry DSN, JDBC URL, database username/password, OTLP headers, full environment/configuration dumps, heap dumps, SQL with bound parameters, and public actuator detail. Shell history and command output must not expand secret environment variables.
 
 ## Deployment and rollback boundary
 
-Every product task follows the [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md): fetch the latest `origin/main`, create one dedicated external worktree on one lowercase `task-*` or `fix-*` branch, and open one Draft PR. `main` is the only long-lived branch; direct pushes to it, stacked PRs, branch/worktree reuse, non-squash merges, and auto-merge are forbidden. Mark the PR Ready only after required CI is green and Codex review is complete. Merge only with explicit user authorization and only by squash using the Conventional Commit PR title. After merge, confirm `main`, close the linked issue, allow automatic remote-branch deletion, verify the local worktree has no tracked or untracked work to preserve before removing it, and run `git fetch --prune`. Production mutation is never part of a documentation or deploy-stub task.
+Every product task follows the [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md): fetch the latest `origin/main`, create one dedicated external worktree on one lowercase `task-*` or `fix-*` branch, and open one Draft PR. The user-authorized Sentry integration is the one-time exact branch-name exception `integration-sentry`; it remains subject to the same required CI, review, squash merge, and branch-retention rules. `main` is the only long-lived branch; direct pushes to it, stacked PRs, branch/worktree reuse, non-squash merges, and auto-merge are forbidden. Mark the PR Ready only after required CI is green and Codex review is complete. Merge only with explicit user authorization and only by squash using the Conventional Commit PR title. After merge, confirm `main`, close the linked issue, preserve the remote source branch and verify automatic deletion remains disabled, verify the local worktree has no tracked or untracked work to preserve before removing it, and run `git fetch --prune`. Production mutation is never part of a documentation or deploy-stub task.
 
-A deploy is immutable: build from a reviewed commit, verify the JAR/container, apply compatible Flyway migrations, start a non-root Java 25 container, wait for readiness, and run smoke tests. Frontend dependency installation invokes the declared manager directly through Corepack with a writable `COREPACK_HOME` and never installs global shims. Before `COPY frontend/`, the Docker context excludes root/nested `.env*`, local secret and credential directories, and key/keystore material; the unchanged container contract test guards those patterns. The final image contains no Node runtime or build secret.
+A deploy is immutable: build from a reviewed commit, verify the JAR/container, apply compatible Flyway migrations, start the non-root glibc-based Java 25 image with native access enabled for async-profiler, wait for readiness, and run smoke tests. Frontend dependency installation invokes the declared manager directly through Corepack with a writable `COREPACK_HOME` and never installs global shims. Before `COPY frontend/`, the Docker context excludes root/nested `.env*`, local secret and credential directories, and key/keystore material; the unchanged container contract test guards those patterns. The final image contains no Node runtime or build secret.
 
 Application rollback selects a previously verified image only when its code is compatible with the current schema. Flyway history is not rolled back. If privacy correctness is in doubt, keep intake and delivery stopped while retention and aggregate checks run. A failed static integration may roll back the JAR without reverting durable lead/outbox rows. A failed credential rotation restores only through the secret store; never through an image or tracked configuration.
 
@@ -194,6 +208,7 @@ Before production release, confirm all of the following with fresh evidence:
 - PostgreSQL backup retention and Telegram auto-delete are each no more than 30 days;
 - forwarded headers remain untrusted until Timeweb CIDRs are verified;
 - OTLP is private and functioning; raw metrics and sensitive actuator endpoints are not public;
+- the secret-store Sentry DSN is verified against the intended organization/project and the controlled non-PII signal/profile canary passes;
 - static frontend prerequisites are merged; direct non-root Corepack execution and Docker-context secret exclusions are contract-tested; final cache/routing/smoke behavior passes;
 - the user explicitly authorizes merge and production release.
 

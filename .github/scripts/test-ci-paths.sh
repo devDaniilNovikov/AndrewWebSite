@@ -8,6 +8,36 @@ echo "Running CI Policy Compliance Tests..."
 
 WORKFLOW=".github/workflows/ci.yml"
 
+# 0. Check the exact one-time integration-sentry branch exception
+PUSH_BRANCH_BLOCK=$(sed -n '/^  push:/,/^  workflow_dispatch:/p' "$WORKFLOW")
+BRANCH_VALIDATION_BLOCK=$(sed -n '/      - name: Validate source branch name/,/      - name: Validate pull request title/p' "$WORKFLOW")
+
+if ! echo "$PUSH_BRANCH_BLOCK" | grep -Fqx '      - "integration-sentry"'; then
+  echo "Error: The exact integration-sentry push trigger is missing." >&2
+  exit 1
+fi
+
+if echo "$PUSH_BRANCH_BLOCK" | grep -Eq '^[[:space:]]*-[[:space:]].*integration-.*\*'; then
+  echo "Error: Wildcard integration branch push triggers are forbidden." >&2
+  exit 1
+fi
+
+if ! echo "$BRANCH_VALIDATION_BLOCK" | grep -Fqx "          allowed='^(main|task-[a-z0-9][a-z0-9-]*|fix-[a-z0-9][a-z0-9-]*)$'"; then
+  echo "Error: The standard branch-name allowlist must remain unchanged." >&2
+  exit 1
+fi
+
+if ! echo "$BRANCH_VALIDATION_BLOCK" | grep -Fqx '          if [[ "$BRANCH_NAME" != "integration-sentry" && ! "$BRANCH_NAME" =~ $allowed ]]; then'; then
+  echo "Error: The branch policy must use an exact integration-sentry exception." >&2
+  exit 1
+fi
+
+if [ "$(echo "$PUSH_BRANCH_BLOCK" | grep -Fc 'integration-sentry')" -ne 1 ] || \
+   [ "$(echo "$BRANCH_VALIDATION_BLOCK" | grep -Fc 'integration-sentry')" -ne 1 ]; then
+  echo "Error: integration-sentry must appear exactly once in each branch-policy surface." >&2
+  exit 1
+fi
+
 # 1. Check for missing or renamed 'Frontend quality' job name
 if ! grep -q "name: Frontend quality" "$WORKFLOW"; then
   echo "Error: Missing or renamed 'Frontend quality' job name." >&2

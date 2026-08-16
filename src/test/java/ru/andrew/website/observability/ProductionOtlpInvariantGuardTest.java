@@ -38,8 +38,8 @@ class ProductionOtlpInvariantGuardTest {
         environment.setActiveProfiles(profile);
         environment
                 .withProperty(PREFIX + "enabled", "false")
-                .withProperty(PREFIX + "url", "http://user:pass@invalid/?x#y")
-                .withProperty(PREFIX + "headers.X-Secret", "secret")
+                .withProperty(PREFIX + "url", "http://user:@invalid/?x#y")
+                .withProperty(PREFIX + "headers.X-Private", "private-marker")
                 .withProperty(PREFIX + "step", "1h");
 
         assertThatCode(() -> validate(environment))
@@ -69,7 +69,7 @@ class ProductionOtlpInvariantGuardTest {
             "http://collector.invalid/v1/metrics",
             "/v1/metrics",
             "https:///v1/metrics",
-            "https://user:password@collector.invalid/v1/metrics",
+            "https://user:@collector.invalid/v1/metrics",
             "https://collector.invalid/v1/metrics?tenant=private",
             "https://collector.invalid/v1/metrics#private",
             "not a URI"

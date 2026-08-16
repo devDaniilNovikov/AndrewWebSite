@@ -18,8 +18,20 @@
     <jackson-bom.version>3.1.5</jackson-bom.version>
     <log4j2.version>2.25.5</log4j2.version>
     <postgresql.version>42.7.13</postgresql.version>
+    <sentry.version>8.53.0</sentry.version>
     <tomcat.version>11.0.24</tomcat.version>
   </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.sentry</groupId>
+        <artifactId>sentry-bom</artifactId>
+        <version>${sentry.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -44,6 +56,15 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-opentelemetry</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.sentry</groupId>
+      <artifactId>sentry-spring-boot-4</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.sentry</groupId>
+      <artifactId>sentry-async-profiler</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>

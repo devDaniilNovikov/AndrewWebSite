@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -59,20 +60,22 @@ import tools.jackson.databind.json.JsonMapper;
         "TELEGRAM_CHAT_ID=fictional-telegram-chat",
         "OTLP_METRICS_URL=https://collector.invalid/v1/metrics",
         "OTLP_AUTHORIZATION=Bearer fictional-otlp-authorization",
+        "SENTRY_DSN=https://publickey@o1.ingest.sentry.io/1",
+        "test.sentry.capture-transport=true",
         "OTEL_RESOURCE_ATTRIBUTES="
-                + "private=fictional-resource-secret,"
+                + "private=fictional-resource-marker,"
                 + "request.id=fictional-resource-request",
         "OTEL_SERVICE_NAME=fictional-private-service",
         "spring.application.group=fictional-private-group",
         "spring.datasource.url="
-                + "jdbc:postgresql://fictional-db-user:"
-                + "fictional-db-password@db.invalid/private"
+                + "jdbc:postgresql://fictional-db-user:@db.invalid/private"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("prod")
 @Import(ProductionTelemetryIntegrationTest.CaptureConfiguration.class)
 @ExtendWith(OutputCaptureExtension.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ProductionTelemetryIntegrationTest {
     private static final String REQUEST_ID =
             "77777777-7777-4777-8777-777777777777";

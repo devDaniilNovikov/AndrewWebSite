@@ -5,7 +5,9 @@
 - Trunk-based: `main` only, everything lands through a PR, no direct pushes,
   no stacked branches, no long-lived side branches.
 - One approved task = one branch = one dedicated external worktree = one PR.
-- Branch names: `task-<kebab>` or `fix-<kebab>` — CI rejects anything else.
+- Branch names: `task-<kebab>` or `fix-<kebab>` — CI rejects anything else
+  except the user-authorized one-time Sentry integration branch
+  `integration-sentry`.
 - Draft publication and the later Ready transition each require their own
   explicit current user authorization. **Ready never grants merge
   authorization** — only an explicit user command does.
@@ -97,6 +99,12 @@ Any exception requires an explicit user decision and a synchronized update to
 this document in the same change. Security, secret scanning, input
 validation, and review requirements cannot be waived — by anyone, for any
 reason.
+
+For the Sentry integration explicitly authorized on 2026-08-16, the branch
+`integration-sentry` is accepted as an exact one-time exception to the normal
+`task-*` or `fix-*` naming rule. This exception applies only to this task and
+does not authorize that name or any other `integration-*` branch for future
+work.
 
 For the F1A recovery authorized on 2026-08-01, the native Jules GitHub App may
 publish one generated implementation branch after the retained
