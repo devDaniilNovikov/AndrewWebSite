@@ -11,7 +11,7 @@ import type { LegitimateLeadDraft } from '../lib/leads/domain-types';
 
 const draft: LegitimateLeadDraft = {
   name: 'Тест',
-  phone: '0000000',
+  phone: '+7 (999) 123-45-67',
   sourcePath: '/',
   intent: 'repair',
   consent: true,

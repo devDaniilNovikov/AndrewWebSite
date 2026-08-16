@@ -9,6 +9,7 @@ import {
   PlaceholderBadge,
   SectionHeading,
 } from '../landing/PreviewPrimitives';
+import { LeadCta } from '../landing/LeadCta';
 import { Reveal } from '../landing/Reveal';
 
 function sectionClasses(
@@ -30,7 +31,7 @@ export function ProvisionalProductPage({
         <section className="overflow-hidden border-b border-slate-200 bg-white">
           <Container className="grid gap-7 py-8 lg:grid-cols-2 lg:items-stretch lg:gap-0 lg:py-0">
             <div className="flex flex-col justify-center lg:py-10 lg:pr-10">
-              <PlaceholderBadge>Демонстрационная страница</PlaceholderBadge>
+              <PlaceholderBadge>Информация о направлении</PlaceholderBadge>
               <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-primary-ink">
                 {page.eyebrow}
               </p>
@@ -45,12 +46,12 @@ export function ProvisionalProductPage({
                 не используются для production-сборки.
               </p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <Link
+                <LeadCta
                   className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(23,107,255,0.2)] hover:bg-blue-700"
-                  href="#contact"
+                  sourceSection={`product-${page.path.slice(1)}-hero`}
                 >
                   Оставить заявку
-                </Link>
+                </LeadCta>
                 <Link
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:border-primary hover:text-primary-ink"
                   href="/"
@@ -116,9 +117,23 @@ export function ProvisionalProductPage({
                           </PlaceholderBadge>
                         </div>
                       ) : null}
-                      {item.href ? (
+                      {item.href === '#request' ? (
+                        <LeadCta
+                          className={`mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-semibold ${
+                            inverse ? 'text-blue-200' : 'text-primary-ink'
+                          }`}
+                          intent={item.intent}
+                          sourceSection={
+                            item.sourceSection ??
+                            `product-${page.path.slice(1)}`
+                          }
+                        >
+                          {item.linkLabel ?? 'Оставить заявку'}
+                          <LineIcon className="h-4 w-4" name="arrow" />
+                        </LeadCta>
+                      ) : item.href ? (
                         <Link
-                          className={`mt-4 inline-flex min-h-10 items-center gap-1 text-sm font-semibold ${
+                          className={`mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-semibold ${
                             inverse ? 'text-blue-200' : 'text-primary-ink'
                           }`}
                           href={item.href}

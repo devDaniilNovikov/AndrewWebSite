@@ -21,7 +21,7 @@ const PRIMARY_NAVIGATION = [
   { label: 'Работы', path: '/#works' },
   { label: 'Цены', path: '/#pricing' },
   { label: 'О компании', path: '/#about' },
-  { label: 'Контакты', path: '/#contact' },
+  { label: 'Контакты', path: '/#request' },
 ] as const;
 
 function captureHttpOrigins(page: Page) {
@@ -139,8 +139,8 @@ test('keeps product navigation internal and preserves the custom static 404', as
   }
 
   await navigation.getByRole('link', { name: 'Контакты', exact: true }).click();
-  await expect(page).toHaveURL(new URL('/#contact', baseURL!).toString());
-  await expect(page.locator('#contact')).toBeInViewport();
+  await expect(page).toHaveURL(new URL('/#request', baseURL!).toString());
+  await expect(page.locator('#request')).toBeInViewport();
 
   const response = await page.goto('/missing-product-route');
   expect(response?.status()).toBe(404);

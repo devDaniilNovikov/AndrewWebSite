@@ -16,7 +16,13 @@ import {
   markLeadFormEdited,
   prepareLeadAttempt,
 } from '../../lib/leads/attempt-state';
+import {
+  DEFAULT_LEAD_CONTEXT,
+  dispatchLeadAnalytics,
+  parseLeadContext,
+} from '../../lib/leads/context';
 import type {
+  LeadAnalyticsEventName,
   LeadFormValues,
   LeadResponseOutcome,
   LeadValidationErrors,
@@ -28,29 +34,38 @@ import {
   classifyLeadResponse,
 } from '../../lib/leads/response-policy';
 import { submitLeadAttempt } from '../../lib/leads/transport';
-import { validateLeadForm } from '../../lib/leads/validation';
+import {
+  formatRussianPhoneInput,
+  validateLeadForm,
+} from '../../lib/leads/validation';
 import { PlaceholderBadge } from '../landing/PreviewPrimitives';
 
-const initialValues: LeadFormValues = {
+const initialValues: LeadFormValues = Object.freeze({
   name: '',
   phone: '',
   comment: '',
   intent: 'repair',
-  consent: false,
   website: '',
-};
+});
+
+const SUCCESS_MESSAGE =
+  'Заявка принята. Свяжемся с вами в рабочее время после проверки доступности мастера.';
+const FIRST_ERROR_MESSAGE =
+  'Не удалось отправить заявку. Проверьте соединение и попробуйте ещё раз.';
+const SECOND_ERROR_MESSAGE =
+  'Заявка не отправлена. Попробуйте ещё раз или позвоните нам.';
+const OFFLINE_MESSAGE = 'Нет соединения. Введённые данные сохранены.';
 
 const validationMessages: Readonly<
   Record<NonNullable<LeadValidationErrors[LeadValidationField]>, string>
 > = {
-  name_required: 'Укажите имя.',
-  name_length: 'Укажите имя от 2 до 100 символов.',
-  phone_required: 'Укажите телефон.',
-  phone_length: 'Телефон должен содержать от 7 до 15 цифр.',
-  phone_format: 'Используйте только цифры и символы + ( ) . пробел или дефис.',
-  comment_length: 'Сократите комментарий до 1000 символов.',
-  intent_invalid: 'Выберите вид обращения.',
-  consent_required: 'Подтвердите согласие перед отправкой.',
+  name_required: 'Укажите имя длиной от 2 до 50 символов',
+  name_length: 'Укажите имя длиной от 2 до 50 символов',
+  phone_required: 'Введите номер телефона',
+  phone_format: 'Введите номер телефона в формате +7 (999) 123-45-67',
+  comment_length:
+    'Опишите неисправность минимум в 10 символах или оставьте поле пустым',
+  intent_invalid: 'Не удалось определить тип обращения.',
   source_path_invalid: 'Не удалось определить безопасный адрес страницы.',
 };
 
@@ -59,7 +74,6 @@ const fieldOrder: readonly LeadValidationField[] = [
   'phone',
   'comment',
   'intent',
-  'consent',
   'sourcePath',
 ];
 
@@ -68,6 +82,16 @@ type Feedback = LeadResponseOutcome | null;
 const subscribeToPageOrigin = () => () => undefined;
 const readBrowserPageOrigin = () => window.location.origin;
 const readServerPageOrigin = () => '';
+const readBrowserOnline = () => window.navigator.onLine;
+const readServerOnline = () => true;
+const subscribeToOnline = (onStoreChange: () => void) => {
+  window.addEventListener('online', onStoreChange);
+  window.addEventListener('offline', onStoreChange);
+  return () => {
+    window.removeEventListener('online', onStoreChange);
+    window.removeEventListener('offline', onStoreChange);
+  };
+};
 
 function errorMessage(
   errors: LeadValidationErrors,
@@ -89,23 +113,63 @@ export function LeadForm() {
   const [errors, setErrors] = useState<LeadValidationErrors>({});
   const [attemptState, setAttemptState] = useState(createLeadAttemptState);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [failureCount, setFailureCount] = useState(0);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const submissionInFlightRef = useRef(false);
+  const formStartedRef = useRef(false);
+  const contextRef = useRef(DEFAULT_LEAD_CONTEXT);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const commentRef = useRef<HTMLTextAreaElement>(null);
-  const repairRef = useRef<HTMLInputElement>(null);
-  const consentRef = useRef<HTMLInputElement>(null);
+  const successRef = useRef<HTMLHeadingElement>(null);
   const pageOrigin = useSyncExternalStore(
     subscribeToPageOrigin,
     readBrowserPageOrigin,
     readServerPageOrigin,
+  );
+  const isOnline = useSyncExternalStore(
+    subscribeToOnline,
+    readBrowserOnline,
+    readServerOnline,
   );
   const policy = resolveLeadEndpoint({
     buildMode: process.env.NEXT_PUBLIC_BUILD_MODE,
     pageOrigin,
     previewApiOrigin: process.env.NEXT_PUBLIC_PREVIEW_API_ORIGIN,
   });
+
+  useEffect(() => {
+    const handleLeadContext = (event: Event) => {
+      if (submissionInFlightRef.current) {
+        return;
+      }
+
+      const nextContext = parseLeadContext((event as CustomEvent).detail);
+      if (nextContext === null) {
+        return;
+      }
+
+      contextRef.current = nextContext;
+      setValues((current) => ({ ...current, intent: nextContext.intent }));
+      setAttemptState((current) => markLeadFormEdited(current));
+      setErrors((current) => {
+        if (current.intent === undefined) {
+          return current;
+        }
+        const next = { ...current };
+        delete next.intent;
+        return next;
+      });
+      setFeedback(null);
+      setFailureCount(0);
+      setCooldownSeconds(0);
+    };
+
+    window.addEventListener('andrew:lead-context', handleLeadContext);
+    return () => {
+      window.removeEventListener('andrew:lead-context', handleLeadContext);
+    };
+  }, []);
 
   useEffect(() => {
     if (cooldownSeconds <= 0) {
@@ -119,11 +183,30 @@ export function LeadForm() {
     return () => window.clearInterval(timer);
   }, [cooldownSeconds]);
 
+  useEffect(() => {
+    if (feedback?.kind === 'accepted') {
+      successRef.current?.focus();
+    }
+  }, [feedback]);
+
+  const emitAnalytics = (
+    name: LeadAnalyticsEventName,
+    sourceSection = contextRef.current.sourceSection,
+  ) => dispatchLeadAnalytics(name, sourceSection);
+
   const formLocked =
     !policy.enabled || attemptState.inFlight || cooldownSeconds > 0;
   const mustEditBeforeSubmitting =
     feedback !== null && feedback.kind !== 'accepted' && !feedback.retryable;
   const submitDisabled = formLocked || mustEditBeforeSubmitting;
+
+  const beginForm = () => {
+    if (formStartedRef.current) {
+      return;
+    }
+    formStartedRef.current = true;
+    emitAnalytics('form_start');
+  };
 
   const updateValue = <Field extends keyof LeadFormValues>(
     field: Field,
@@ -133,6 +216,9 @@ export function LeadForm() {
       return;
     }
 
+    if (field !== 'website') {
+      beginForm();
+    }
     setValues((current) => ({ ...current, [field]: value }));
     setAttemptState((current) => markLeadFormEdited(current));
     setErrors((current) => {
@@ -145,6 +231,7 @@ export function LeadForm() {
       return next;
     });
     setFeedback(null);
+    setFailureCount(0);
   };
 
   const focusFirstError = (validationErrors: LeadValidationErrors) => {
@@ -155,17 +242,22 @@ export function LeadForm() {
       name: nameRef.current,
       phone: phoneRef.current,
       comment: commentRef.current,
-      intent: repairRef.current,
-      consent: consentRef.current,
     };
     controls[first ?? 'name']?.focus();
   };
 
-  const completeAttempt = (outcome: LeadResponseOutcome) => {
+  const completeAttempt = (
+    outcome: LeadResponseOutcome,
+    sourceSection: string,
+    analyticsEnabled: boolean,
+  ) => {
     setAttemptState((current) => {
       const finished = current.inFlight
         ? markLeadAttemptFinished(current)
         : current;
+      if (outcome.kind === 'accepted') {
+        return createLeadAttemptState();
+      }
       return outcome.invalidateAttempt
         ? invalidateLeadAttempt(finished)
         : finished;
@@ -179,7 +271,20 @@ export function LeadForm() {
     if (outcome.kind === 'accepted') {
       setValues(initialValues);
       setErrors({});
-      setAttemptState(createLeadAttemptState());
+      setFailureCount(0);
+      contextRef.current = DEFAULT_LEAD_CONTEXT;
+      formStartedRef.current = false;
+      if (analyticsEnabled) {
+        emitAnalytics('form_success', sourceSection);
+      }
+      return;
+    }
+
+    if (outcome.retryable) {
+      setFailureCount((count) => Math.min(2, count + 1));
+    }
+    if (analyticsEnabled) {
+      emitAnalytics('form_error', sourceSection);
     }
   };
 
@@ -193,14 +298,36 @@ export function LeadForm() {
     if (!validation.ok) {
       setErrors(validation.errors);
       setFeedback(null);
+      setFailureCount(0);
+      emitAnalytics('form_validation_error');
       focusFirstError(validation.errors);
       return;
+    }
+
+    const analyticsEnabled = !('website' in validation.draft);
+    const sourceSection = contextRef.current.sourceSection;
+    if (analyticsEnabled && feedback?.retryable) {
+      emitAnalytics('form_retry', sourceSection);
+    }
+    if (analyticsEnabled) {
+      emitAnalytics('form_submit', sourceSection);
     }
 
     setErrors({});
     const prepared = prepareLeadAttempt(attemptState, validation.draft, () =>
       crypto.randomUUID(),
     );
+
+    if (!isOnline) {
+      setAttemptState(prepared.state);
+      completeAttempt(
+        classifyLeadFailure('offline'),
+        sourceSection,
+        analyticsEnabled,
+      );
+      return;
+    }
+
     const started = markLeadAttemptStarted(prepared.state);
     submissionInFlightRef.current = true;
     setAttemptState(started);
@@ -209,7 +336,11 @@ export function LeadForm() {
     try {
       const result = await submitLeadAttempt(policy.endpoint, prepared.attempt);
       if (result.kind === 'response') {
-        completeAttempt(classifyLeadResponse(result.status, result.retryAfter));
+        completeAttempt(
+          classifyLeadResponse(result.status, result.retryAfter),
+          sourceSection,
+          analyticsEnabled,
+        );
         return;
       }
 
@@ -217,20 +348,69 @@ export function LeadForm() {
         classifyLeadFailure(
           result.kind === 'timeout' ? 'timeout' : 'network_error',
         ),
+        sourceSection,
+        analyticsEnabled,
       );
     } catch {
-      completeAttempt(classifyLeadFailure('network_error'));
+      completeAttempt(
+        classifyLeadFailure('network_error'),
+        sourceSection,
+        analyticsEnabled,
+      );
     } finally {
       submissionInFlightRef.current = false;
     }
   };
 
+  const resetAfterSuccess = () => {
+    setValues(initialValues);
+    setErrors({});
+    setAttemptState(createLeadAttemptState());
+    setFeedback(null);
+    setFailureCount(0);
+    setCooldownSeconds(0);
+    contextRef.current = DEFAULT_LEAD_CONTEXT;
+    formStartedRef.current = false;
+  };
+
+  if (feedback?.kind === 'accepted') {
+    return (
+      <section
+        aria-live="polite"
+        className="rounded-md border border-emerald-300/40 bg-emerald-950/30 p-5"
+        role="status"
+      >
+        <h3
+          aria-label="Заявка принята"
+          className="text-xl font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+          ref={successRef}
+          tabIndex={-1}
+        >
+          {SUCCESS_MESSAGE}
+        </h3>
+        <button
+          className="mt-5 min-h-12 rounded-md border border-white/25 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"
+          onClick={resetAfterSuccess}
+          type="button"
+        >
+          Оставить ещё одну заявку
+        </button>
+      </section>
+    );
+  }
+
   const statusMessage = (() => {
     if (!policy.enabled) {
-      return 'Отправка заявок в опубликованной демонстрации отключена.';
+      return 'Backend формы не подключён к этому предпросмотру.';
     }
     if (attemptState.inFlight) {
       return 'Отправляем заявку…';
+    }
+    if (!isOnline || feedback?.kind === 'offline') {
+      return OFFLINE_MESSAGE;
+    }
+    if (feedback?.retryable) {
+      return failureCount >= 2 ? SECOND_ERROR_MESSAGE : FIRST_ERROR_MESSAGE;
     }
     if (feedback !== null) {
       return feedback.message;
@@ -246,7 +426,7 @@ export function LeadForm() {
       return `Повторить через ${cooldownSeconds} с`;
     }
     if (feedback?.retryable) {
-      return 'Повторить отправку';
+      return 'Попробовать ещё раз';
     }
     return 'Отправить заявку';
   })();
@@ -254,11 +434,11 @@ export function LeadForm() {
   const nameError = errorMessage(errors, 'name');
   const phoneError = errorMessage(errors, 'phone');
   const commentError = errorMessage(errors, 'comment');
-  const intentError = errorMessage(errors, 'intent');
-  const consentError = errorMessage(errors, 'consent');
   const validationErrorMessages = fieldOrder
     .map((field) => errorMessage(errors, field))
     .filter((message): message is string => message !== undefined);
+  const showOfflineFallback = !isOnline || feedback?.kind === 'offline';
+  const showSecondErrorFallback = feedback?.retryable && failureCount >= 2;
 
   return (
     <form
@@ -270,7 +450,9 @@ export function LeadForm() {
       <div className="flex flex-col gap-2 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-xl font-semibold">Оставить заявку</h3>
         <PlaceholderBadge inverse>
-          {policy.enabled ? 'Локальный тестовый режим' : 'Отправка отключена'}
+          {policy.enabled
+            ? 'Подключение к форме активно'
+            : 'Backend формы не подключён'}
         </PlaceholderBadge>
       </div>
 
@@ -282,8 +464,8 @@ export function LeadForm() {
         >
           <p className="font-semibold">Исправьте отмеченные поля.</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            {validationErrorMessages.map((message) => (
-              <li key={message}>{message}</li>
+            {validationErrorMessages.map((message, index) => (
+              <li key={`${index}-${message}`}>{message}</li>
             ))}
           </ul>
         </div>
@@ -300,11 +482,11 @@ export function LeadForm() {
           <input
             aria-describedby={describedBy(nameError && 'lead-name-error')}
             aria-invalid={nameError !== undefined}
-            autoComplete="off"
-            className="mt-2 min-h-11 w-full rounded-md border border-white/15 bg-white/7 px-3 text-white placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+            autoComplete="name"
+            className="mt-2 min-h-12 w-full rounded-md border border-white/15 bg-white/7 px-3 text-white placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={formLocked}
             id="lead-name"
-            maxLength={100}
+            maxLength={50}
             name="name"
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
               updateValue('name', event.target.value)
@@ -316,7 +498,7 @@ export function LeadForm() {
           />
           {nameError === undefined ? null : (
             <span
-              className="mt-1 block text-xs font-normal text-red-200"
+              className="mt-1 block text-sm font-normal text-red-200"
               id="lead-name-error"
             >
               {nameError}
@@ -337,30 +519,30 @@ export function LeadForm() {
               phoneError && 'lead-phone-error',
             )}
             aria-invalid={phoneError !== undefined}
-            autoComplete="off"
-            className="mt-2 min-h-11 w-full rounded-md border border-white/15 bg-white/7 px-3 text-white placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+            autoComplete="tel"
+            className="mt-2 min-h-12 w-full rounded-md border border-white/15 bg-white/7 px-3 text-white placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={formLocked}
             id="lead-phone"
             inputMode="tel"
-            maxLength={32}
+            maxLength={18}
             name="phone"
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              updateValue('phone', event.target.value)
+              updateValue('phone', formatRussianPhoneInput(event.target.value))
             }
-            placeholder="Только синтетический номер"
+            placeholder="+7 (___) ___-__-__"
             ref={phoneRef}
             type="tel"
             value={values.phone}
           />
           <span
-            className="mt-1 block text-xs font-normal text-slate-400"
+            className="mt-1 block text-sm font-normal text-slate-400"
             id="lead-phone-hint"
           >
-            До подтверждения юридических текстов не вводите реальные данные.
+            Формат: +7 (999) 123-45-67.
           </span>
           {phoneError === undefined ? null : (
             <span
-              className="mt-1 block text-xs font-normal text-red-200"
+              className="mt-1 block text-sm font-normal text-red-200"
               id="lead-phone-error"
             >
               {phoneError}
@@ -374,7 +556,7 @@ export function LeadForm() {
           className="block text-sm font-semibold text-slate-200"
           htmlFor="lead-comment"
         >
-          Комментарий
+          Опишите неисправность
         </label>
         <textarea
           aria-describedby={describedBy(
@@ -390,19 +572,19 @@ export function LeadForm() {
           onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
             updateValue('comment', event.target.value)
           }
-          placeholder="Кратко опишите тестовый сценарий"
+          placeholder="Тип оборудования, симптомы и район выезда"
           ref={commentRef}
           value={values.comment}
         />
         <span
-          className="mt-1 block text-xs font-normal text-slate-400"
+          className="mt-1 block text-sm font-normal text-slate-400"
           id="lead-comment-hint"
         >
-          Необязательное поле, до 1000 символов.
+          Необязательное поле, от 10 до 1000 символов.
         </span>
         {commentError === undefined ? null : (
           <span
-            className="mt-1 block text-xs font-normal text-red-200"
+            className="mt-1 block text-sm font-normal text-red-200"
             id="lead-comment-error"
           >
             {commentError}
@@ -410,75 +592,12 @@ export function LeadForm() {
         )}
       </div>
 
-      <fieldset
-        aria-describedby={describedBy(intentError && 'lead-intent-error')}
-        aria-invalid={intentError !== undefined}
-        className="mt-4"
-        disabled={formLocked}
-      >
-        <legend className="text-sm font-semibold text-slate-200">
-          Тип обращения
-        </legend>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:gap-5">
-          <label className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-200">
-            <input
-              checked={values.intent === 'repair'}
-              className="h-4 w-4 accent-primary"
-              name="intent"
-              onChange={() => updateValue('intent', 'repair')}
-              ref={repairRef}
-              type="radio"
-              value="repair"
-            />
-            Ремонт
-          </label>
-          <label className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-200">
-            <input
-              checked={values.intent === 'maintenance'}
-              className="h-4 w-4 accent-primary"
-              name="intent"
-              onChange={() => updateValue('intent', 'maintenance')}
-              type="radio"
-              value="maintenance"
-            />
-            Плановое обслуживание
-          </label>
-        </div>
-        {intentError === undefined ? null : (
-          <p className="mt-1 text-xs text-red-200" id="lead-intent-error">
-            {intentError}
-          </p>
-        )}
-      </fieldset>
-
-      <label className="mt-4 flex items-start gap-3 text-xs leading-5 text-slate-300">
-        <input
-          aria-describedby={describedBy(
-            'lead-consent-hint',
-            consentError && 'lead-consent-error',
-          )}
-          aria-invalid={consentError !== undefined}
-          checked={values.consent}
-          className="mt-1 h-4 w-4 shrink-0 accent-primary"
-          disabled={formLocked}
-          name="consent"
-          onChange={(event) => updateValue('consent', event.target.checked)}
-          ref={consentRef}
-          type="checkbox"
-        />
-        <span id="lead-consent-hint">
-          Я явно соглашаюсь на обработку данных. Юридический текст уточняется.
-        </span>
-      </label>
-      {consentError === undefined ? null : (
-        <p className="mt-1 pl-7 text-xs text-red-200" id="lead-consent-error">
-          {consentError}
-        </p>
-      )}
+      <input name="intent" type="hidden" value={values.intent} />
 
       <div
         aria-hidden="true"
         className="fixed -left-[100vw] top-0 h-px w-px overflow-hidden"
+        hidden
       >
         <label htmlFor="lead-website">Website</label>
         <input
@@ -495,19 +614,65 @@ export function LeadForm() {
       </div>
 
       <button
-        className="mt-4 min-h-11 w-full rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={submitDisabled}
         type="submit"
       >
-        {buttonLabel}
+        {attemptState.inFlight ? (
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4 animate-spin motion-reduce:animate-none"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              strokeWidth="3"
+            />
+            <path
+              className="opacity-90"
+              d="M21 12a9 9 0 0 0-9-9"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="3"
+            />
+          </svg>
+        ) : null}
+        <span>{buttonLabel}</span>
       </button>
+      <p className="mt-3 text-sm leading-5 text-slate-300">
+        Нажимая «Отправить заявку», вы соглашаетесь на{' '}
+        <a
+          className="inline-flex min-h-11 items-center align-middle underline decoration-white/50 underline-offset-2 hover:decoration-white"
+          href="#personal-data"
+        >
+          обработку персональных данных
+        </a>{' '}
+        и принимаете{' '}
+        <a
+          className="inline-flex min-h-11 items-center align-middle underline decoration-white/50 underline-offset-2 hover:decoration-white"
+          href="#privacy-policy"
+        >
+          политику конфиденциальности
+        </a>
+        .
+      </p>
       <p
         aria-live="polite"
-        className="mt-3 text-xs leading-5 text-slate-300"
+        className="mt-3 text-sm leading-5 text-slate-300"
         role="status"
       >
         {statusMessage}
       </p>
+      {showOfflineFallback || showSecondErrorFallback ? (
+        <p className="mt-2 text-sm font-semibold text-white">
+          Телефон не опубликован
+        </p>
+      ) : null}
     </form>
   );
 }

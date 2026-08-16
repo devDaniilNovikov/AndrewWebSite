@@ -1,34 +1,58 @@
 import { describe, expect, it } from 'vitest';
-import { validateLeadForm } from '../lib/leads/validation';
+import {
+  formatRussianPhoneInput,
+  validateLeadForm,
+} from '../lib/leads/validation';
 import type { LeadFormValues } from '../lib/leads/domain-types';
 
 const validValues = (
   overrides: Partial<LeadFormValues> = {},
 ): LeadFormValues => ({
   name: '  Те\u0301ст  ',
-  phone: '  +0 (000) 000-00-00  ',
+  phone: '  89991234567  ',
   comment: '  Проверка формы  ',
   intent: 'repair',
-  consent: true,
   website: '',
   ...overrides,
 });
 
 describe('lead form validation', () => {
-  it('normalizes a legitimate lead without retaining an empty website field', () => {
+  it('normalizes a legitimate lead to the exact OpenAPI payload', () => {
     const result = validateLeadForm(validValues(), '/services/');
 
     expect(result).toEqual({
       ok: true,
       draft: {
         name: 'Те́ст'.normalize('NFC'),
-        phone: '+0 (000) 000-00-00',
+        phone: '+7 (999) 123-45-67',
         comment: 'Проверка формы',
         sourcePath: '/services/',
         intent: 'repair',
         consent: true,
       },
     });
+  });
+
+  it.each(['89991234567', '79991234567', '+79991234567', '+7 (999) 123-45-67'])(
+    'accepts and normalizes supported Russian phone input %j',
+    (phone) => {
+      const result = validateLeadForm(validValues({ phone }), '/');
+
+      expect(result).toMatchObject({
+        ok: true,
+        draft: { phone: '+7 (999) 123-45-67' },
+      });
+    },
+  );
+
+  it.each([
+    ['8', '+7'],
+    ['8999', '+7 (999)'],
+    ['7999123', '+7 (999) 123'],
+    ['+79991234567', '+7 (999) 123-45-67'],
+    ['799912345678', '799912345678'],
+  ])('applies the visible phone mask to %j', (input, expected) => {
+    expect(formatRussianPhoneInput(input)).toBe(expected);
   });
 
   it('omits a blank optional comment', () => {
@@ -50,7 +74,6 @@ describe('lead form validation', () => {
         name: '',
         phone: '',
         comment: 'must not be retained',
-        consent: false,
         website: 'bot-marker',
       }),
       'not-a-path',
@@ -64,9 +87,8 @@ describe('lead form validation', () => {
       validValues({
         name: 'x',
         phone: '+0 script',
-        comment: 'x'.repeat(1001),
+        comment: 'short',
         intent: 'invalid' as LeadFormValues['intent'],
-        consent: false,
       }),
       '/safe?query=forbidden',
     );
@@ -78,11 +100,32 @@ describe('lead form validation', () => {
         phone: 'phone_format',
         comment: 'comment_length',
         intent: 'intent_invalid',
-        consent: 'consent_required',
         sourcePath: 'source_path_invalid',
       },
     });
   });
+
+  it.each([
+    ['', 'name_required'],
+    ['x', 'name_length'],
+    ['x'.repeat(51), 'name_length'],
+  ] as const)('enforces the required 2-50 character name %j', (name, code) => {
+    const result = validateLeadForm(validValues({ name }), '/');
+
+    expect(result).toMatchObject({ ok: false, errors: { name: code } });
+  });
+
+  it.each(['short', 'x'.repeat(1001)])(
+    'rejects a non-empty comment outside 10-1000 characters',
+    (comment) => {
+      const result = validateLeadForm(validValues({ comment }), '/');
+
+      expect(result).toMatchObject({
+        ok: false,
+        errors: { comment: 'comment_length' },
+      });
+    },
+  );
 
   it.each([
     '',
@@ -91,8 +134,8 @@ describe('lead form validation', () => {
     '/safe#fragment',
     '/safe\\path',
     '/safe/../escape',
-    `/safe/${String.fromCharCode(1)}`,
-    `/${'x'.repeat(2048)}`,
+    '/safe/' + String.fromCharCode(1),
+    '/' + 'x'.repeat(2048),
   ])('rejects unsafe source path %j', (sourcePath) => {
     const result = validateLeadForm(validValues(), sourcePath);
 
@@ -103,13 +146,17 @@ describe('lead form validation', () => {
   });
 
   it.each([
-    ['000000', 'phone_length'],
-    ['0000000000000000', 'phone_length'],
-    ['000-000-A', 'phone_format'],
-    ['+'.repeat(33), 'phone_length'],
-  ] as const)('rejects invalid phone %j', (phone, code) => {
+    '8999123456',
+    '799912345678',
+    '+69991234567',
+    '9991234567',
+    '8 999 123 AB 67',
+  ])('rejects unsupported phone %j', (phone) => {
     const result = validateLeadForm(validValues({ phone }), '/');
 
-    expect(result).toMatchObject({ ok: false, errors: { phone: code } });
+    expect(result).toMatchObject({
+      ok: false,
+      errors: { phone: 'phone_format' },
+    });
   });
 });

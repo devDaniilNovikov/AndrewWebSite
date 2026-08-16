@@ -50,7 +50,7 @@ describe('provisional product page registry', () => {
       expect(createProductPageMetadata(page)).toMatchObject({
         description: page.description,
         robots: { follow: false, index: false },
-        title: `${page.title} — демонстрация`,
+        title: `${page.title} — предварительная версия`,
       });
     }
   });
@@ -63,7 +63,29 @@ describe('provisional product page registry', () => {
     );
     expect(serializedRegistry).not.toMatch(/\d[\d\s.,]*(?:₽|руб(?:\.|лей)?)/iu);
     expect(serializedRegistry).not.toContain('Москва');
+    expect(serializedRegistry).not.toMatch(
+      /(?:Телефон будет добавлен|Регион(?: выезда)? уточняется|Цена уточняется|Отправка отключена)/iu,
+    );
     expect(serializedRegistry).toContain('уточняется');
+  });
+
+  it('routes product-page request links through the shared lead context contract', () => {
+    const page = getProductPage('/uslugi');
+    const { container } = render(<ProvisionalProductPage page={page} />);
+    const view = within(container);
+
+    expect(
+      container.querySelector('[data-lead-source="product-uslugi-hero"]'),
+    ).toHaveAttribute('data-lead-intent', 'repair');
+
+    const maintenanceCta = view.getByRole('link', {
+      name: 'Обсудить обслуживание',
+    });
+    expect(maintenanceCta).toHaveAttribute(
+      'data-lead-source',
+      'product-services-maintenance',
+    );
+    expect(maintenanceCta).toHaveAttribute('data-lead-intent', 'maintenance');
   });
 
   it('marks works, prices, and company details as provisional', () => {
@@ -92,15 +114,18 @@ describe('ProvisionalProductPage', () => {
         page.title,
       );
       expect(
-        view.getAllByText(/Демонстрационная версия/iu).length,
+        view.getAllByText(/Предпубликационная версия/iu).length,
       ).toBeGreaterThan(0);
       expect(view.getAllByText(page.mediaLabel).length).toBeGreaterThan(0);
       expect(
-        view.getAllByText('Телефон будет добавлен').length,
+        view.getAllByText('Телефон не опубликован').length,
       ).toBeGreaterThan(0);
       expect(
-        view.getAllByText('Название компании уточняется').length,
-      ).toBeGreaterThan(0);
+        view.queryByText('Телефон будет добавлен'),
+      ).not.toBeInTheDocument();
+      expect(
+        view.queryByText('Название компании уточняется'),
+      ).not.toBeInTheDocument();
       expect(
         container.querySelectorAll('[data-media-slot="placeholder"]'),
       ).not.toHaveLength(0);

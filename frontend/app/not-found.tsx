@@ -9,7 +9,7 @@ export default function NotFound() {
         </p>
         <h1 className="mt-4 text-4xl font-semibold">Страница не найдена</h1>
         <p className="mt-4 max-w-xl text-base text-slate-700">
-          Такого маршрута нет в демонстрационной версии сайта.
+          Такого маршрута нет в текущей версии сайта.
         </p>
         <Link
           className="mt-8 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"

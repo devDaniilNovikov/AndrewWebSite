@@ -23,6 +23,8 @@ export type ProductPageItem = Readonly<{
   status: ContentStatus;
   href?: PreviewHref;
   linkLabel?: string;
+  intent?: 'maintenance' | 'repair';
+  sourceSection?: string;
 }>;
 
 export type ProductPageSection = Readonly<{
@@ -47,8 +49,8 @@ export const productPageRoutes = [
     path: '/uslugi',
     title: 'Услуги',
     description:
-      'Демонстрационная структура направлений ремонта и обслуживания коммерческого холодильного оборудования.',
-    eyebrow: 'Регион выезда уточняется',
+      'Предварительная структура направлений ремонта и обслуживания коммерческого холодильного оборудования.',
+    eyebrow: 'Регион обслуживания не опубликован',
     mediaIcon: 'wrench',
     mediaLabel: 'Фото услуги будет добавлено',
     sections: [
@@ -79,8 +81,10 @@ export const productPageRoutes = [
             title: 'Плановое обслуживание',
             text: 'Обсуждение регулярного обслуживания объектов через общую форму.',
             status: 'confirmed',
-            href: '#contact',
+            href: '#request',
             linkLabel: 'Обсудить обслуживание',
+            intent: 'maintenance',
+            sourceSection: 'product-services-maintenance',
           },
         ],
       },
@@ -246,7 +250,7 @@ export const productPageRoutes = [
     path: '/o-kompanii',
     title: 'О компании',
     description:
-      'Демонстрационная страница команды мастеров без вымышленных имён, стажа, реквизитов или фотографий.',
+      'Предварительная страница команды мастеров без вымышленных имён, стажа, реквизитов или фотографий.',
     eyebrow: 'Команда будет добавлена',
     mediaIcon: 'team',
     mediaLabel: 'Фото команды будет добавлено',
@@ -372,7 +376,7 @@ export const productPageRoutes = [
     path: '/tseny',
     title: 'Цены',
     description:
-      'Демонстрационная структура прайса без неподтверждённых сумм, условий диагностики или гарантий.',
+      'Предварительная структура прайса без неподтверждённых сумм, условий диагностики или гарантий.',
     eyebrow: 'Прайс требует подтверждения',
     mediaIcon: 'clipboard',
     mediaLabel: 'Иллюстрация прайса будет добавлена',
@@ -392,13 +396,13 @@ export const productPageRoutes = [
           {
             icon: 'store',
             title: 'Ремонт торгового оборудования',
-            text: 'Цена уточняется после диагностики и проверки прайса.',
+            text: 'Стоимость определяется после диагностики и проверки прайса.',
             status: 'placeholder',
           },
           {
             icon: 'ice',
             title: 'Ремонт ледогенераторов',
-            text: 'Цена уточняется после подтверждения условий.',
+            text: 'Стоимость определяется после подтверждения условий.',
             status: 'placeholder',
           },
           {
@@ -444,7 +448,7 @@ export const productPageRoutes = [
       'Предварительная контактная страница: регион, телефон, часы и реквизиты остаются плейсхолдерами.',
     eyebrow: 'Связь с командой',
     mediaIcon: 'phone',
-    mediaLabel: 'Контактная фотография будет добавлена',
+    mediaLabel: 'Контактное изображение не опубликовано',
     sections: [
       {
         title: 'Контактные сведения',
@@ -455,13 +459,13 @@ export const productPageRoutes = [
           {
             icon: 'phone',
             title: 'Телефон',
-            text: 'Телефон будет добавлен.',
+            text: 'Телефон не опубликован.',
             status: 'placeholder',
           },
           {
             icon: 'building',
             title: 'Регион',
-            text: 'Регион выезда уточняется.',
+            text: 'Регион выезда не опубликован.',
             status: 'placeholder',
           },
           {
@@ -493,10 +497,12 @@ export const productPageRoutes = [
           {
             icon: 'message',
             title: 'Форма заявки',
-            text: 'В опубликованном preview отправка отключена; локально допустимы только синтетические данные.',
+            text: 'Форма принимает заявки после подключения backend; локально допустимы только синтетические данные.',
             status: 'confirmed',
-            href: '#contact',
+            href: '#request',
             linkLabel: 'Перейти к форме',
+            intent: 'repair',
+            sourceSection: 'product-contacts-form',
           },
         ],
       },
@@ -518,7 +524,7 @@ export function createProductPageMetadata(
   page: ProductPageDefinition,
 ): Metadata {
   return {
-    title: `${page.title} — демонстрация`,
+    title: `${page.title} — предварительная версия`,
     description: page.description,
     robots: {
       index: false,

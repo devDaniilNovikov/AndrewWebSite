@@ -5,7 +5,7 @@ import { submitLeadAttempt } from '../lib/leads/transport';
 const payload = Object.freeze({
   requestId: '11111111-1111-4111-8111-111111111111',
   name: 'Тест',
-  phone: '0000000',
+  phone: '+7 (999) 123-45-67',
   sourcePath: '/',
   intent: 'repair' as const,
   consent: true as const,

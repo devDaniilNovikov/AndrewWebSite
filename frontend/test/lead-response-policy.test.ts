@@ -7,12 +7,17 @@ import {
 
 describe('lead response policy', () => {
   it.each([
+    [200, 'accepted', false, false],
     [202, 'accepted', false, false],
+    [204, 'accepted', false, false],
+    [299, 'accepted', false, false],
     [400, 'invalid_request', false, false],
     [409, 'conflict', true, true],
     [413, 'invalid_request', false, false],
     [415, 'unsupported_media_type', false, false],
     [503, 'unavailable', true, false],
+    [500, 'unavailable', true, false],
+    [599, 'unavailable', true, false],
     [418, 'unexpected', false, false],
   ] as const)(
     'maps HTTP %i to a fixed PII-free outcome',
@@ -34,7 +39,7 @@ describe('lead response policy', () => {
     });
   });
 
-  it.each(['network_error', 'timeout'] as const)(
+  it.each(['network_error', 'timeout', 'offline'] as const)(
     'keeps an unchanged attempt retryable after %s',
     (kind) => {
       expect(classifyLeadFailure(kind)).toMatchObject({

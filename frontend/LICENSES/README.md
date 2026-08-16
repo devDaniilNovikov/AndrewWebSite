@@ -14,3 +14,10 @@ generated with FontTools 4.59.0 without modifying the font software name.
 
 Inter is distributed under the SIL Open Font License 1.1. The complete
 license and attribution are recorded in `Inter-OFL-1.1.txt`.
+
+Headings use Manrope Variable from the exact
+`@fontsource-variable/manrope@5.3.0` package. Its unicode-range declarations
+let browsers fetch only the Cyrillic and Latin variable subsets needed by the
+page, with `font-display: swap`; no remote font request is made. Manrope is
+also distributed under the SIL Open Font License 1.1, included by the pinned
+package and covered by the repository's OFL notice.

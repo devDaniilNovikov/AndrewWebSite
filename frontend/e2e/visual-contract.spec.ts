@@ -11,8 +11,7 @@ const SECTION_ORDER = [
   'process',
   'about',
   'maintenance',
-  'reviews',
-  'contact',
+  'request',
 ] as const;
 
 test('enforces the behavior-based responsive visual contract', async ({
