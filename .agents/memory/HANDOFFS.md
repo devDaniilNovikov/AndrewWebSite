@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-mobile-navigation-scroll` | `2026-08-08-060621-fix-mobile-navigation-scroll-handoff.md` → `2026-08-08-062129-fix-mobile-navigation-scroll-draft-handoff.md` → `2026-08-08-063036-fix-mobile-navigation-scroll-ready-handoff.md` | Ready and squash-merge authorized for PR #69; exact-head checks required after metadata push | frontend, accessibility, testing, security, tracker, incident |
+| `fix-frontend-tz-preview` | `2026-08-16-074143-fix-frontend-tz-preview-draft-handoff.md` | Draft publication, Ready transition, required CI, and squash merge explicitly authorized; PR pending | frontend, design, accessibility, privacy, testing, standalone-export |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -62,6 +62,7 @@ design.
 | `task-frontend-openapi-ci-path` | 1 | `2026-08-02-081723-task-frontend-openapi-ci-path-draft-handoff.md` | merged as `1372bbd`; Issue #65 closed; native Jules branch retained; post-merge CI, Dependency Submission, and Semgrep green; no deployment | frontend, ci, openapi, testing, incident, tracker |
 | `task-frontend-quality-hardening` | 3 | `2026-08-02-114416-task-frontend-quality-hardening-ready-handoff.md` | merged as `6511017`; source branch retained; post-merge CI, Dependency Submission and Semgrep green; no deployment | frontend, performance, accessibility, testing, security, tracker |
 | `task-frontend-product-pages` | 3 | `2026-08-02-145524-task-frontend-product-pages-ready-handoff.md` | merged as `25ce867`; source branch retained; post-merge CI/security green; no deployment | frontend, product, accessibility, testing, security, tracker |
+| `fix-mobile-navigation-scroll` | 3 | `2026-08-08-063036-fix-mobile-navigation-scroll-ready-handoff.md` | merged as `172d20f`; source branch retained; no deployment | frontend, accessibility, testing, security, tracker, incident |
 
 ## Rules
 
