@@ -273,6 +273,28 @@ class TelegramRestClientGatewayTest {
     }
 
     @Test
+    void stripsPreconfiguredInterceptorsFromCredentialBearingClient() {
+        var interceptorInvoked = new AtomicBoolean();
+        RestClient.Builder instrumentedBuilder = RestClient.builder()
+                .requestInterceptor((request, body, execution) -> {
+                    interceptorInvoked.set(true);
+                    return execution.execute(request, body);
+                });
+        MockRestServiceServer instrumentedServer =
+                MockRestServiceServer.bindTo(instrumentedBuilder).build();
+        TelegramRestClientGateway instrumentedGateway =
+                gateway(instrumentedBuilder);
+        instrumentedServer.expect(once(), requestTo(BOT_ENDPOINT))
+                .andRespond(withStatus(HttpStatus.OK));
+
+        assertThat(instrumentedGateway.send(message(), DELIVERY_DEADLINE))
+                .isEqualTo(new TelegramDeliveryResult.Delivered());
+
+        assertThat(interceptorInvoked).isFalse();
+        instrumentedServer.verify();
+    }
+
+    @Test
     void networkFailureDoesNotReachObservationHandlersAsTokenBearingError() {
         var meters = new SimpleMeterRegistry();
         var observations = ObservationRegistry.create();

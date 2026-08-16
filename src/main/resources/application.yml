@@ -93,5 +93,43 @@ management:
           include: livenessState
         readiness:
           include: readinessState,dbReadiness,telegramWorkerReadiness
+sentry:
+  enabled: false
+  debug: false
+  enable-external-configuration: false
+  enable-spotlight: false
+  enable-pretty-serialization-output: false
+  use-git-commit-id-as-release: false
+  send-modules: false
+  attach-stacktrace: false
+  attach-threads: false
+  print-uncaught-stack-trace: false
+  send-client-reports: false
+  enable-auto-session-tracking: false
+  capture-open-telemetry-events: false
+  enable-database-transaction-tracing: false
+  enable-cache-tracing: false
+  enable-queue-tracing: false
+  trace-options-requests: false
+  propagate-traceparent: false
+  trace-propagation-targets: []
+  max-feature-flags: 0
+  sample-rate: 1.0
+  send-default-pii: false
+  max-request-body-size: none
+  max-breadcrumbs: 0
+  strict-trace-continuation: true
+  traces-sample-rate: 0.0
+  profile-session-sample-rate: 0.0
+  enable-app-start-profiling: false
+  start-profiler-on-app-start: false
+  enable-legacy-profiling: false
+  profile-lifecycle: TRACE
+  logs:
+    enabled: false
+  logging:
+    enabled: false
+  metrics:
+    enabled: false
 server:
   forward-headers-strategy: none

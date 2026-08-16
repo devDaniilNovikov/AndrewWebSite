@@ -1,5 +1,6 @@
 package ru.andrew.website;
 
+import java.util.function.IntConsumer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -10,12 +11,23 @@ import ru.andrew.website.common.ProductionStartupFailureReporter;
 @ConfigurationPropertiesScan
 public class AndrewWebsiteApplication {
     public static void main(String[] args) {
+        main(args, System::exit);
+    }
+
+    static void main(String[] args, IntConsumer processTerminator) {
         SpringApplication application =
                 new SpringApplication(AndrewWebsiteApplication.class);
         ProductionStartupFailureReporter failureReporter =
                 new ProductionStartupFailureReporter();
         application.addListeners(failureReporter);
-        run(application, failureReporter, args);
+        try {
+            run(application, failureReporter, args);
+        } catch (RuntimeException | Error failure) {
+            if (failureReporter.isProductionFailureReportingEnabled()) {
+                processTerminator.accept(1);
+            }
+            throw failure;
+        }
     }
 
     static ConfigurableApplicationContext run(

@@ -2,4 +2,5 @@ org.springframework.boot.EnvironmentPostProcessor=\
 ru.andrew.website.common.RuntimeProfileGuard,\
 ru.andrew.website.leads.LeadFingerprintKeyProfileGuard,\
 ru.andrew.website.web.ProductionHttpInvariantGuard,\
-ru.andrew.website.observability.ProductionOtlpInvariantGuard
+ru.andrew.website.observability.ProductionOtlpInvariantGuard,\
+ru.andrew.website.observability.SentryInvariantGuard

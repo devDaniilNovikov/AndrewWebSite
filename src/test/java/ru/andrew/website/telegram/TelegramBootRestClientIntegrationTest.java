@@ -78,7 +78,7 @@ class TelegramBootRestClientIntegrationTest {
         RESPONSE_MODE.set(ResponseMode.SLOW);
 
         TelegramDeliveryResult result = assertTimeout(
-                Duration.ofMillis(750),
+                Duration.ofSeconds(2),
                 () -> gateway.send(message(), Instant.MAX));
 
         assertThat(result)

@@ -8,6 +8,7 @@ on:
       - main
       - "task-*"
       - "fix-*"
+      - "integration-sentry"
   workflow_dispatch:
 
 permissions:
@@ -38,7 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           allowed='^(main|task-[a-z0-9][a-z0-9-]*|fix-[a-z0-9][a-z0-9-]*)$'
-          if [[ ! "$BRANCH_NAME" =~ $allowed ]]; then
+          if [[ "$BRANCH_NAME" != "integration-sentry" && ! "$BRANCH_NAME" =~ $allowed ]]; then
             echo "Unsupported branch name: $BRANCH_NAME" >&2
             exit 1
           fi

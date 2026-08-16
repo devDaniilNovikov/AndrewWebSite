@@ -22,6 +22,8 @@ class ProductionStartupFailureLoggingTest {
                     "fictional-db-user",
                     "fictional-db-password",
                     "fictional-startup-authorization",
+                    "publickey",
+                    "ingest.sentry.io",
                     "UnknownHostException",
                     "error.message",
                     "stack_trace",
@@ -162,6 +164,7 @@ class ProductionStartupFailureLoggingTest {
         List<String> command = Stream.concat(
                         Stream.of(
                                 java,
+                                "--enable-native-access=ALL-UNNAMED",
                                 "-cp",
                                 classpath,
                                 "ru.andrew.website"
@@ -186,7 +189,11 @@ class ProductionStartupFailureLoggingTest {
                 "OTLP_METRICS_URL",
                 "https://collector.invalid/v1/metrics",
                 "OTLP_AUTHORIZATION",
-                "Bearer fictional-startup-authorization"));
+                "Bearer fictional-startup-authorization",
+                "SENTRY_DSN",
+                "https://publickey@o1.ingest.sentry.io/1",
+                "TEST_SENTRY_CAPTURE_TRANSPORT",
+                "true"));
         return builder;
     }
 }
