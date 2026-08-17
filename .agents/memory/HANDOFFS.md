@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-security-audit-findings` | `2026-08-17-155333-fix-security-audit-findings-handoff.md` → `2026-08-17-170456-fix-security-audit-findings-draft-handoff.md` | Local implementation and review gates green; authorized Draft publication pending | backend, frontend, container, ci, security |
+| `fix-security-audit-findings` | `2026-08-17-155333-fix-security-audit-findings-handoff.md` → `2026-08-17-170456-fix-security-audit-findings-draft-handoff.md` → `2026-08-17-171857-fix-security-audit-findings-ready-handoff.md` | Exact Draft checkpoint `5c60330` reviewed and green; Ready metadata successor pending publication | backend, frontend, container, ci, security |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
