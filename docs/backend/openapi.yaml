@@ -1,10 +1,10 @@
 openapi: 3.1.1
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 info:
-  title: AndrewWebSite Public Backend API
+  title: AndrewWebSite Public and Operational Backend API
   version: 1.0.0
   description: >-
-    Executable public contract for durable lead intake and minimal health probes.
+    Executable contract for public durable lead intake and private minimal health probes.
     Static pages are packaged with the application but are not API operations.
     No login, administration, environment, configuration, shutdown, heap, or raw
     metrics endpoint is public.
@@ -16,7 +16,7 @@ tags:
   - name: Leads
     description: Anonymous, rate-limited durable lead intake.
   - name: Health
-    description: Anonymous minimal liveness and readiness probes.
+    description: Minimal liveness and readiness probes on the loopback management listener.
 paths:
   /api/leads:
     post:
@@ -24,11 +24,13 @@ paths:
       operationId: submitLead
       summary: Accept a lead for durable asynchronous delivery
       description: >-
-        Accepts JSON bodies up to 16 KiB. A bounded rolling global window admits
+        Before media or body processing, a coarse per-instance rolling perimeter
+        admits at most 10,000 requests across every public method and path in each
+        minute. After the body boundary, a lead-only rolling global window admits
         at most 60 requests in every half-open interval (t - 60 seconds, t], and a
-        separate bounded per-connection-address bucket has burst 5 and refills 1
-        token per minute. Forwarded client headers
-        are ignored until Timeweb proxy CIDRs are verified. The empty 202 response
+        separate bounded per-connection-address lead bucket has burst 5 and refills
+        1 token per minute. Forwarded client headers are ignored until Timeweb proxy
+        CIDRs are verified. The empty 202 response
         deliberately does not reveal whether the request was newly committed,
         idempotently accepted, safely accepted after fingerprint retention, or
         synthetically accepted. A honeypot request needs only a non-empty `website`;
@@ -92,8 +94,9 @@ paths:
       operationId: getLiveness
       summary: Dependency-free process liveness
       description: >-
-        Uses only application liveness state. It never probes PostgreSQL,
-        Telegram, OTLP, the outbox worker, or the retention worker.
+        Available in production only on 127.0.0.1:8081. Uses only application
+        liveness state. It never probes PostgreSQL, Telegram, OTLP, the outbox
+        worker, or the retention worker.
       responses:
         '200':
           description: The process is live.
@@ -123,11 +126,12 @@ paths:
       operationId: getReadiness
       summary: Minimal dependency and worker readiness
       description: >-
-        Returns UP only when PostgreSQL is available and the outbox worker has
-        completed a successful poll in the last 45 seconds, after a 45-second
-        startup grace. A successful poll finishes its full batch and durably
-        records every delivery decision; exceptions and failed state writes do
-        not advance the heartbeat. It never discloses which dependency is degraded.
+        Available in production only on 127.0.0.1:8081. Returns UP only when
+        PostgreSQL is available and the outbox worker has completed a successful
+        poll in the last 45 seconds, after a 45-second startup grace. A successful
+        poll finishes its full batch and durably records every delivery decision;
+        exceptions and failed state writes do not advance the heartbeat. It never
+        discloses which dependency is degraded.
       responses:
         '200':
           description: The application is ready to accept lead traffic.
@@ -373,7 +377,9 @@ components:
             detail: This endpoint accepts application/json only.
             instance: /api/leads
     RateLimitExceeded:
-      description: The rolling global window is full or the connection-address token bucket has no token available.
+      description: >-
+        The coarse public perimeter is full, the lead-only rolling global window
+        is full, or the connection-address lead bucket has no token available.
       headers:
         Retry-After:
           $ref: '#/components/headers/RetryAfter'
@@ -381,12 +387,23 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
-          example:
-            type: urn:andrew:problem:rate-limit-exceeded
-            title: Too many requests
-            status: 429
-            detail: Wait before submitting another request.
-            instance: /api/leads
+          examples:
+            lead:
+              summary: Lead submission gate exhausted
+              value:
+                type: urn:andrew:problem:rate-limit-exceeded
+                title: Too many requests
+                status: 429
+                detail: Wait before submitting another request.
+                instance: /api/leads
+            perimeter:
+              summary: Coarse public perimeter exhausted
+              value:
+                type: urn:andrew:problem:perimeter-rate-limit-exceeded
+                title: Too many requests
+                status: 429
+                detail: Wait before retrying.
+                instance: /
     ServiceUnavailable:
       description: Durable acceptance cannot be completed because PostgreSQL is unavailable.
       content:

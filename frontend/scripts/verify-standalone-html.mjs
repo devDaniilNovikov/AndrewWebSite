@@ -14,8 +14,21 @@ const context = await browser.newContext({
 const page = await context.newPage();
 page.setDefaultTimeout(5_000);
 const consoleErrors = [];
+const contentSecurityPolicyViolations = [];
 const failedRequests = [];
 const externalRequests = [];
+
+await page.exposeFunction('recordAndrewCspViolation', (violation) => {
+  contentSecurityPolicyViolations.push(violation);
+});
+await page.addInitScript(() => {
+  document.addEventListener('securitypolicyviolation', (event) => {
+    window.recordAndrewCspViolation({
+      blockedUri: event.blockedURI,
+      directive: event.effectiveDirective,
+    });
+  });
+});
 
 await page.route('**/*', async (route) => {
   const url = route.request().url();
@@ -111,13 +124,17 @@ try {
     consoleErrors.length === 0,
     `Standalone file logged browser errors: ${consoleErrors.join(' | ')}`,
   );
+  assert(
+    contentSecurityPolicyViolations.length === 0,
+    `Standalone file violated CSP: ${JSON.stringify(contentSecurityPolicyViolations)}`,
+  );
 
   process.stdout.write(
     `Standalone file verified through file:// (${inputPath})\n`,
   );
 } catch (error) {
   process.stderr.write(
-    `${JSON.stringify({ consoleErrors, externalRequests, failedRequests }, null, 2)}\n`,
+    `${JSON.stringify({ consoleErrors, contentSecurityPolicyViolations, externalRequests, failedRequests }, null, 2)}\n`,
   );
   throw error;
 } finally {

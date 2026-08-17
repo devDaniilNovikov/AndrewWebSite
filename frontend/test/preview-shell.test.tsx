@@ -169,13 +169,33 @@ describe('PreviewShell', () => {
     const drawer = screen.getByRole('dialog', { name: 'Мобильная навигация' });
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(drawer).toHaveAttribute('open');
-    expect(document.body).toHaveStyle({ overflow: 'hidden' });
+    expect(document.body).toHaveClass('andrew-scroll-locked');
 
     fireEvent.keyDown(drawer, { key: 'Escape' });
 
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(document.body).not.toHaveStyle({ overflow: 'hidden' });
+    expect(document.body).not.toHaveClass('andrew-scroll-locked');
     expect(trigger).toHaveFocus();
+  });
+
+  it('preserves a body scroll lock owned outside the mobile drawer', () => {
+    document.body.classList.add('andrew-scroll-locked');
+
+    try {
+      render(<PreviewShell />);
+
+      const trigger = screen.getByRole('button', { name: 'Открыть меню' });
+      fireEvent.click(trigger);
+      const drawer = screen.getByRole('dialog', {
+        name: 'Мобильная навигация',
+      });
+      fireEvent.keyDown(drawer, { key: 'Escape' });
+
+      expect(drawer).not.toHaveAttribute('open');
+      expect(document.body).toHaveClass('andrew-scroll-locked');
+    } finally {
+      document.body.classList.remove('andrew-scroll-locked');
+    }
   });
 
   it('does not restore trigger focus when a drawer link controls scrolling', () => {
@@ -194,9 +214,11 @@ describe('PreviewShell', () => {
   });
 
   it('uses explicit same-page anchor scrolling from the mobile drawer', () => {
-    const scrollOverflowStates: string[] = [];
+    const scrollLockStates: boolean[] = [];
     const scrollIntoView = vi.fn(() => {
-      scrollOverflowStates.push(document.body.style.overflow);
+      scrollLockStates.push(
+        document.body.classList.contains('andrew-scroll-locked'),
+      );
     });
     const originalClose = HTMLDialogElement.prototype.close;
     const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
@@ -226,8 +248,8 @@ describe('PreviewShell', () => {
         behavior: 'auto',
         block: 'start',
       });
-      expect(scrollOverflowStates).toEqual(['']);
-      expect(document.body).not.toHaveStyle({ overflow: 'hidden' });
+      expect(scrollLockStates).toEqual([false]);
+      expect(document.body).not.toHaveClass('andrew-scroll-locked');
     } finally {
       Object.defineProperty(HTMLDialogElement.prototype, 'close', {
         configurable: true,

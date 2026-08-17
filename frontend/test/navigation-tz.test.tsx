@@ -375,9 +375,8 @@ describe('MobileStickyCta', () => {
     });
     expect(stickyCta).toHaveAttribute('href', '#request');
     expect(stickyCta).toHaveClass('min-h-12');
-    expect(stickyCta.parentElement?.getAttribute('style')).toContain(
-      'env(safe-area-inset-bottom)',
-    );
+    expect(stickyCta.parentElement).toHaveClass('mobile-sticky-safe-area');
+    expect(stickyCta.parentElement).not.toHaveAttribute('style');
 
     act(() => {
       observer.trigger(request, {

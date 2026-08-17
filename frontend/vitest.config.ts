@@ -13,6 +13,7 @@ export default defineConfig({
       include: [
         'components/**/*.tsx',
         'lib/leads/**/*.ts',
+        'scripts/lib/content-security-policy.mjs',
         'scripts/lib/lighthouse-runner.mjs',
         'scripts/lib/preview-api-origin.mjs',
         'scripts/lib/production-readiness.mjs',

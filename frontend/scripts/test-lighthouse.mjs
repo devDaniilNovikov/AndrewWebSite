@@ -69,13 +69,47 @@ async function resolveStaticFile(pathname) {
   }
 }
 
+async function loadContentSecurityPolicies() {
+  const config = JSON.parse(
+    await readFile(resolve(outputDirectory, 'serve.json'), 'utf8'),
+  );
+  if (!Array.isArray(config.headers)) {
+    throw new Error('Static export CSP configuration is missing header rules.');
+  }
+
+  return new Map(
+    config.headers.map((rule) => {
+      const header = rule.headers?.find(
+        ({ key }) => key.toLowerCase() === 'content-security-policy',
+      );
+      if (
+        typeof rule.source !== 'string' ||
+        typeof header?.value !== 'string'
+      ) {
+        throw new Error('Static export CSP header rule is malformed.');
+      }
+      return [rule.source, header.value];
+    }),
+  );
+}
+
 async function startStaticServer() {
+  const contentSecurityPolicies = await loadContentSecurityPolicies();
   const server = createServer(async (request, response) => {
     try {
       const requestUrl = new URL(request.url ?? '/', 'http://127.0.0.1');
       const requestedFile = await resolveStaticFile(requestUrl.pathname);
       const filePath = requestedFile ?? resolve(outputDirectory, '404.html');
       const fileExtension = extname(filePath);
+      const relativeFilePath = relative(outputDirectory, filePath).replaceAll(
+        '\\',
+        '/',
+      );
+      const contentSecurityPolicy =
+        contentSecurityPolicies.get(relativeFilePath);
+      if (fileExtension === '.html' && contentSecurityPolicy === undefined) {
+        throw new Error(`Missing CSP header for ${relativeFilePath}.`);
+      }
       const sourceBody = await readFile(filePath);
       const useGzip = shouldGzipStaticResponse(
         fileExtension,
@@ -87,6 +121,9 @@ async function startStaticServer() {
         'Cache-Control': requestUrl.pathname.startsWith('/_next/static/')
           ? 'public, max-age=31536000, immutable'
           : 'no-store',
+        ...(contentSecurityPolicy
+          ? { 'Content-Security-Policy': contentSecurityPolicy }
+          : {}),
         ...(useGzip
           ? { 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' }
           : {}),

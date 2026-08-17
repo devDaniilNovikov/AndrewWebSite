@@ -7,20 +7,24 @@ import {
 } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  injectStandaloneContentSecurityPolicy,
+  OFFLINE_STANDALONE_ARTIFACT_PATH,
+} from './lib/content-security-policy.mjs';
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const frontendDirectory = resolve(scriptDirectory, '..');
 const defaultInputPath = resolve(frontendDirectory, 'out/index.html');
 const defaultOutputPath = resolve(
   frontendDirectory,
-  'out/andrew-website-updated.html',
+  'out',
+  OFFLINE_STANDALONE_ARTIFACT_PATH,
 );
 const nextAssetPrefix = '/_next/';
 const turbopackCurrentScriptExpression =
   '"object"==typeof document?document.currentScript:void 0';
 
 const standaloneBootstrap = String.raw`
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' data:; style-src 'unsafe-inline' data:; font-src data:; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <script data-standalone-bootstrap="true">
 (() => {
   const nativeFetch = window.fetch.bind(window);
@@ -226,17 +230,27 @@ async function inlineFlightAssets(html, inputPath) {
     /(I\[\d+,)\[(?:\\"\/_next\/static\/chunks\/[^"\\]+\.js\\"(?:,\\"\/_next\/static\/chunks\/[^"\\]+\.js\\")*)\]/gu,
     '$1[]',
   );
-  const withoutScriptResources = withoutChunkPreloads.replace(
-    /\/_next\/static\/chunks\/[^"\\]+\.js/gu,
-    'data:text/javascript,',
+  const withoutStylesheetHints = withoutChunkPreloads.replace(
+    /:HL\[\\"\/_next\/static\/chunks\/[^"\\]+\.css\\",\\"style\\"(?:,\{[^}\n]*\})?\]\\n/gu,
+    '',
   );
-  const withoutStylesheetResources = withoutScriptResources.replace(
-    /\/_next\/static\/chunks\/[^"\\]+\.css/gu,
-    'data:text/css,',
+  const withoutScriptResources = withoutStylesheetHints.replace(
+    /\[\\"\$\\",\\"script\\",\\"[^"\\]*\\",\{\\"src\\":\\"\/_next\/static\/chunks\/[^"\\]+\.js\\"[^}]*\}\]/gu,
+    'null',
+  );
+  const withoutChunkResources = withoutScriptResources.replace(
+    /\[\\"\$\\",\\"link\\",\\"[^"\\]*\\",\{\\"rel\\":\\"stylesheet\\",\\"href\\":\\"\/_next\/static\/chunks\/[^"\\]+\.css\\"[^}]*\}\]/gu,
+    'null',
   );
 
+  if (
+    /\/_next\/static\/chunks\/[^"\\]+\.(?:css|js)/u.test(withoutChunkResources)
+  ) {
+    throw new Error('Standalone Flight data still contains a Next chunk URL.');
+  }
+
   return replaceAsync(
-    withoutStylesheetResources,
+    withoutChunkResources,
     /\/_next\/static\/media\/([^"\\]+\.woff2)/gu,
     async (match) => {
       const font = await readFile(await resolveAssetPath(inputPath, match[0]));
@@ -264,6 +278,8 @@ export async function buildStandaloneHtml({
   if (/(?:href|src)="\/_next\//u.test(html)) {
     throw new Error('Standalone export still contains an external Next asset.');
   }
+
+  html = injectStandaloneContentSecurityPolicy(html);
 
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, html, 'utf8');

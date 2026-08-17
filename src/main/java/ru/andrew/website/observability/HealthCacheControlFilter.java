@@ -17,7 +17,7 @@ import org.springframework.web.util.UriUtils;
 import org.springframework.web.util.UrlPathHelper;
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public final class HealthCacheControlFilter extends OncePerRequestFilter {
     private static final String ACTUATOR_ROOT = "/actuator";
     private static final String GET = "GET";

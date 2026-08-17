@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
-
-type RevealStyle = CSSProperties & Readonly<{ '--reveal-delay': string }>;
+import type { ReactNode } from 'react';
 
 type RevealProps = Readonly<{
   children: ReactNode;
@@ -13,6 +11,7 @@ type RevealProps = Readonly<{
 
 export function Reveal({ children, className, delay = 0 }: RevealProps) {
   const elementRef = useRef<HTMLDivElement>(null);
+  const delayStep = Math.max(0, Math.min(5, Math.round(delay / 0.035)));
 
   useEffect(() => {
     const element = elementRef.current;
@@ -48,9 +47,9 @@ export function Reveal({ children, className, delay = 0 }: RevealProps) {
     <div
       className={className}
       data-reveal="css"
+      data-reveal-delay={delayStep === 0 ? undefined : delayStep}
       data-reveal-state="visible"
       ref={elementRef}
-      style={{ '--reveal-delay': `${delay}s` } as RevealStyle}
     >
       {children}
     </div>

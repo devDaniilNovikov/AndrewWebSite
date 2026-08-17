@@ -10,27 +10,31 @@ The fixed platform is Java 25 LTS, Spring Boot 4.1.0, one root Maven module, Mav
 
 ```text
 Public browser
-  | same-origin HTTPS: static GET/HEAD, POST /api/leads, health GET
+  | same-origin HTTPS: static GET/HEAD, POST /api/leads
   v
 Timeweb Cloud App Platform ingress (proxy trust not yet established)
   |
   v
 Single non-root Spring Boot container
+  |-- coarse public perimeter admission (all methods and paths)
   |-- static resource handler
   |-- public web/security boundary
   |-- lead intake transaction
   |-- Telegram outbox worker
   |-- privacy retention worker
   |-- safe health and telemetry
+  |     ^ loopback-only 127.0.0.1:8081 health probes
   |
   +---- TLS/VPC ----> managed PostgreSQL 18 in the Moscow region
   +---- HTTPS ------> Telegram Bot API
   +---- HTTPS/OTLP -> Grafana Cloud collector (production only after gate)
 ```
 
-The public browser and all request headers are untrusted. Until Timeweb publishes or confirms the actual forwarding behavior and trusted proxy CIDRs, the application ignores `Forwarded` and `X-Forwarded-For` for rate-limit identity and uses only `HttpServletRequest.getRemoteAddr()` plus the global limiter. Enabling forwarded-header processing is a production change gate, not a default.
+The public browser and all request headers are untrusted. Until Timeweb publishes or confirms the actual forwarding behavior and trusted proxy CIDRs, the application ignores `Forwarded` and `X-Forwarded-For` for rate-limit identity and uses only `HttpServletRequest.getRemoteAddr()` plus server-local limiters. Enabling forwarded-header processing is a production change gate, not a default.
 
-The global limiter is a rolling window, not a token bucket: for every instant `t`, the half-open interval `(t - 60 seconds, t]` contains at most 60 globally admitted requests. It stores only the at-most-60 admission timestamps needed for that window; timestamps at or before `t - 60 seconds` expire before the next decision. A separate bounded per-connection-address token bucket has capacity 5 and refills exactly one token per minute. The per-connection decision is evaluated first so traffic already rejected for one connection cannot consume global admissions; a request that passes it then attempts the rolling global decision, so any request passing both gates is necessarily within the global cap. A rejection returns the ceiling in whole seconds until the applicable oldest timestamp or client token becomes available.
+Before media-type, body, routing, or authorization work, one coarse rolling perimeter gate admits at most 10,000 requests per application instance in every half-open `(t - 60 seconds, t]` interval across every method and public path, including malformed and otherwise rejected traffic. Its fixed problem response reveals neither the requested path nor the connection address. The limit reuses the canonical 10,000-entry in-memory client bound as a deliberately high availability ceiling; it is not the stricter lead-submission policy. The production management connector is bound to `127.0.0.1:8081`, bypasses this public gate, and is unreachable through the public listener, so platform liveness and readiness probes cannot consume or be starved by public admissions.
+
+After body-size validation, the lead-only global limiter is a rolling window, not a token bucket: for every instant `t`, the half-open interval `(t - 60 seconds, t]` contains at most 60 admitted `POST /api/leads` requests. It stores only the at-most-60 admission timestamps needed for that window; timestamps at or before `t - 60 seconds` expire before the next decision. A separate bounded per-connection-address token bucket has capacity 5 and refills exactly one token per minute. The per-connection decision is evaluated first so traffic already rejected for one connection cannot consume lead-global admissions; a request that passes it then attempts the rolling global decision, so any request passing both lead gates is necessarily within the global cap. A rejection returns the ceiling in whole seconds until the applicable oldest timestamp or client token becomes available.
 
 PostgreSQL, Telegram, OTLP, and Sentry are outbound dependencies. Credentials and Sentry DSNs cross into the container only through an access-controlled platform secret store that encrypts them at rest and delivers runtime bindings through the platform's protected channel as described in `operations.md`; no secret is embedded in a file, image layer, log, metric, health response, or exception response. The process necessarily receives the usable value in memory because the Telegram protocol authenticates with the token in an HTTPS request path and the Sentry SDK needs a DSN destination; application-level ciphertext cannot be sent in their place.
 
@@ -52,13 +56,16 @@ Feature internals expose explicit ports; controllers do not issue SQL, workers d
 
 ## Public HTTP surface
 
-The executable request/response detail is in `openapi.yaml`. The only public backend-owned routes are:
+The executable request/response detail is in `openapi.yaml`. The only public backend-owned route is:
 
-- `POST /api/leads` with `Content-Type: application/json` and a hard 16 KiB body limit;
+- `POST /api/leads` with `Content-Type: application/json` and a hard 16 KiB body limit.
+
+Production health operations are available only to the loopback management connector on `127.0.0.1:8081`:
+
 - `GET /actuator/health/liveness`;
 - `GET /actuator/health/readiness`.
 
-Static `GET` and `HEAD` requests are served from the packaged frontend. `/api/**` and `/actuator/**` never fall through to static content. `/actuator/health`, `/actuator/metrics`, `/actuator/prometheus`, environment, configuration, shutdown, heap, mappings, loggers, and every other actuator endpoint are denied externally. There are no authentication or login routes.
+Static `GET` and `HEAD` requests are served from the packaged frontend. `/api/**` and `/actuator/**` never fall through to static content. The public listener has no actuator mappings. `/actuator/health`, `/actuator/metrics`, `/actuator/prometheus`, environment, configuration, shutdown, heap, mappings, loggers, and every other actuator endpoint are unavailable externally. There are no authentication or login routes.
 
 Production is same-origin and has no CORS allowlist. The `local` profile may allow only explicitly configured development origins. The lead endpoint is stateless, uses no cookies, and has CSRF disabled only for `POST /api/leads`; all other non-safe methods remain denied by the route allowlist.
 
@@ -207,13 +214,13 @@ Sentry callbacks remove request, user, breadcrumb, tag, extra, message, thread, 
 
 ## Health and heartbeat semantics
 
-`/actuator/health/liveness` is dependency-free and includes only Spring application liveness. It never checks PostgreSQL, Telegram, worker delivery, retention, or OTLP.
+On the loopback-only management listener, `/actuator/health/liveness` is dependency-free and includes only Spring application liveness. It never checks PostgreSQL, Telegram, worker delivery, retention, or OTLP.
 
-`/actuator/health/readiness` returns only `{"status":"UP"}` or `{"status":"DOWN"}`. It is `UP` only when PostgreSQL accepts the bounded validation query and the outbox worker has completed a successful poll within 45 seconds. A successful poll means lease recovery and claiming completed and the entire claimed batch finished: every Telegram delivered/retry/blocked decision was durably recorded, while a privacy-invalidated reload was safely skipped. An empty completed poll is successful. Any exception from reload, send, or state persistence, or any lease-token state update returning false, aborts the poll and does not advance the heartbeat. The worker has a 45-second startup grace. Telegram availability itself is not readiness because expected Telegram failures become durable queue outcomes. Retention success is not readiness; its last-success heartbeat becomes stale after two hours and raises an operational alert. Health bodies never include dependency names, errors, hostnames, durations, counts, or configuration. Every liveness and readiness response, including `200` and `503`, has exactly `Cache-Control: no-store`; a path-scoped response filter pins that value and MockMvc tests protect both paths.
+On the same listener, `/actuator/health/readiness` returns only `{"status":"UP"}` or `{"status":"DOWN"}`. It is `UP` only when PostgreSQL accepts the bounded validation query and the outbox worker has completed a successful poll within 45 seconds. A successful poll means lease recovery and claiming completed and the entire claimed batch finished: every Telegram delivered/retry/blocked decision was durably recorded, while a privacy-invalidated reload was safely skipped. An empty completed poll is successful. Any exception from reload, send, or state persistence, or any lease-token state update returning false, aborts the poll and does not advance the heartbeat. The worker has a 45-second startup grace. Telegram availability itself is not readiness because expected Telegram failures become durable queue outcomes. Retention success is not readiness; its last-success heartbeat becomes stale after two hours and raises an operational alert. Health bodies never include dependency names, errors, hostnames, durations, counts, or configuration. Every liveness and readiness response, including `200` and `503`, has exactly `Cache-Control: no-store`; a path-scoped response filter pins that value and MockMvc tests protect both paths.
 
 ## Build and runtime topology
 
-Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, invokes the manifest-declared manager directly through Corepack with a writable `COREPACK_HOME` and no shim installation, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. Before any `COPY frontend/`, `.dockerignore` excludes root and nested `.env*`, local secret/credential directories, and private-key/keystore material; an executable container contract test pins those exclusions. Host and CI `./mvnw -B verify` run the PostgreSQL Testcontainers suites with Docker available. The containerized `backend-build` uses `./mvnw -B -DexcludedGroups=database verify`, excluding only the nested-Docker database group while still running every other test; broad test skipping is forbidden. The final container uses the glibc-based Java 25 Noble runtime required by async-profiler, enables Java native access explicitly, runs the JAR as a non-root numeric user, exposes no Node runtime, and health-checks liveness.
+Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, invokes the manifest-declared manager directly through Corepack with a writable `COREPACK_HOME` and no shim installation, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. Before any `COPY frontend/`, `.dockerignore` excludes root and nested `.env*`, local secret/credential directories, and private-key/keystore material; an executable container contract test pins those exclusions. Host and CI `./mvnw -B verify` run the PostgreSQL Testcontainers suites with Docker available. The containerized `backend-build` uses `./mvnw -B -DexcludedGroups=database verify`, excluding only the nested-Docker database group while still running every other test; broad test skipping is forbidden. The final container uses the glibc-based Java 25 Noble runtime required by async-profiler, enables Java native access explicitly, runs the JAR as a non-root numeric user, exposes no Node runtime, binds the public application to `0.0.0.0:8080`, binds management to `127.0.0.1:8081`, and health-checks liveness through that private connector.
 
 Production gates are: PostgreSQL 18 in the same Moscow region/VPC; verified secret-store encryption at rest, access control, protected runtime bindings, and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP and Sentry delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and an explicitly user-authorized squash merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
 

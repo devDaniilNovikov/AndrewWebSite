@@ -10,7 +10,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      'node scripts/verify-toolchain.mjs && pnpm run build:preview && pnpm run serve:preview',
+      'node scripts/verify-toolchain.mjs && pnpm run build:standalone && pnpm run serve:preview',
     env: {
       NEXT_PUBLIC_PREVIEW_API_ORIGIN: 'http://127.0.0.1:4174',
     },

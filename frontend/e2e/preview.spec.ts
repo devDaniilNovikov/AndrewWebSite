@@ -42,6 +42,68 @@ const PRIMARY_NAVIGATION = [
   { label: 'Контакты', path: '/#request' },
 ] as const;
 
+const OFFLINE_STANDALONE_ARTIFACT_PATH = '/andrew-website-updated.html';
+const HOSTED_STATIC_PATHS = [
+  '/kontakty',
+  '/o-kompanii',
+  '/raboty',
+  '/remont-ledogeneratorov',
+  '/remont-torgovogo-holodilnogo-oborudovaniya',
+  '/tseny',
+  '/uslugi',
+] as const;
+
+function cspDirective(policy: string, name: string) {
+  return policy
+    .split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(`${name} `));
+}
+
+function expectStrictHostedCsp(contentSecurityPolicy: string | undefined) {
+  expect(contentSecurityPolicy).toBeTruthy();
+  expect(contentSecurityPolicy).not.toMatch(/'unsafe-(?:eval|inline)'/u);
+  expect(cspDirective(contentSecurityPolicy!, 'script-src')).not.toContain(
+    'data:',
+  );
+  expect(cspDirective(contentSecurityPolicy!, 'script-src-attr')).toBe(
+    "script-src-attr 'none'",
+  );
+  expect(cspDirective(contentSecurityPolicy!, 'style-src-attr')).toBe(
+    "style-src-attr 'none'",
+  );
+  expect(cspDirective(contentSecurityPolicy!, 'frame-ancestors')).toBe(
+    "frame-ancestors 'none'",
+  );
+}
+
+async function expectNoCspViolations(page: Page) {
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __andrewCspViolations?: string[];
+          }
+        ).__andrewCspViolations ?? [],
+    ),
+  ).toEqual([]);
+}
+
+async function installCspViolationCapture(page: Page) {
+  await page.addInitScript(() => {
+    const scope = window as typeof window & {
+      __andrewCspViolations?: string[];
+    };
+    scope.__andrewCspViolations = [];
+    document.addEventListener('securitypolicyviolation', (event) => {
+      scope.__andrewCspViolations?.push(
+        `${event.effectiveDirective}:${event.blockedURI}`,
+      );
+    });
+  });
+}
+
 function captureNetworkOrigins(page: Page) {
   const origins = new Set<string>();
 
@@ -86,11 +148,14 @@ test('serves the complete accessible, network-isolated landing preview', async (
   baseURL,
   page,
 }) => {
+  await installCspViolationCapture(page);
   const networkOrigins = captureNetworkOrigins(page);
   const response = await page.goto('/');
   await page.waitForLoadState('networkidle');
 
   expect(response?.status()).toBe(200);
+  const contentSecurityPolicy = response?.headers()['content-security-policy'];
+  expectStrictHostedCsp(contentSecurityPolicy);
   await expect(
     page.getByRole('heading', {
       level: 1,
@@ -151,6 +216,42 @@ test('serves the complete accessible, network-isolated landing preview', async (
   await expectNoHorizontalOverflow(page);
   await expectNoWcagAaViolations(page);
   await expectOnlyPreviewOrigin(networkOrigins, baseURL);
+  await expectNoCspViolations(page);
+});
+
+test('keeps the standalone delivery file download-only at the hosted boundary', async ({
+  baseURL,
+  request,
+}) => {
+  expect(baseURL).toBeTruthy();
+  const response = await request.get(
+    new URL(OFFLINE_STANDALONE_ARTIFACT_PATH, baseURL).href,
+  );
+  const headers = response.headers();
+
+  expect(response.status()).toBe(200);
+  expect(headers['content-disposition']).toBe(
+    'attachment; filename="andrew-website-updated.html"',
+  );
+  expect(headers['x-content-type-options']).toBe('nosniff');
+  expect(headers['content-security-policy']).toBe(
+    "default-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'",
+  );
+});
+
+test('serves every extensionless static document with an enforced CSP', async ({
+  page,
+}) => {
+  await installCspViolationCapture(page);
+
+  for (const path of HOSTED_STATIC_PATHS) {
+    const response = await page.goto(path);
+    await page.waitForLoadState('networkidle');
+
+    expect(response?.status(), path).toBe(200);
+    expectStrictHostedCsp(response?.headers()['content-security-policy']);
+    await expectNoCspViolations(page);
+  }
 });
 
 test('keeps navigation internal and landing CTAs on verified anchors', async ({
@@ -345,10 +446,12 @@ test('serves the custom static 404 without third-party requests', async ({
   baseURL,
   page,
 }) => {
+  await installCspViolationCapture(page);
   const networkOrigins = captureNetworkOrigins(page);
   const response = await page.goto('/missing-preview-route');
 
   expect(response?.status()).toBe(404);
+  expectStrictHostedCsp(response?.headers()['content-security-policy']);
   await expect(
     page.getByRole('heading', { name: 'Страница не найдена' }),
   ).toBeVisible();
@@ -359,4 +462,5 @@ test('serves the custom static 404 without third-party requests', async ({
   await expectNoHorizontalOverflow(page);
   await expectNoWcagAaViolations(page);
   await expectOnlyPreviewOrigin(networkOrigins, baseURL);
+  await expectNoCspViolations(page);
 });
