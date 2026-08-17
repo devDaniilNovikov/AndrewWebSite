@@ -10,6 +10,7 @@ import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATAB
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,6 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
 import org.springframework.boot.actuate.endpoint.Show;
 import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
 import org.springframework.boot.context.event.ApplicationContextInitializedEvent;
@@ -45,12 +47,12 @@ class ProductionHttpInvariantGuardTest {
     }
 
     @Test
-    void acceptsEquivalentNonPublicManagementConfiguration() {
+    void acceptsCanonicalPrivateManagementConfiguration() {
         MockEnvironment environment = safeProductionEnvironment()
                 .withProperty("server.port", "8080")
                 .withProperty("server.address", "0.0.0.0")
-                .withProperty("management.server.port", "8080")
-                .withProperty("management.server.base-path", "/manage")
+                .withProperty("management.server.port", "8081")
+                .withProperty("management.server.address", "127.0.0.1")
                 .withProperty("management.endpoints.web.exposure.exclude", "env")
                 .withProperty("management.endpoints.web.path-mapping.env", "environment")
                 .withProperty("management.endpoints.web.path-mapping.health", "health")
@@ -158,6 +160,31 @@ class ProductionHttpInvariantGuardTest {
         assertThat(invokePrivate("isRootServletPath", new Class<?>[] {String.class}, ""))
                 .isEqualTo(true);
         assertThat(invokePrivate("isPublic", new Class<?>[] {Show.class}, Show.NEVER))
+                .isEqualTo(false);
+    }
+
+    @Test
+    void privateManagementBindingRequiresBothCanonicalValues() throws Exception {
+        ManagementServerProperties properties = new ManagementServerProperties();
+
+        assertThat(invokePrivate(
+                        "hasUnsafeManagementBinding",
+                        new Class<?>[] {ManagementServerProperties.class},
+                        properties))
+                .isEqualTo(true);
+
+        properties.setPort(ProductionHttpInvariantGuard.MANAGEMENT_SERVER_PORT);
+        assertThat(invokePrivate(
+                        "hasUnsafeManagementBinding",
+                        new Class<?>[] {ManagementServerProperties.class},
+                        properties))
+                .isEqualTo(true);
+
+        properties.setAddress(InetAddress.getByName("127.0.0.1"));
+        assertThat(invokePrivate(
+                        "hasUnsafeManagementBinding",
+                        new Class<?>[] {ManagementServerProperties.class},
+                        properties))
                 .isEqualTo(false);
     }
 
@@ -294,6 +321,8 @@ class ProductionHttpInvariantGuardTest {
         environment.setActiveProfiles("prod");
         return environment
                 .withProperty("server.forward-headers-strategy", "none")
+                .withProperty("management.server.port", "8081")
+                .withProperty("management.server.address", "127.0.0.1")
                 .withProperty("management.endpoints.web.base-path", "/actuator")
                 .withProperty("management.endpoints.web.exposure.include", "health")
                 .withProperty("management.endpoint.health.access", "READ_ONLY")
@@ -411,10 +440,17 @@ class ProductionHttpInvariantGuardTest {
                         "actuator CORS origin pattern",
                         "management.endpoints.web.cors.allowed-origin-patterns[0]",
                         "*"),
+                property("same management port", "management.server.port", "8080"),
+                property("ephemeral management port", "management.server.port", "0"),
+                property("unexpected management port", "management.server.port", "8082"),
                 property(
-                        "separate management port",
-                        "management.server.port",
-                        "0"),
+                        "public management address",
+                        "management.server.address",
+                        "0.0.0.0"),
+                property(
+                        "IPv6 management address",
+                        "management.server.address",
+                        "::1"),
                 property(
                         "application context path",
                         "server.servlet.context-path",

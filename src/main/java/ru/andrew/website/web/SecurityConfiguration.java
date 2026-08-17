@@ -40,6 +40,25 @@ class SecurityConfiguration {
     }
 
     @Bean
+    SlidingWindowRateLimiter perimeterRateLimiter(
+            Clock clock, WebProperties properties) {
+        WebProperties.RateLimit rateLimit = properties.rateLimit();
+        return new SlidingWindowRateLimiter(
+                rateLimit.maxClients(), rateLimit.globalWindow(), clock);
+    }
+
+    @Bean
+    PerimeterRateLimitFilter perimeterRateLimitFilter(
+            WebProperties properties,
+            SlidingWindowRateLimiter perimeterRateLimiter,
+            ProblemResponseWriter problems) {
+        return new PerimeterRateLimitFilter(
+                properties.rateLimit().enabled(),
+                perimeterRateLimiter,
+                problems);
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, WebProperties properties,
             ClientRateLimiter limiter, ProblemResponseWriter problems,
             LeadMetrics metrics,

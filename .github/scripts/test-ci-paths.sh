@@ -8,6 +8,38 @@ echo "Running CI Policy Compliance Tests..."
 
 WORKFLOW=".github/workflows/ci.yml"
 
+bash .github/scripts/test-jules-issue-policy.sh
+
+# The immutable-image remediation is incomplete unless CI performs a real
+# clean build and inspects the resulting runtime image.
+CONTAINER_JOB_BLOCK=$(sed -n '/^  container-build:/,/^  frontend-quality:/p' "$WORKFLOW")
+
+if [ -z "$CONTAINER_JOB_BLOCK" ]; then
+  echo "Error: Missing container-build job." >&2
+  exit 1
+fi
+
+for required_container_contract in \
+  'name: Container build' \
+  'timeout-minutes: 30' \
+  'docker build --pull --no-cache --tag andrew-website:ci .' \
+  'docker run --rm --entrypoint /bin/bash andrew-website:ci' \
+  'test "$(id -u):$(id -g)" = "10001:10001"' \
+  "test \"\$(docker image inspect --format '{{.Config.User}}' andrew-website:ci)\" = \"10001:10001\"" \
+  '/dev/tcp/127.0.0.1/8081' \
+  '/actuator/health/liveness'; do
+  if ! grep -Fq -- "$required_container_contract" <<<"$CONTAINER_JOB_BLOCK"; then
+    echo "Error: Container build contract is missing: $required_container_contract" >&2
+    exit 1
+  fi
+done
+
+if grep -q 'secrets\.' <<<"$CONTAINER_JOB_BLOCK" || \
+   grep -E 'permissions:' -A 5 <<<"$CONTAINER_JOB_BLOCK" | grep -q 'write'; then
+  echo "Error: Container build must remain secret-free and read-only." >&2
+  exit 1
+fi
+
 # 0. Check the exact one-time integration-sentry branch exception
 PUSH_BRANCH_BLOCK=$(sed -n '/^  push:/,/^  workflow_dispatch:/p' "$WORKFLOW")
 BRANCH_VALIDATION_BLOCK=$(sed -n '/      - name: Validate source branch name/,/      - name: Validate pull request title/p' "$WORKFLOW")

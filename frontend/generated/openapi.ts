@@ -13,7 +13,7 @@ export type paths = {
         };
         /**
          * Dependency-free process liveness
-         * @description Uses only application liveness state. It never probes PostgreSQL, Telegram, OTLP, the outbox worker, or the retention worker.
+         * @description Available in production only on 127.0.0.1:8081. Uses only application liveness state. It never probes PostgreSQL, Telegram, OTLP, the outbox worker, or the retention worker.
          */
         readonly get: operations["getLiveness"];
         readonly put?: never;
@@ -33,7 +33,7 @@ export type paths = {
         };
         /**
          * Minimal dependency and worker readiness
-         * @description Returns UP only when PostgreSQL is available and the outbox worker has completed a successful poll in the last 45 seconds, after a 45-second startup grace. A successful poll finishes its full batch and durably records every delivery decision; exceptions and failed state writes do not advance the heartbeat. It never discloses which dependency is degraded.
+         * @description Available in production only on 127.0.0.1:8081. Returns UP only when PostgreSQL is available and the outbox worker has completed a successful poll in the last 45 seconds, after a 45-second startup grace. A successful poll finishes its full batch and durably records every delivery decision; exceptions and failed state writes do not advance the heartbeat. It never discloses which dependency is degraded.
          */
         readonly get: operations["getReadiness"];
         readonly put?: never;
@@ -55,7 +55,7 @@ export type paths = {
         readonly put?: never;
         /**
          * Accept a lead for durable asynchronous delivery
-         * @description Accepts JSON bodies up to 16 KiB. A bounded rolling global window admits at most 60 requests in every half-open interval (t - 60 seconds, t], and a separate bounded per-connection-address bucket has burst 5 and refills 1 token per minute. Forwarded client headers are ignored until Timeweb proxy CIDRs are verified. The empty 202 response deliberately does not reveal whether the request was newly committed, idempotently accepted, safely accepted after fingerprint retention, or synthetically accepted. A honeypot request needs only a non-empty `website`; legitimate fields may be absent. Telegram delivery is asynchronous and at least once.
+         * @description Before media or body processing, a coarse per-instance rolling perimeter admits at most 10,000 requests across every public method and path in each minute. After the body boundary, a lead-only rolling global window admits at most 60 requests in every half-open interval (t - 60 seconds, t], and a separate bounded per-connection-address lead bucket has burst 5 and refills 1 token per minute. Forwarded client headers are ignored until Timeweb proxy CIDRs are verified. The empty 202 response deliberately does not reveal whether the request was newly committed, idempotently accepted, safely accepted after fingerprint retention, or synthetically accepted. A honeypot request needs only a non-empty `website`; legitimate fields may be absent. Telegram delivery is asynchronous and at least once.
          */
         readonly post: operations["submitLead"];
         readonly delete?: never;
@@ -213,22 +213,13 @@ export type components = {
                 readonly "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description The rolling global window is full or the connection-address token bucket has no token available. */
+        /** @description The coarse public perimeter is full, the lead-only rolling global window is full, or the connection-address lead bucket has no token available. */
         readonly RateLimitExceeded: {
             headers: {
                 readonly "Retry-After": components["headers"]["RetryAfter"];
                 readonly [name: string]: unknown;
             };
             content: {
-                /**
-                 * @example {
-                 *       "type": "urn:andrew:problem:rate-limit-exceeded",
-                 *       "title": "Too many requests",
-                 *       "status": 429,
-                 *       "detail": "Wait before submitting another request.",
-                 *       "instance": "/api/leads"
-                 *     }
-                 */
                 readonly "application/problem+json": components["schemas"]["Problem"];
             };
         };

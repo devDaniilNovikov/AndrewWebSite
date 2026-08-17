@@ -3,6 +3,7 @@ import { rm } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parsePreviewApiOrigin } from './lib/preview-api-origin.mjs';
+import { writeHostedCspConfig } from './lib/content-security-policy.mjs';
 import { createSourceFingerprint } from './lib/source-fingerprint.mjs';
 import { assertPinnedNodeVersion } from './lib/toolchain.mjs';
 
@@ -71,4 +72,19 @@ const build = spawnSync(process.execPath, [nextBinary, 'build'], {
   },
 });
 
-process.exit(build.status ?? 1);
+if (build.status !== 0) {
+  process.exit(build.status ?? 1);
+}
+
+try {
+  const result = await writeHostedCspConfig({
+    outputDirectory: resolve(frontendDirectory, 'out'),
+    previewApiOrigin,
+  });
+  process.stdout.write(
+    `Hosted CSP headers created for ${result.documents} documents.\n`,
+  );
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}

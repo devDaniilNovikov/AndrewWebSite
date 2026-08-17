@@ -23,6 +23,7 @@ const focusableSelector = [
 ].join(',');
 
 const requestHeadingSelector = '[data-lead-heading], h1, h2, h3, h4, h5, h6';
+const bodyScrollLockClass = 'andrew-scroll-locked';
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -46,26 +47,29 @@ export function MobileNavigation({ items }: MobileNavigationProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const closeCompletedRef = useRef(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const previousBodyOverflowRef = useRef<string | null>(null);
+  const bodyHadScrollLockRef = useRef<boolean | null>(null);
   const restoreFocusRef = useRef(true);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   const lockBodyScroll = useCallback(() => {
-    if (previousBodyOverflowRef.current === null) {
-      previousBodyOverflowRef.current = document.body.style.overflow;
+    if (bodyHadScrollLockRef.current === null) {
+      bodyHadScrollLockRef.current =
+        document.body.classList.contains(bodyScrollLockClass);
     }
 
-    document.body.style.overflow = 'hidden';
+    document.body.classList.add(bodyScrollLockClass);
   }, []);
 
   const unlockBodyScroll = useCallback(() => {
-    if (previousBodyOverflowRef.current === null) {
+    if (bodyHadScrollLockRef.current === null) {
       return;
     }
 
-    document.body.style.overflow = previousBodyOverflowRef.current;
-    previousBodyOverflowRef.current = null;
+    if (!bodyHadScrollLockRef.current) {
+      document.body.classList.remove(bodyScrollLockClass);
+    }
+    bodyHadScrollLockRef.current = null;
   }, []);
 
   const finishClose = useCallback(

@@ -156,11 +156,8 @@ export function MobileStickyCta() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-30 px-4 pt-3 md:hidden"
+      className="mobile-sticky-safe-area fixed inset-x-0 bottom-0 z-30 px-4 pt-3 md:hidden"
       data-mobile-sticky-cta
-      style={{
-        paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
-      }}
     >
       <LeadCta
         aria-label="Оставить заявку — закреплённая кнопка"

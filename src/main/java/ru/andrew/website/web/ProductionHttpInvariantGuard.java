@@ -8,7 +8,7 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.actuate.autoconfigure.endpoint.PropertiesEndpointAccessResolver;
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.CorsEndpointProperties;
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties;
-import org.springframework.boot.actuate.autoconfigure.web.server.ManagementPortType;
+import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
 import org.springframework.boot.actuate.endpoint.Access;
 import org.springframework.boot.actuate.endpoint.EndpointId;
 import org.springframework.boot.actuate.endpoint.Show;
@@ -39,7 +39,8 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
     private static final Set<String> LIVENESS_MEMBERS = Set.of("livenessState");
     private static final Set<String> READINESS_MEMBERS = Set.of(
             "readinessState", "dbReadiness", "telegramWorkerReadiness");
-    private static final int CONTAINER_SERVER_PORT = 8080;
+    static final int PUBLIC_SERVER_PORT = 8080;
+    static final int MANAGEMENT_SERVER_PORT = 8081;
     private static final int ORDER = ConfigDataEnvironmentPostProcessor.ORDER + 3;
 
     @Override
@@ -58,6 +59,8 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
         WebMvcProperties mvc = bind(binder, "spring.mvc", WebMvcProperties.class);
         WebEndpointProperties endpoints =
                 bind(binder, "management.endpoints.web", WebEndpointProperties.class);
+        ManagementServerProperties managementServer =
+                bind(binder, "management.server", ManagementServerProperties.class);
         CorsEndpointProperties endpointCors = bind(
                 binder, "management.endpoints.web.cors", CorsEndpointProperties.class);
         org.springframework.boot.autoconfigure.web.WebProperties bootWeb = bind(
@@ -71,6 +74,7 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
 
         if (webApplicationType != WebApplicationType.SERVLET
                 || hasUnsafeServerBinding(server)
+                || hasUnsafeManagementBinding(managementServer)
                 || server.getForwardHeadersStrategy() != ForwardHeadersStrategy.NONE
                 || StringUtils.hasText(tomcat.getRemoteip().getProtocolHeader())
                 || StringUtils.hasText(tomcat.getRemoteip().getRemoteIpHeader())
@@ -83,7 +87,6 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
                 || hasUnsafeHealthPathMapping(endpoints)
                 || !endpointCors.getAllowedOrigins().isEmpty()
                 || !endpointCors.getAllowedOriginPatterns().isEmpty()
-                || ManagementPortType.get(environment) != ManagementPortType.SAME
                 || hasUnsafeErrorHandling(bootWeb)
                 || !hasReadOnlyHealthAccess(environment)
                 || health.getShowDetails() != Show.NEVER
@@ -112,11 +115,20 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
 
     private static boolean hasUnsafeServerBinding(ServerProperties server) {
         Integer port = server.getPort();
-        if (port != null && port != CONTAINER_SERVER_PORT) {
+        if (port != null && port != PUBLIC_SERVER_PORT) {
             return true;
         }
         var address = server.getAddress();
         return address != null && !"0.0.0.0".equals(address.getHostAddress());
+    }
+
+    private static boolean hasUnsafeManagementBinding(
+            ManagementServerProperties managementServer) {
+        Integer port = managementServer.getPort();
+        var address = managementServer.getAddress();
+        return !Integer.valueOf(MANAGEMENT_SERVER_PORT).equals(port)
+                || address == null
+                || !"127.0.0.1".equals(address.getHostAddress());
     }
 
     private static boolean hasUnsafeExposure(WebEndpointProperties endpoints) {

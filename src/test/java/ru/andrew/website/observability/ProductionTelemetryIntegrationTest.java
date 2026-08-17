@@ -7,7 +7,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
@@ -28,6 +27,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.availability.ApplicationAvailability;
+import org.springframework.boot.availability.LivenessState;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -97,6 +98,9 @@ class ProductionTelemetryIntegrationTest {
 
     @Autowired
     CapturingSender sender;
+
+    @Autowired
+    ApplicationAvailability availability;
 
     @Autowired
     @Qualifier("scheduledTaskErrorHandler")
@@ -189,9 +193,9 @@ class ProductionTelemetryIntegrationTest {
                         .content(validBody()))
                 .andExpect(status().isAccepted());
         mvc.perform(get("/actuator/health/liveness"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(
-                        "{\"status\":\"UP\"}"));
+                .andExpect(status().isNotFound());
+        assertThat(availability.getLivenessState())
+                .isEqualTo(LivenessState.CORRECT);
 
         Clock clock = Clock.fixed(
                 Instant.parse("2026-07-26T00:00:00Z"),
