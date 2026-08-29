@@ -135,4 +135,5 @@ sentry:
     enabled: false
 server:
   forward-headers-strategy: none
+  port: ${PORT:8080}
     
