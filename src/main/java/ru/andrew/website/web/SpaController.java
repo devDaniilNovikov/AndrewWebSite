@@ -1,36 +1,37 @@
 package ru.andrew.website.web;
 
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import java.nio.charset.StandardCharsets;
 
 @Controller
 public class SpaController {
 
-    @RequestMapping(value = {"/", "/error"})
+    @RequestMapping(value = {"/", "/error"}, produces = "text/html;charset=UTF-8")
     public ResponseEntity<String> serveIndexHtml() {
+        StringBuilder html = new StringBuilder();
+        html.append("<html><body style='font-family: monospace; font-size: 16px;'>");
+        html.append("<h2>Диагностика: файлы в папке static</h2><ul>");
+        
         try {
-            Resource resource = new ClassPathResource("static/index.html");
-            if (resource.exists()) {
-                // Если файл есть — читаем его вручную и отдаем браузеру
-                String html = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-                return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
-            } else {
-                // Если файла нет, выводим ошибку на экран
-                return ResponseEntity.status(404)
-                        .contentType(MediaType.TEXT_HTML)
-                        .body("<h1>Критическая ошибка сборки</h1>" +
-                              "<p>Файл <b>index.html</b> физически отсутствует внутри Java-архива.</p>" +
-                              "<p>Это значит, что Dockerfile не смог скопировать фронтенд в папку static.</p>");
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            // Сканируем все файлы в папке static
+            Resource[] resources = resolver.getResources("classpath:/static/*");
+            for (Resource r : resources) {
+                try {
+                    long size = r.contentLength();
+                    html.append("<li><b>").append(r.getFilename()).append("</b> &mdash; ").append(size).append(" байт</li>");
+                } catch (Exception ex) {
+                    html.append("<li><b>").append(r.getFilename()).append("</b> &mdash; (папка)</li>");
+                }
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Ошибка чтения файла: " + e.getMessage());
+            html.append("<li>Ошибка: ").append(e.getMessage()).append("</li>");
         }
+        
+        html.append("</ul></body></html>");
+        return ResponseEntity.ok(html.toString());
     }
 }
