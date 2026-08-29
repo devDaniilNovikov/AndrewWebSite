@@ -1,6 +1,5 @@
 package ru.andrew.website.web;
 
-import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -12,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.nio.charset.StandardCharsets;
 
 @Controller
-public class SpaController implements ErrorController {
+public class SpaController {
 
     @RequestMapping(value = {"/", "/error"})
     public ResponseEntity<String> serveIndexHtml() {
@@ -23,7 +22,7 @@ public class SpaController implements ErrorController {
                 String html = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
                 return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
             } else {
-                // Если файла нет, выводим ошибку, чтобы больше не видеть белый экран!
+                // Если файла нет, выводим ошибку на экран
                 return ResponseEntity.status(404)
                         .contentType(MediaType.TEXT_HTML)
                         .body("<h1>Критическая ошибка сборки</h1>" +
