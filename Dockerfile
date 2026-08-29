@@ -1,12 +1,11 @@
 # --- Этап 1: Сборка фронтенда ---
-FROM node:22-alpine AS frontend-build
+# Используем Node 24, как требует ваш package.json
+FROM node:24-alpine AS frontend-build
 WORKDIR /app
-# Внутри Docker у нас есть права, pnpm встанет без проблем
 RUN npm install -g pnpm
-# Копируем всё содержимое папки frontend
 COPY frontend/ ./
-# Ставим пакеты и собираем (с игнором конфликтов)
-RUN pnpm install --ignore-scripts
+# Убрали --ignore-scripts. Теперь движки Vite/Next нормально скачаются!
+RUN pnpm install
 RUN pnpm run build
 
 # --- Этап 2: Сборка бэкенда ---
@@ -17,10 +16,8 @@ COPY mvnw pom.xml ./
 RUN ./mvnw -B dependency:go-offline
 COPY Dockerfile .dockerignore ./
 COPY src src
-# МАГИЯ: Копируем готовый фронтенд из папки out прямо в Spring Boot
-# (Судя по вашему package.json, файлы собираются в папку out)
+# Копируем готовый фронтенд прямо в Spring Boot
 COPY --from=frontend-build /app/out ./src/main/resources/static
-# Собираем бэкенд без тестов
 RUN ./mvnw -B clean package -Dmaven.test.skip=true
 
 # --- Этап 3: Финальный запуск ---
