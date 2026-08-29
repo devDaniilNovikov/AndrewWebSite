@@ -79,7 +79,7 @@ management:
         enabled: true
       group:
         liveness:
-          include: livenessState
+          include: livenessState 
         readiness:
           include: readinessState
 sentry:
