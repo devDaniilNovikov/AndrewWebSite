@@ -16,5 +16,5 @@ COPY --from=backend-build --chown=10001:10001 /workspace/target/andrew-website-0
 USER 10001:10001
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --start-period=30s --retries=3 \
-  CMD /bin/bash -ec 'exec 3<>/dev/tcp/127.0.0.1/8081; printf "GET /actuator/health/liveness HTTP/1.1\r\nHost: 127.0.0.1:8081\r\nConnection: close\r\n\r\n" >&3; read -r _ status _ <&3; test "$status" = 200'
+  CMD /bin/bash -ec 'exec 3<>/dev/tcp/127.0.0.1/8080; printf "GET /actuator/health/liveness HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3; read -r _ status _ <&3; test "$status" = 200'
 ENTRYPOINT ["java", "--enable-native-access=ALL-UNNAMED", "-jar", "/app/application.jar"]
