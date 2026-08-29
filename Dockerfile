@@ -1,10 +1,9 @@
 # --- Этап 1: Сборка фронтенда ---
-# Используем Node 24, как требует ваш package.json
-FROM node:24-alpine AS frontend-build
+# Жестко фиксируем версию, которую требует ваш скрипт build.mjs
+FROM node:24.14.0-alpine AS frontend-build
 WORKDIR /app
 RUN npm install -g pnpm
 COPY frontend/ ./
-# Убрали --ignore-scripts. Теперь движки Vite/Next нормально скачаются!
 RUN pnpm install
 RUN pnpm run build
 
@@ -16,7 +15,6 @@ COPY mvnw pom.xml ./
 RUN ./mvnw -B dependency:go-offline
 COPY Dockerfile .dockerignore ./
 COPY src src
-# Копируем готовый фронтенд прямо в Spring Boot
 COPY --from=frontend-build /app/out ./src/main/resources/static
 RUN ./mvnw -B clean package -Dmaven.test.skip=true
 
