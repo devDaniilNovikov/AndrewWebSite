@@ -21,19 +21,6 @@ spring:
       include-binding-errors: never
       include-stacktrace: never
       include-path: never
-  sql:
-    init:
-      mode: never
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    validate-on-migrate: true
-    baseline-on-migrate: false
-    clean-disabled: true
-  datasource:
-    hikari:
-      connection-timeout: 2000
-      validation-timeout: 1000
   jackson:
     datatype:
       enum:
@@ -94,7 +81,7 @@ management:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState,dbReadiness,telegramWorkerReadiness
+          include: readinessState,telegramWorkerReadiness
 sentry:
   enabled: false
   debug: false
@@ -136,4 +123,3 @@ sentry:
 server:
   forward-headers-strategy: none
   port: ${PORT:8080}
-    
