@@ -81,7 +81,7 @@ management:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState,telegramWorkerReadiness
+          include: readinessState,dbReadiness,telegramWorkerReadiness
 sentry:
   enabled: false
   debug: false
