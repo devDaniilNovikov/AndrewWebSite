@@ -5,7 +5,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 COPY frontend/ ./
 RUN pnpm install
-RUN pnpm run build
+RUN pnpm run build:standalone
 
 # --- Этап 2: Сборка бэкенда ---
 FROM eclipse-temurin:25.0.3_9-jdk-noble AS backend-build
