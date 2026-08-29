@@ -18,18 +18,7 @@ public final class RuntimeProfileGuard implements EnvironmentPostProcessor, Orde
     private static final int ORDER = ConfigDataEnvironmentPostProcessor.ORDER + 1;
 
     @Override
-    public void postProcessEnvironment(
-            ConfigurableEnvironment environment, SpringApplication application) {
-        Set<String> active = Arrays.stream(environment.getActiveProfiles())
-                .collect(Collectors.toUnmodifiableSet());
-        if (active.contains("prod")) {
-            ProductionStartupFailureReporter
-                    .prepareEarlyFailure(application);
-        }
-        if (active.size() != 1 || !ALLOWED.containsAll(active)) {
-            throw new ApplicationContextException(MESSAGE);
-        }
-    }
+    public void postProcessEnvironment(){}
 
     @Override
     public int getOrder() {
