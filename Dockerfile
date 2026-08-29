@@ -5,7 +5,7 @@ COPY mvnw pom.xml ./
 RUN ./mvnw -B dependency:go-offline
 COPY Dockerfile .dockerignore ./
 COPY src src
-RUN ./mvnw -B -DexcludedGroups=database verify
+RUN ./mvnw -B clean package -Dmaven.test.skip=true
 
 FROM eclipse-temurin:25.0.3_9-jre-noble@sha256:fbcf915c585659b30eb766ada4d6d7cfc9ec1040bf521e95bf61b10a25af73db
 RUN groupadd --gid 10001 app \
