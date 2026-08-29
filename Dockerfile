@@ -15,7 +15,8 @@ COPY mvnw pom.xml ./
 RUN ./mvnw -B dependency:go-offline
 COPY Dockerfile .dockerignore ./
 COPY src src
-COPY --from=frontend-build /app/dist ./src/main/resources/static
+# Снова меняем dist на out
+COPY --from=frontend-build /app/out ./src/main/resources/static
 RUN ./mvnw -B clean package -Dmaven.test.skip=true
 
 # --- Этап 3: Финальный запуск ---
