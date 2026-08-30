@@ -13,7 +13,7 @@
     "build": "pnpm run build:preview",
     "build:preview": "node scripts/build.mjs preview",
     "build:production": "node scripts/build.mjs production",
-    "build:standalone": "node scripts/build.mjs production && node scripts/build-standalone-html.mjs out/index.html",,
+    "build:standalone": "node scripts/build.mjs production && node scripts/build-standalone-html.mjs out/index.html",
     "generate:api": "openapi-typescript ../docs/backend/openapi.yaml --output generated/openapi.ts --immutable --alphabetize --export-type",
     "verify:api-types": "openapi-typescript ../docs/backend/openapi.yaml --output generated/openapi.ts --immutable --alphabetize --export-type --check",
     "verify:toolchain": "node scripts/verify-toolchain.mjs",
