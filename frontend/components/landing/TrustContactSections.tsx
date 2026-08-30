@@ -139,6 +139,7 @@ export function ReviewsSection() {
     />
   );
 }
+
 export function ContactSection() {
   return (
     <section
@@ -171,7 +172,7 @@ export function ContactSection() {
               {activeContactChannels.map((channel) => (
                 <div
                   aria-label={channel.label}
-                  className="flex min-h-16 items-center gap-3 rounded-lg border border-slate-200 bg-surface p-3"
+                  className="flex min-h-16 items-center gap-2 rounded-lg border border-slate-200 bg-surface p-3"
                   key={channel.label}
                   role="listitem"
                 >
@@ -180,7 +181,7 @@ export function ContactSection() {
                   </span>
                   <span className="min-w-0">
                     <a
-                      className="block text-base font-semibold text-navy underline hover:text-blue-600"
+                      className="block text-sm font-semibold text-navy underline transition-colors hover:text-blue-600 truncate"
                       href={channel.href}
                       {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     >
@@ -200,6 +201,7 @@ export function ContactSection() {
     </section>
   );
 }
+
 export function LandingFooter() {
   return (
     <footer className="bg-navy py-10 text-slate-300" id="contacts-footer">
