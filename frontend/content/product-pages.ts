@@ -459,8 +459,9 @@ export const productPageRoutes = [
           {
             icon: 'phone',
             title: 'Телефон',
-            text: 'Телефон не опубликован.',
-            status: 'placeholder',
+            text: '+7 (903) 237-58-61',
+            status: 'active',
+            href: 'tel:+79032375861',
           },
           {
             icon: 'building',
