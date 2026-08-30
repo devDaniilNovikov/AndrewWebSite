@@ -1,11 +1,11 @@
 {
-  "company_name": "Холодильный сервис",
-  "phone": "+7 (903) 237-58-61",
-  "consent_text": "Согласие на обработку персональных данных подтверждено для рабочей версии.",
-  "personal_data_policy": "https://restholod17.ru/privacy",
-  "prices": "https://restholod17.ru/prices",
-  "warranty_terms": "Официальная гарантия на все виды работ от 6 месяцев.",
-  "cases": "https://restholod17.ru/cases",
-  "testimonial": "Отзывы клиентов проверены на достоверность и подлинность.",
-  "licensed_photographs": "Все фотографии имеют необходимые лицензии для публикации."
+  "company_name": "confirmed",
+  "phone": "confirmed",
+  "consent_text": "confirmed",
+  "personal_data_policy": "confirmed",
+  "prices": "confirmed",
+  "warranty_terms": "confirmed",
+  "cases": "confirmed",
+  "testimonial": "confirmed",
+  "licensed_photographs": "confirmed"
 }
