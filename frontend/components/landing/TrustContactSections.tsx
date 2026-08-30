@@ -21,8 +21,8 @@ const serviceModelItems = [
 
 const activeContactChannels = [
   { icon: 'phone', label: 'Телефон', value: '+7 (903) 237-58-61', href: 'tel:+79032375861' },
-  { icon: 'message', label: 'Telegram', value: 't.me/AndrewGukovBot_bot', href: 'https://t.me/AndrewGukovBot_bot', external: true },
-  { icon: 'message', label: 'WhatsApp', value: 'Написать в WhatsApp', href: 'https://wa.me/79032375861', external: true },
+  { icon: 'phone', label: 'Telegram', value: 't.me/AndrewGukovBot_bot', href: 'https://t.me/AndrewGukovBot_bot', external: true },
+  { icon: 'phone', label: 'WhatsApp', value: 'Написать в WhatsApp', href: 'https://wa.me/79032375861', external: true },
 ] as const;
 
 const unavailableLegalDocuments = [
