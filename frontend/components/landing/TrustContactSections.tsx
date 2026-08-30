@@ -20,9 +20,9 @@ const serviceModelItems = [
 ] as const;
 
 const activeContactChannels = [
-  { icon: 'phone', label: 'Телефон', value: '+7 (903) 237-58-61', href: 'tel:+79032375861' },
-  { icon: 'phone', label: 'Telegram', value: 't.me/AndrewGukovBot_bot', href: 'https://t.me/AndrewGukovBot_bot', external: true },
-  { icon: 'phone', label: 'WhatsApp', value: 'Написать в WhatsApp', href: 'https://wa.me/79032375861', external: true },
+  { icon: 'phone' as const, label: 'Телефон', value: '+7 (903) 237-58-61', href: 'tel:+79032375861' },
+  { icon: 'phone' as const, label: 'Telegram', value: 't.me/AndrewGukovBot_bot', href: 'https://t.me/AndrewGukovBot_bot', external: true },
+  { icon: 'phone' as const, label: 'WhatsApp', value: 'Написать в WhatsApp', href: 'https://wa.me/79032375861', external: true },
 ] as const;
 
 const unavailableLegalDocuments = [
@@ -179,7 +179,7 @@ export function ContactSection() {
                   {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 >
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-primary-ink shadow-sm">
-                    <LineIcon className="h-5 w-5" name={channel.icon} />
+                    <LineIcon className="h-5 w-5" name={channel.icon as any} />
                   </span>
                   <span className="min-w-0">
                     <strong className="block text-sm font-semibold text-navy">
