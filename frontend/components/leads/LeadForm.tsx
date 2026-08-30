@@ -677,4 +677,3 @@ export function LeadForm() {
     </form>
   );
 }
-}
