@@ -460,7 +460,7 @@ export const productPageRoutes = [
             icon: 'phone',
             title: 'Телефон',
             text: '+7 (903) 237-58-61',
-            status: 'active',
+            status: 'confirmed',
             href: 'tel:+79032375861',
           },
           {
