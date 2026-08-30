@@ -338,7 +338,7 @@ export const productPageRoutes = [
           },
           {
             icon: 'ice',
-            title: 'Льдогенератор',
+            title: 'Ледогенератор',
             text: 'Фактический кейс и лицензированные фотографии будут добавлены в F4.',
             status: 'placeholder',
           },
@@ -461,7 +461,7 @@ export const productPageRoutes = [
             title: 'Телефон',
             text: '+7 (903) 237-58-61',
             status: 'confirmed',
-            href: 'tel:+79032375861',
+      
           },
           {
             icon: 'building',
