@@ -112,9 +112,12 @@ export function LandingHeader() {
 
         <div className="ml-auto hidden shrink-0 items-center gap-3 lg:flex">
           <span className="text-right">
-            <span className="block text-[0.8125rem] font-semibold leading-[1.125rem] text-navy">
-              Телефон не опубликован
-            </span>
+            <a
+              className="block text-[0.8125rem] font-semibold leading-[1.125rem] text-navy underline hover:text-blue-600"
+              href="tel:+79032375861"
+            >
+              +7 (903) 237-58-61
+            </a>
           </span>
           <LeadCta
             className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-[0.9375rem] font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
