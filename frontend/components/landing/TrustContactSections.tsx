@@ -172,16 +172,16 @@ export function ContactSection() {
               {activeContactChannels.map((channel) => (
                 <div
                   aria-label={channel.label}
-                  className="flex min-h-16 items-center gap-2 rounded-lg border border-slate-200 bg-surface p-3"
+                  className="flex min-h-16 items-center gap-1.5 rounded-lg border border-slate-200 bg-surface px-2.5 py-3"
                   key={channel.label}
                   role="listitem"
                 >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-primary-ink shadow-sm">
-                    <LineIcon className="h-5 w-5" name={channel.icon as any} />
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-white text-primary-ink shadow-sm">
+                    <LineIcon className="h-4 w-4" name={channel.icon as any} />
                   </span>
                   <span className="min-w-0">
                     <a
-                      className="block text-sm font-semibold text-navy underline transition-colors hover:text-blue-600 truncate"
+                      className="block text-sm font-semibold tracking-tight text-navy underline transition-colors hover:text-blue-600 truncate"
                       href={channel.href}
                       {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     >
