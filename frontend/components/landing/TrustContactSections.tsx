@@ -20,7 +20,7 @@ const serviceModelItems = [
 ] as const;
 
 const activeContactChannels = [
-  { icon: 'phone' as const, label: 'Телефон', value: '+7 (903) 237-58-61', href: 'tel:+79032375861' },
+  { icon: 'phone' as const, label: 'Телефон', value: '+7 (903) 237-58-61', href: 'tel:+79032375861', external: false },
   { icon: 'phone' as const, label: 'Telegram', value: 't.me/AndrewGukovBot_bot', href: 'https://t.me/AndrewGukovBot_bot', external: true },
   { icon: 'phone' as const, label: 'WhatsApp', value: 'Написать в WhatsApp', href: 'https://wa.me/79032375861', external: true },
 ] as const;
