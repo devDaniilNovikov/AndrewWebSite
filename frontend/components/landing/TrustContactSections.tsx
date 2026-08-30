@@ -139,7 +139,6 @@ export function ReviewsSection() {
     />
   );
 }
-
 export function ContactSection() {
   return (
     <section
@@ -170,26 +169,28 @@ export function ContactSection() {
               role="list"
             >
               {activeContactChannels.map((channel) => (
-                <a
+                <div
                   aria-label={`${channel.label}: ${channel.value}`}
-                  className="flex min-h-16 items-center gap-3 rounded-lg border border-slate-200 bg-surface p-3 transition-colors hover:border-blue-300 hover:bg-white"
-                  href={channel.href}
+                  className="flex min-h-16 items-center gap-3 rounded-lg border border-slate-200 bg-surface p-3"
                   key={channel.label}
                   role="listitem"
-                  {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 >
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-primary-ink shadow-sm">
                     <LineIcon className="h-5 w-5" name={channel.icon as any} />
                   </span>
                   <span className="min-w-0">
-                    <strong className="block text-sm font-semibold text-navy">
+                    <a
+                      className="block text-sm font-semibold text-navy underline hover:text-blue-600"
+                      href={channel.href}
+                      {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    >
                       {channel.label}
-                    </strong>
-                    <span className="mt-1 block text-[0.8125rem] leading-[1.125rem] text-blue-600 underline">
+                    </a>
+                    <span className="mt-1 block text-[0.8125rem] leading-[1.125rem] text-slate-600">
                       {channel.value}
                     </span>
                   </span>
-                </a>
+                </div>
               ))}
             </div>
           </Reveal>
