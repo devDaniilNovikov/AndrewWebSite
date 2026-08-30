@@ -674,4 +674,7 @@ export function LeadForm() {
           <span>Telegram: <a href="https://t.me/AndrewGukovBot_bot" className="underline hover:text-blue-300" target="_blank" rel="noopener noreferrer">t.me/AndrewGukovBot_bot</a></span>
         </p>
       ) : null}
+    </form>
+  );
+}
 }
