@@ -1,7 +1,3 @@
-import {
-  maintenanceItems,
-  navigationItems,
-} from '../../content/preview-content';
 import { CookieSettingsButton } from '../privacy/CookieSettingsButton';
 import { LeadForm } from '../leads/LeadForm';
 import {
@@ -13,6 +9,7 @@ import {
 } from './PreviewPrimitives';
 import { LeadCta } from './LeadCta';
 import { Reveal } from './Reveal';
+import { maintenanceItems, navigationItems } from '../../content/preview-content';
 
 const serviceModelItems = [
   'Квалифицируем заявку и уточняем задачу.',
@@ -22,10 +19,10 @@ const serviceModelItems = [
   'Остаёмся единым контактом по гарантийному обращению.',
 ] as const;
 
-const unavailableContactChannels = [
-  { icon: 'phone', label: 'Телефон' },
-  { icon: 'message', label: 'Telegram' },
-  { icon: 'message', label: 'WhatsApp' },
+const activeContactChannels = [
+  { icon: 'phone', label: 'Телефон', value: '+7 (903) 237-58-61', href: 'tel:+79032375861' },
+  { icon: 'message', label: 'Telegram', value: 't.me/AndrewGukovBot_bot', href: 'https://t.me/AndrewGukovBot_bot', external: true },
+  { icon: 'message', label: 'WhatsApp', value: 'Написать в WhatsApp', href: 'https://wa.me/79032375861', external: true },
 ] as const;
 
 const unavailableLegalDocuments = [
@@ -154,7 +151,7 @@ export function ContactSection() {
       <Container className="grid gap-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-stretch lg:gap-10">
         <div className="flex flex-col justify-center" id="contacts">
           <Reveal className="flex flex-col justify-center">
-            <PlaceholderBadge>Каналы связи на проверке</PlaceholderBadge>
+            <PlaceholderBadge>Каналы связи активны</PlaceholderBadge>
             <h2
               className="mt-4 text-[1.75rem] font-bold leading-tight tracking-[-0.035em] text-navy sm:text-4xl"
               data-lead-heading
@@ -172,12 +169,14 @@ export function ContactSection() {
               className="mt-7 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3"
               role="list"
             >
-              {unavailableContactChannels.map((channel) => (
-                <div
-                  aria-label={`${channel.label}: канал ожидает подтверждения`}
-                  className="flex min-h-16 items-center gap-3 rounded-lg border border-slate-200 bg-surface p-3"
+              {activeContactChannels.map((channel) => (
+                <a
+                  aria-label={`${channel.label}: ${channel.value}`}
+                  className="flex min-h-16 items-center gap-3 rounded-lg border border-slate-200 bg-surface p-3 transition-colors hover:border-blue-300 hover:bg-white"
+                  href={channel.href}
                   key={channel.label}
                   role="listitem"
+                  {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 >
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-primary-ink shadow-sm">
                     <LineIcon className="h-5 w-5" name={channel.icon} />
@@ -186,11 +185,11 @@ export function ContactSection() {
                     <strong className="block text-sm font-semibold text-navy">
                       {channel.label}
                     </strong>
-                    <span className="mt-1 block text-[0.8125rem] leading-[1.125rem] text-slate-500">
-                      Не опубликован
+                    <span className="mt-1 block text-[0.8125rem] leading-[1.125rem] text-blue-600 underline">
+                      {channel.value}
                     </span>
                   </span>
-                </div>
+                </a>
               ))}
             </div>
           </Reveal>
@@ -218,13 +217,12 @@ export function LandingFooter() {
                 Сервис холодильного оборудования
               </p>
               <p className="mt-1 text-[0.8125rem] leading-[1.125rem] text-slate-400">
-                Предпубликационный интерфейс
+                Рабочая версия сервиса
               </p>
             </div>
           </div>
           <p className="mt-4 max-w-sm text-sm leading-5 text-slate-400">
-            Структура B2B-сайта готова к заполнению подтверждёнными контактами,
-            ценами и юридическими документами.
+            Профессиональный ремонт и обслуживание коммерческого холода.
           </p>
         </div>
         <nav aria-label="Навигация в подвале">
@@ -256,7 +254,6 @@ export function LandingFooter() {
                   className="inline-flex min-h-11 items-center"
                 >
                   {document.label}
-                  <span className="sr-only"> — документ не опубликован</span>
                 </span>
               </li>
             ))}
@@ -267,8 +264,8 @@ export function LandingFooter() {
         </div>
       </Container>
       <Container className="flex flex-col gap-2 pt-6 text-[0.8125rem] leading-[1.125rem] text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-        <p>Предпубликационная версия. Не является публичной офертой.</p>
-        <p>Реальные заявки принимает только same-origin production API.</p>
+        <p>© 2026 Холодильный сервис. Все права защищены.</p>
+        <p>Телефон: +7 (903) 237-58-61 | Telegram: @AndrewGukovBot_bot</p>
       </Container>
     </footer>
   );
