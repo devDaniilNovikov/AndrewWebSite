@@ -20,9 +20,9 @@ const serviceModelItems = [
 ] as const;
 
 const activeContactChannels = [
-  { icon: 'phone' as const, label: 'Телефон', value: '+7 (903) 237-58-61', href: 'tel:+79032375861', external: false },
-  { icon: 'phone' as const, label: 'Telegram', value: 't.me/AndrewGukovBot_bot', href: 'https://t.me/AndrewGukovBot_bot', external: true },
-  { icon: 'phone' as const, label: 'WhatsApp', value: 'Написать в WhatsApp', href: 'https://wa.me/79032375861', external: true },
+  { icon: 'phone' as const, label: 'Телефон', href: 'tel:+79032375861', external: false },
+  { icon: 'phone' as const, label: 'Telegram', href: 'https://t.me/AndrewGukovBot_bot', external: true },
+  { icon: 'phone' as const, label: 'WhatsApp', href: 'https://wa.me/79032375861', external: true },
 ] as const;
 
 const unavailableLegalDocuments = [
@@ -170,7 +170,7 @@ export function ContactSection() {
             >
               {activeContactChannels.map((channel) => (
                 <div
-                  aria-label={`${channel.label}: ${channel.value}`}
+                  aria-label={channel.label}
                   className="flex min-h-16 items-center gap-3 rounded-lg border border-slate-200 bg-surface p-3"
                   key={channel.label}
                   role="listitem"
@@ -180,15 +180,12 @@ export function ContactSection() {
                   </span>
                   <span className="min-w-0">
                     <a
-                      className="block text-sm font-semibold text-navy underline hover:text-blue-600"
+                      className="block text-base font-semibold text-navy underline hover:text-blue-600"
                       href={channel.href}
                       {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     >
                       {channel.label}
                     </a>
-                    <span className="mt-1 block text-[0.8125rem] leading-[1.125rem] text-slate-600">
-                      {channel.value}
-                    </span>
                   </span>
                 </div>
               ))}
@@ -203,7 +200,6 @@ export function ContactSection() {
     </section>
   );
 }
-
 export function LandingFooter() {
   return (
     <footer className="bg-navy py-10 text-slate-300" id="contacts-footer">
