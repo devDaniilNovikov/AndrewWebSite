@@ -9,7 +9,10 @@ import {
 } from './PreviewPrimitives';
 import { LeadCta } from './LeadCta';
 import { Reveal } from './Reveal';
-import { maintenanceItems, navigationItems } from '../../content/preview-content';
+import {
+  maintenanceItems,
+  navigationItems,
+} from '../../content/preview-content';
 
 const serviceModelItems = [
   'Квалифицируем заявку и уточняем задачу.',
@@ -20,9 +23,27 @@ const serviceModelItems = [
 ] as const;
 
 const activeContactChannels = [
-  { icon: 'phone', label: 'Телефон', value: '+7 (903) 237-58-61', href: 'tel:+79032375861' },
-  { icon: 'phone', label: 'Telegram', value: 't.me/AndrewGukovBot_bot', href: 'https://t.me/AndrewGukovBot_bot', external: true },
-  { icon: 'phone', label: 'WhatsApp', value: 'Написать в WhatsApp', href: 'https://wa.me/79032375861', external: true },
+  {
+    icon: 'phone',
+    label: 'Телефон',
+    value: '+7 (903) 237-58-61',
+    href: 'tel:+79032375861',
+    external: false,
+  },
+  {
+    icon: 'phone',
+    label: 'Telegram',
+    value: 't.me/AndrewGukovBot_bot',
+    href: 'https://t.me/AndrewGukovBot_bot',
+    external: true,
+  },
+  {
+    icon: 'phone',
+    label: 'WhatsApp',
+    value: 'Написать в WhatsApp',
+    href: 'https://wa.me/79032375861',
+    external: true,
+  },
 ] as const;
 
 const unavailableLegalDocuments = [
@@ -176,7 +197,9 @@ export function ContactSection() {
                   href={channel.href}
                   key={channel.label}
                   role="listitem"
-                  {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  {...(channel.external
+                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                    : {})}
                 >
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-primary-ink shadow-sm">
                     <LineIcon className="h-5 w-5" name={channel.icon} />

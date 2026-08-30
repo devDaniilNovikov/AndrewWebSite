@@ -461,7 +461,6 @@ export const productPageRoutes = [
             title: 'Телефон',
             text: '+7 (903) 237-58-61',
             status: 'confirmed',
-      
           },
           {
             icon: 'building',

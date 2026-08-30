@@ -670,8 +670,26 @@ export function LeadForm() {
       </p>
       {showOfflineFallback || showSecondErrorFallback ? (
         <p className="mt-2 text-sm font-semibold text-white flex flex-col gap-2">
-          <span>Телефон: <a href="tel:+79032375861" className="underline hover:text-blue-300">+7 (903) 237-58-61</a></span>
-          <span>Telegram: <a href="https://t.me/AndrewGukovBot_bot" className="underline hover:text-blue-300" target="_blank" rel="noopener noreferrer">t.me/AndrewGukovBot_bot</a></span>
+          <span>
+            Телефон:{' '}
+            <a
+              href="tel:+79032375861"
+              className="underline hover:text-blue-300"
+            >
+              +7 (903) 237-58-61
+            </a>
+          </span>
+          <span>
+            Telegram:{' '}
+            <a
+              href="https://t.me/AndrewGukovBot_bot"
+              className="underline hover:text-blue-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              t.me/AndrewGukovBot_bot
+            </a>
+          </span>
         </p>
       ) : null}
     </form>
