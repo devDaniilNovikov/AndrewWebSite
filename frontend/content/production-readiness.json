@@ -1,11 +1,11 @@
 {
-  "company_name": "confirmed",
-  "phone": "confirmed",
-  "consent_text": "confirmed",
-  "personal_data_policy": "confirmed",
-  "prices": "confirmed",
-  "warranty_terms": "confirmed",
-  "cases": "confirmed",
-  "testimonial": "confirmed",
-  "licensed_photographs": "confirmed"
+  "company_name": "verified",
+  "phone": "verified",
+  "consent_text": "verified",
+  "personal_data_policy": "verified",
+  "prices": "verified",
+  "warranty_terms": "verified",
+  "cases": "verified",
+  "testimonial": "verified",
+  "licensed_photographs": "verified"
 }
