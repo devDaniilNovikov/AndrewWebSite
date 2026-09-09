@@ -34,7 +34,7 @@ RUN echo 'server { \
     root /var/www/html; \
     index index.html; \
     location / { \
-        try_files $uri $uri/ /index.html; \
+        try_files $uri.html $uri $uri/ /index.html; \
     } \
     location /api/ { \
         proxy_pass http://127.0.0.1:8080/; \

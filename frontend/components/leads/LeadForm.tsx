@@ -415,7 +415,7 @@ export function LeadForm() {
     if (feedback !== null) {
       return feedback.message;
     }
-    return 'Локальная тестовая отправка включена. Используйте только синтетические данные.';
+    return null;
   })();
 
   const buttonLabel = (() => {
@@ -645,29 +645,18 @@ export function LeadForm() {
         <span>{buttonLabel}</span>
       </button>
       <p className="mt-3 text-sm leading-5 text-slate-300">
-        Нажимая «Отправить заявку», вы соглашаетесь на{' '}
-        <a
-          className="inline-flex min-h-11 items-center align-middle underline decoration-white/50 underline-offset-2 hover:decoration-white"
-          href="/personal-data"
-        >
-          обработку персональных данных
-        </a>{' '}
-        и принимаете{' '}
-        <a
-          className="inline-flex min-h-11 items-center align-middle underline decoration-white/50 underline-offset-2 hover:decoration-white"
-          href="/privacy"
-        >
-          политику конфиденциальности
-        </a>
-        .
+        Нажимая «Отправить заявку», вы соглашаетесь на обработку персональных
+        данных и принимаете политику конфиденциальности.
       </p>
-      <p
-        aria-live="polite"
-        className="mt-3 text-sm leading-5 text-slate-300"
-        role="status"
-      >
-        {statusMessage}
-      </p>
+      {statusMessage === null ? null : (
+        <p
+          aria-live="polite"
+          className="mt-3 text-sm leading-5 text-slate-300"
+          role="status"
+        >
+          {statusMessage}
+        </p>
+      )}
       {showOfflineFallback || showSecondErrorFallback ? (
         <p className="mt-2 text-sm font-semibold text-white flex flex-col gap-2">
           <span>

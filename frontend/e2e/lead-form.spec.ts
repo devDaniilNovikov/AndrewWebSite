@@ -132,9 +132,13 @@ async function openEnabledForm(page: Page, path = '/') {
 
   const form = page.getByRole('form', { name: 'Форма заявки' });
   await expect(form).toBeVisible();
-  await expect(form.getByRole('status')).toHaveText(
-    'Локальная тестовая отправка включена. Используйте только синтетические данные.',
-  );
+  await expect(form.getByRole('status')).toHaveCount(0);
+  await expect(
+    form.getByRole('link', { name: 'обработку персональных данных' }),
+  ).toHaveCount(0);
+  await expect(
+    form.getByRole('link', { name: 'политику конфиденциальности' }),
+  ).toHaveCount(0);
   await expect(form.getByLabel('Имя')).toBeEnabled();
   await expect(form.getByLabel('Телефон')).toBeEnabled();
   await expect(form.getByLabel('Опишите неисправность')).toBeEnabled();
