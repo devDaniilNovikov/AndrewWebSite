@@ -88,12 +88,12 @@ describe('LeadForm', () => {
       within(form).getByRole('link', {
         name: 'обработку персональных данных',
       }),
-    ).toHaveAttribute('href', '#personal-data');
+    ).toHaveAttribute('href', '/personal-data');
     expect(
       within(form).getByRole('link', {
         name: 'политику конфиденциальности',
       }),
-    ).toHaveAttribute('href', '#privacy-policy');
+    ).toHaveAttribute('href', '/privacy');
     expect(
       within(form).getByRole('button', { name: 'Отправить заявку' }),
     ).toBeDisabled();

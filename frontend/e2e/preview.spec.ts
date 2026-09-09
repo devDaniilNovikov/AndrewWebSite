@@ -44,6 +44,8 @@ const PRIMARY_NAVIGATION = [
 
 const OFFLINE_STANDALONE_ARTIFACT_PATH = '/andrew-website-updated.html';
 const HOSTED_STATIC_PATHS = [
+  '/privacy',
+  '/personal-data',
   '/kontakty',
   '/o-kompanii',
   '/raboty',

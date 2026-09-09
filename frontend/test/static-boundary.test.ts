@@ -78,7 +78,7 @@ describe('static frontend boundary', () => {
     ]);
   });
 
-  it('allows only the seven declared provisional product page routes', async () => {
+  it('allows only the declared product and legal document routes', async () => {
     const fixture = await createFixture();
     await writeFixtureFile(
       fixture,
@@ -87,6 +87,8 @@ describe('static frontend boundary', () => {
     );
 
     const productPageFiles = [
+      'app/privacy/page.tsx',
+      'app/personal-data/page.tsx',
       'app/uslugi/page.tsx',
       'app/remont-torgovogo-holodilnogo-oborudovaniya/page.tsx',
       'app/remont-ledogeneratorov/page.tsx',

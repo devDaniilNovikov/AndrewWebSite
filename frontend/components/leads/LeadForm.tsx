@@ -648,14 +648,14 @@ export function LeadForm() {
         Нажимая «Отправить заявку», вы соглашаетесь на{' '}
         <a
           className="inline-flex min-h-11 items-center align-middle underline decoration-white/50 underline-offset-2 hover:decoration-white"
-          href="#personal-data"
+          href="/personal-data"
         >
           обработку персональных данных
         </a>{' '}
         и принимаете{' '}
         <a
           className="inline-flex min-h-11 items-center align-middle underline decoration-white/50 underline-offset-2 hover:decoration-white"
-          href="#privacy-policy"
+          href="/privacy"
         >
           политику конфиденциальности
         </a>
@@ -670,8 +670,26 @@ export function LeadForm() {
       </p>
       {showOfflineFallback || showSecondErrorFallback ? (
         <p className="mt-2 text-sm font-semibold text-white flex flex-col gap-2">
-          <span>Телефон: <a href="tel:+79032375861" className="underline hover:text-blue-300">+7 (903) 237-58-61</a></span>
-          <span>Telegram: <a href="https://t.me/AndrewGukovBot_bot" className="underline hover:text-blue-300" target="_blank" rel="noopener noreferrer">t.me/AndrewGukovBot_bot</a></span>
+          <span>
+            Телефон:{' '}
+            <a
+              href="tel:+79032375861"
+              className="underline hover:text-blue-300"
+            >
+              +7 (903) 237-58-61
+            </a>
+          </span>
+          <span>
+            Telegram:{' '}
+            <a
+              href="https://t.me/AndrewGukovBot_bot"
+              className="underline hover:text-blue-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              t.me/AndrewGukovBot_bot
+            </a>
+          </span>
         </p>
       ) : null}
     </form>

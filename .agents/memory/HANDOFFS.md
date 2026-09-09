@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-security-audit-findings` | `2026-08-17-155333-fix-security-audit-findings-handoff.md` → `2026-08-17-170456-fix-security-audit-findings-draft-handoff.md` → `2026-08-17-171857-fix-security-audit-findings-ready-handoff.md` | Exact Draft checkpoint `5c60330` reviewed and green; Ready metadata successor pending publication | backend, frontend, container, ci, security |
+| `fix-footer-legal-links` | `2026-09-09-123847-fix-footer-legal-links-handoff.md` | Implementation complete; Draft publication authorized and pending | frontend, product, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -65,6 +65,7 @@ design.
 | `fix-mobile-navigation-scroll` | 3 | `2026-08-08-063036-fix-mobile-navigation-scroll-ready-handoff.md` | merged as `172d20f`; source branch retained; no deployment | frontend, accessibility, testing, security, tracker, incident |
 | `fix-frontend-tz-preview` | 3 | `2026-08-16-075253-fix-frontend-tz-preview-ready-handoff.md` | merged as `c41538a`; source branch retained; no deployment | frontend, design, accessibility, privacy, testing, standalone-export |
 | `integration-sentry` | 3 | `2026-08-16-184622-integration-sentry-ready-handoff.md` | merged as `df324aa`; source branch retained; post-merge CI/security green; no deployment | backend, integration, observability, security, ci |
+| `fix-security-audit-findings` | 3 | `2026-08-17-171857-fix-security-audit-findings-ready-handoff.md` | merged as `0e84020`; source branch retained; no deployment | backend, frontend, container, ci, security |
 
 ## Rules
 
