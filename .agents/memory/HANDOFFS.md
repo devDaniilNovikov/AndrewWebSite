@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-remove-test-notice` | `2026-09-09-173950-fix-remove-test-notice-handoff.md` | Draft PR #131 published; CI pending | frontend, nginx, testing, tracker |
+| `fix-remove-test-notice` | `2026-09-09-173950-fix-remove-test-notice-handoff.md` | PR #131 reviewed and Ready; squash merge authorized | frontend, nginx, testing, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is

@@ -21,9 +21,11 @@ Signature: HND fix-remove-test-notice [draft-pr] topics: frontend, nginx, testin
 ## Snapshot at 2026-09-09T17:39:50Z — re-verify live before use
 
 - Branch `fix-remove-test-notice` is based on `origin/main` `a4bd9df` in its
-  dedicated external worktree. Published head is `dd52f62`.
-- Draft [PR #131](https://github.com/devDaniilNovikov/AndrewWebSite/pull/131)
-  targets `main` from `fix-remove-test-notice`.
+  dedicated external worktree. Runtime implementation commit is `dd52f62`;
+  later branch commits contain task metadata only.
+- [PR #131](https://github.com/devDaniilNovikov/AndrewWebSite/pull/131)
+  targets `main` from `fix-remove-test-notice` and has no unresolved review
+  thread, review, or comment.
 - Four focused Vitest contracts passed; ESLint and strict TypeScript passed.
   Production static build and deterministic export verification passed with 12
   routes. Focused Chromium E2E passed for lead-form behavior and opening both
@@ -36,6 +38,10 @@ Signature: HND fix-remove-test-notice [draft-pr] topics: frontend, nginx, testin
   baseline. Full formatting remains blocked by unchanged
   `frontend/content/product-pages.ts`; the static-boundary command reports the
   two unchanged external runtime URLs.
+- At the reviewed PR head, Repository policy, dependency-security, Semgrep,
+  and Snyk passed. `verify`, Frontend quality, and Container runtime-contract
+  failures match the same failing steps on `main` `a4bd9df`; GitHub reports no
+  required status-check configuration for `main`.
 
 ## Next steps — conditional on live evidence
 
