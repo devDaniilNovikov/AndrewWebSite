@@ -9,7 +9,10 @@ import {
 } from './PreviewPrimitives';
 import { LeadCta } from './LeadCta';
 import { Reveal } from './Reveal';
-import { maintenanceItems, navigationItems } from '../../content/preview-content';
+import {
+  maintenanceItems,
+  navigationItems,
+} from '../../content/preview-content';
 
 const serviceModelItems = [
   'Квалифицируем заявку и уточняем задачу.',
@@ -20,18 +23,37 @@ const serviceModelItems = [
 ] as const;
 
 const activeContactChannels = [
-  { icon: 'phone' as const, label: 'Телефон', href: 'tel:+79032375861', external: false },
-  { icon: 'phone' as const, label: 'Telegram', href: 'https://t.me/AndrewGukovBot_bot', external: true },
-  { icon: 'phone' as const, label: 'WhatsApp', href: 'https://wa.me/79032375861', external: true },
+  {
+    icon: 'phone' as const,
+    label: 'Телефон',
+    href: 'tel:+79032375861',
+    external: false,
+  },
+  {
+    icon: 'phone' as const,
+    label: 'Telegram',
+    href: 'https://t.me/AndrewGukovBot_bot',
+    external: true,
+  },
+  {
+    icon: 'phone' as const,
+    label: 'WhatsApp',
+    href: 'https://wa.me/79032375861',
+    external: true,
+  },
 ] as const;
 
-const unavailableLegalDocuments = [
-  { id: 'privacy-policy', label: 'Политика конфиденциальности' },
+const legalDocuments = [
+  {
+    id: 'privacy-policy',
+    href: '/privacy',
+    label: 'Политика конфиденциальности',
+  },
   {
     id: 'personal-data',
+    href: '/personal-data',
     label: 'Информация об обработке персональных данных',
   },
-  { id: 'requisites', label: 'Реквизиты ИП' },
 ] as const;
 
 export function AboutSection() {
@@ -177,13 +199,15 @@ export function ContactSection() {
                   role="listitem"
                 >
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-white text-primary-ink shadow-sm">
-                    <LineIcon className="h-4 w-4" name={channel.icon as any} />
+                    <LineIcon className="h-4 w-4" name={channel.icon} />
                   </span>
                   <span className="min-w-0">
                     <a
                       className="block text-sm font-semibold tracking-tight text-navy underline transition-colors hover:text-blue-600 truncate"
                       href={channel.href}
-                      {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      {...(channel.external
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {})}
                     >
                       {channel.label}
                     </a>
@@ -246,16 +270,21 @@ export function LandingFooter() {
             Документы и настройки
           </h2>
           <ul className="mt-4 space-y-1 text-sm text-slate-400">
-            {unavailableLegalDocuments.map((document) => (
+            {legalDocuments.map((document) => (
               <li id={document.id} key={document.id}>
-                <span
-                  aria-disabled="true"
-                  className="inline-flex min-h-11 items-center"
+                <a
+                  className="inline-flex min-h-11 items-center underline decoration-white/25 underline-offset-4 transition-colors duration-150 hover:text-white hover:decoration-white"
+                  href={document.href}
                 >
                   {document.label}
-                </span>
+                </a>
               </li>
             ))}
+            <li id="requisites">
+              <span className="inline-flex min-h-11 items-center">
+                ИНН: 771549669484
+              </span>
+            </li>
             <li>
               <CookieSettingsButton />
             </li>

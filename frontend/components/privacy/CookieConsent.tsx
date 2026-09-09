@@ -202,7 +202,7 @@ export function CookieConsent() {
         </p>
         <a
           className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-primary-ink underline decoration-primary/30 underline-offset-4 hover:decoration-primary"
-          href="#privacy-policy"
+          href="/privacy"
         >
           Политика конфиденциальности
         </a>

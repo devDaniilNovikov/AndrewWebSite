@@ -43,6 +43,8 @@ const allowedAppFiles = new Set([
   'app/layout.tsx',
   'app/not-found.tsx',
   'app/page.tsx',
+  'app/privacy/page.tsx',
+  'app/personal-data/page.tsx',
   'app/kontakty/page.tsx',
   'app/o-kompanii/page.tsx',
   'app/raboty/page.tsx',

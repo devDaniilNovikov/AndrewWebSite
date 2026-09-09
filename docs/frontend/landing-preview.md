@@ -17,6 +17,12 @@ wording are design-only examples and are never business facts.
 
 ## Delivery slice
 
+The user authorized legal document publication on 2026-09-09: `/privacy`
+contains the supplied policy and `/personal-data` the separate consent,
+both dated 2026-09-06. Preserve their body text, lists and tables. The footer
+links to both documents and displays the user-confirmed INN. This content
+delivery does not change the lead-processing or analytics implementation.
+
 - Export `/` plus `/uslugi`,
   `/remont-torgovogo-holodilnogo-oborudovaniya`,
   `/remont-ledogeneratorov`, `/o-kompanii`, `/raboty`, `/tseny`, and

@@ -5,6 +5,8 @@ import { createFileManifest, hashFileManifest } from './lib/file-manifest.mjs';
 
 const outputDirectory = resolve('out');
 const requiredProductFiles = [
+  'privacy.html',
+  'personal-data.html',
   'uslugi.html',
   'remont-torgovogo-holodilnogo-oborudovaniya.html',
   'remont-ledogeneratorov.html',
