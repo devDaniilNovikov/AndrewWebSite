@@ -1,6 +1,6 @@
 # fix-footer-legal-links handoff
 
-Signature: HND fix-footer-legal-links [implementation-complete] topics: frontend, product, security, tracker → predecessor: none
+Signature: HND fix-footer-legal-links [draft-pr] topics: frontend, product, security, tracker → predecessor: none
 
 ## Durable — safe to cite later
 
@@ -24,6 +24,8 @@ Signature: HND fix-footer-legal-links [implementation-complete] topics: frontend
 
 - Branch `fix-footer-legal-links` is based on `origin/main` `36f7dea` in its
   dedicated external worktree.
+- Draft [PR #130](https://github.com/devDaniilNovikov/AndrewWebSite/pull/130)
+  targets `main` from `fix-footer-legal-links`.
 - Preview build generated 12 static pages including both legal routes.
 - Focused unit/component tests passed (4 run, 14 filtered); strict typecheck
   and lint passed. Legal-route Playwright checks passed on desktop, tablet and
@@ -39,9 +41,7 @@ Signature: HND fix-footer-legal-links [implementation-complete] topics: frontend
 
 ## Next steps — conditional, each requires the stated live check
 
-1. Publish a Draft PR to `main`, update this snapshot and `TASKS.md` with its
-   number, then push the metadata commit.
-2. Treat CI failures matching the recorded `origin/main` baseline as existing
+1. Treat CI failures matching the recorded `origin/main` baseline as existing
    repository debt; resolve any new failure introduced by this branch.
-3. Ready transition, merge, deployment, and branch deletion require their own
+2. Ready transition, merge, deployment, and branch deletion require their own
    explicit user authorization.

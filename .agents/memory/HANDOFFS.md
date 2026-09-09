@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-footer-legal-links` | `2026-09-09-123847-fix-footer-legal-links-handoff.md` | Implementation complete; Draft publication authorized and pending | frontend, product, security, tracker |
+| `fix-footer-legal-links` | `2026-09-09-123847-fix-footer-legal-links-handoff.md` | Draft PR #130 published; CI pending | frontend, product, security, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
