@@ -1,4 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LandingFooter } from '../components/landing/TrustContactSections';
 
@@ -20,5 +22,14 @@ describe('published legal documents', () => {
     expect(
       footer.getByRole('button', { name: 'Настройки cookies' }),
     ).toBeEnabled();
+  });
+
+  it('serves extensionless document URLs before matching export directories', async () => {
+    const dockerfile = await readFile(
+      resolve(process.cwd(), '..', 'Dockerfile'),
+      'utf8',
+    );
+
+    expect(dockerfile).toContain('try_files $uri.html $uri $uri/ /index.html;');
   });
 });

@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-footer-legal-links` | `2026-09-09-123847-fix-footer-legal-links-handoff.md` | Draft PR #130 published; CI pending | frontend, product, security, tracker |
+| `fix-remove-test-notice` | `2026-09-09-173950-fix-remove-test-notice-handoff.md` | PR #131 reviewed and Ready; squash merge authorized | frontend, nginx, testing, tracker |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -66,6 +66,7 @@ design.
 | `fix-frontend-tz-preview` | 3 | `2026-08-16-075253-fix-frontend-tz-preview-ready-handoff.md` | merged as `c41538a`; source branch retained; no deployment | frontend, design, accessibility, privacy, testing, standalone-export |
 | `integration-sentry` | 3 | `2026-08-16-184622-integration-sentry-ready-handoff.md` | merged as `df324aa`; source branch retained; post-merge CI/security green; no deployment | backend, integration, observability, security, ci |
 | `fix-security-audit-findings` | 3 | `2026-08-17-171857-fix-security-audit-findings-ready-handoff.md` | merged as `0e84020`; source branch retained; no deployment | backend, frontend, container, ci, security |
+| `fix-footer-legal-links` | 1 | `2026-09-09-123847-fix-footer-legal-links-handoff.md` | merged as `a4bd9df`; source branch retained; live legal-route redirect corrected by PR #131 | frontend, product, security, tracker |
 
 ## Rules
 

@@ -85,15 +85,15 @@ describe('LeadForm', () => {
       'Нажимая «Отправить заявку», вы соглашаетесь на обработку персональных данных и принимаете политику конфиденциальности.',
     );
     expect(
-      within(form).getByRole('link', {
+      within(form).queryByRole('link', {
         name: 'обработку персональных данных',
       }),
-    ).toHaveAttribute('href', '/personal-data');
+    ).not.toBeInTheDocument();
     expect(
-      within(form).getByRole('link', {
+      within(form).queryByRole('link', {
         name: 'политику конфиденциальности',
       }),
-    ).toHaveAttribute('href', '/privacy');
+    ).not.toBeInTheDocument();
     expect(
       within(form).getByRole('button', { name: 'Отправить заявку' }),
     ).toBeDisabled();
@@ -109,6 +109,14 @@ describe('LeadForm', () => {
     expect(honeypot).toHaveAttribute('tabindex', '-1');
     expect(honeypot).toBeDisabled();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the enabled idle form free of a test-only status notice', () => {
+    enableLoopbackPreview();
+    render(<LeadForm />);
+
+    const form = screen.getByRole('form', { name: 'Форма заявки' });
+    expect(within(form).queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('shows the exact field errors and focuses the first invalid control', () => {
