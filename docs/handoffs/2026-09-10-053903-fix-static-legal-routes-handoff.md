@@ -1,6 +1,6 @@
 # fix-static-legal-routes handoff
 
-Signature: HND fix-static-legal-routes [in_progress] topics: frontend, nginx, routing, testing, tracker → predecessor: 2026-09-09-173950-fix-remove-test-notice-handoff.md
+Signature: HND fix-static-legal-routes [draft_pr] topics: frontend, nginx, routing, testing, tracker → predecessor: 2026-09-09-173950-fix-remove-test-notice-handoff.md
 
 ## Scope
 
@@ -9,6 +9,7 @@ Signature: HND fix-static-legal-routes [in_progress] topics: frontend, nginx, ro
 - Branch `fix-static-legal-routes` starts from fresh `origin/main`
   `4dd990d7abdf898cd420365d0ba364a49efa747c` in
   `/Users/daniilnovikov/.codex/worktrees/fix-static-legal-routes/AndrewWorkWebSite`.
+- Draft PR #132 targets `main` from `fix-static-legal-routes`.
 - Owned paths are `Dockerfile`, the legal-document unit test, this task note,
   `TASKS.md`, and `.agents/memory/HANDOFFS.md`.
 
@@ -35,8 +36,25 @@ Signature: HND fix-static-legal-routes [in_progress] topics: frontend, nginx, ro
 
 ## Next steps
 
-1. Run focused frontend checks for the legal route contract.
-2. Commit, push, open PR to `main`, and continue the previously authorized
-   merge workflow.
+1. Wait for GitHub checks on PR #132 and resolve only task-scope failures.
+2. Continue the previously authorized Ready and merge workflow if checks allow.
 3. After merge, Timeweb must build from the new `main` commit; direct
    production deployment remains outside this repository change.
+
+## Verification
+
+- `pnpm exec vitest run test/legal-documents.test.tsx --reporter=default`
+  with Node 24.14.0 and pnpm 11.18.0: passed.
+- `pnpm run lint` with Node 24.14.0 and pnpm 11.18.0: passed.
+- `pnpm run typecheck` with Node 24.14.0 and pnpm 11.18.0: passed.
+- `pnpm run build:production` with Node 24.14.0 and pnpm 11.18.0: passed.
+- `pnpm run verify:export` with Node 24.14.0 and pnpm 11.18.0: passed;
+  deterministic export verified.
+- Artifact probe confirmed `out/privacy.html`, `out/personal-data.html`, and
+  relative homepage hrefs `/privacy` and `/personal-data`; no checked HTML
+  contained `restholod17.ru:8080`, `Реквизиты ИП`, or
+  `Локальная тестовая отправка`.
+- `git diff --check`: passed.
+- Full `pnpm test` still has unrelated main-equivalent placeholder and
+  production-gate failures. Docker daemon was unavailable, so local Docker
+  build was not run.

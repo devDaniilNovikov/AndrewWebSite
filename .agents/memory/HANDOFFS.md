@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-static-legal-routes` | `2026-09-10-053903-fix-static-legal-routes-handoff.md` | In progress; server redirect hardening after user reproduced `:8080` legal-link failure | frontend, nginx, routing, testing |
+| `fix-static-legal-routes` | `2026-09-10-053903-fix-static-legal-routes-handoff.md` | Draft PR #132; focused checks passed; GitHub checks pending | frontend, nginx, routing, testing |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
