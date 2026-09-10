@@ -1,7 +1,7 @@
 # --- Этап 1: Сборка фронтенда ---
 FROM node:24.14.0-alpine AS frontend-build
 WORKDIR /app
-RUN npm install -g pnpm
+RUN npm install -g pnpm@11.18.0
 COPY frontend/ ./
 RUN pnpm install
 RUN pnpm run build:standalone
@@ -31,10 +31,18 @@ COPY --from=frontend-build /app/out /var/www/html
 # Настраиваем простейший конфиг Nginx: все запросы идут на фронтенд, а /api — в Java
 RUN echo 'server { \
     listen 8080; \
+    absolute_redirect off; \
+    port_in_redirect off; \
     root /var/www/html; \
     index index.html; \
+    location = /privacy/ { \
+        try_files /privacy.html =404; \
+    } \
+    location = /personal-data/ { \
+        try_files /personal-data.html =404; \
+    } \
     location / { \
-        try_files $uri.html $uri $uri/ /index.html; \
+        try_files $uri.html $uri/index.html $uri /index.html; \
     } \
     location /api/ { \
         proxy_pass http://127.0.0.1:8080/; \
