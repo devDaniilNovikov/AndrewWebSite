@@ -24,12 +24,23 @@ describe('published legal documents', () => {
     ).toBeEnabled();
   });
 
-  it('serves extensionless document URLs before matching export directories', async () => {
+  it('serves legal routes from static documents before directory redirects', async () => {
     const dockerfile = await readFile(
       resolve(process.cwd(), '..', 'Dockerfile'),
       'utf8',
     );
 
-    expect(dockerfile).toContain('try_files $uri.html $uri $uri/ /index.html;');
+    expect(dockerfile).toContain('absolute_redirect off;');
+    expect(dockerfile).toContain('port_in_redirect off;');
+    expect(dockerfile).toContain('location = /privacy/');
+    expect(dockerfile).toContain('try_files /privacy.html =404;');
+    expect(dockerfile).toContain('location = /personal-data/');
+    expect(dockerfile).toContain('try_files /personal-data.html =404;');
+    expect(dockerfile).toContain(
+      'try_files $uri.html $uri/index.html $uri /index.html;',
+    );
+    expect(dockerfile).not.toContain(
+      'try_files $uri.html $uri $uri/ /index.html;',
+    );
   });
 });
