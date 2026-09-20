@@ -1,11 +1,22 @@
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildStandaloneHtml } from '../scripts/build-standalone-html.mjs';
 
 const temporaryDirectories: string[] = [];
+const fixturePng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl63xQAAAAASUVORK5CYII=',
+  'base64',
+);
 
 function directive(policy: string, name: string) {
   return policy
@@ -44,23 +55,26 @@ describe('standalone HTML export', () => {
     const exportDirectory = resolve(directory, 'out');
     const chunkDirectory = resolve(exportDirectory, '_next/static/chunks');
     const mediaDirectory = resolve(exportDirectory, '_next/static/media');
+    const verifiedDirectory = resolve(exportDirectory, 'media/verified');
     const outputPath = resolve(directory, 'andrew-website-updated.html');
     await mkdir(chunkDirectory, { recursive: true });
     await mkdir(mediaDirectory, { recursive: true });
+    await mkdir(verifiedDirectory, { recursive: true });
     await writeFile(
       resolve(exportDirectory, 'index.html'),
       '<!DOCTYPE html><html lang="ru"><head>' +
         '<link rel="stylesheet" href="/_next/static/chunks/app.css"/>' +
         '<script src="/_next/static/chunks/asset-prefix.js"></script>' +
         '<script src="/_next/static/chunks/turbopack-fixture.js"></script>' +
-        '</head><body><main id="main-content"></main>' +
+        '</head><body><main id="main-content"><img src="/media/verified/fixture.png" alt="Fixture"/></main>' +
         '<section id="request"></section>' +
         '<script>self.__next_f=self.__next_f||[];self.__next_f.push([1,' +
         '"2:I[1,[\\"/_next/static/chunks/turbopack-fixture.js\\"],\\"default\\"]\\n' +
         ':HL[\\"/_next/static/chunks/app.css\\",\\"style\\"]\\n' +
         '3:[\\"$\\",\\"link\\",\\"0\\",{\\"rel\\":\\"stylesheet\\",\\"href\\":\\"/_next/static/chunks/app.css\\",\\"precedence\\":\\"next\\"}]\\n' +
         '4:[\\"$\\",\\"script\\",\\"script-0\\",{\\"src\\":\\"/_next/static/chunks/turbopack-fixture.js\\",\\"async\\":true}]\\n' +
-        ':HL[\\"/_next/static/media/font.woff2\\",\\"font\\"]\\n"]);</script>' +
+        ':HL[\\"/_next/static/media/font.woff2\\",\\"font\\"]\\n' +
+        '5:{\\"src\\":\\"/media/verified/fixture.png\\"}\\n"]);</script>' +
         '</body></html>',
       'utf8',
     );
@@ -80,6 +94,7 @@ describe('standalone HTML export', () => {
       'utf8',
     );
     await writeFile(resolve(mediaDirectory, 'font.woff2'), new Uint8Array([0]));
+    await writeFile(resolve(verifiedDirectory, 'fixture.png'), fixturePng);
 
     await buildStandaloneHtml({
       inputPath: resolve(exportDirectory, 'index.html'),
@@ -113,6 +128,8 @@ describe('standalone HTML export', () => {
     expect(html).toContain("connect-src 'none'");
     expect(html).toContain("form-action 'none'");
     expect(html).toContain('data:font/woff2;base64,');
+    expect(html).toContain('data:image/png;base64,');
+    expect(html).not.toContain('/media/verified/');
     expect(html).toContain('data-inline-chunk=');
     expect(html).not.toMatch(/(?:href|src)="\/_next\//u);
     expect(html).not.toContain('/_next/static/');
@@ -146,6 +163,110 @@ describe('standalone HTML export', () => {
         outputPath: resolve(directory, 'standalone.html'),
       }),
     ).rejects.toThrow('outside the generated export');
+  });
+
+  it('rejects verified image symlinks outside the export directory', async () => {
+    const directory = await mkdtemp(resolve(tmpdir(), 'andrew-standalone-'));
+    temporaryDirectories.push(directory);
+    const exportDirectory = resolve(directory, 'out');
+    const verifiedDirectory = resolve(exportDirectory, 'media/verified');
+    await mkdir(resolve(exportDirectory, '_next/static/chunks'), {
+      recursive: true,
+    });
+    await mkdir(verifiedDirectory, { recursive: true });
+    await writeFile(resolve(directory, 'private.png'), new Uint8Array([0x89]));
+    await symlink(
+      resolve(directory, 'private.png'),
+      resolve(verifiedDirectory, 'fixture.png'),
+    );
+    await writeFile(
+      resolve(exportDirectory, 'index.html'),
+      '<!DOCTYPE html><html><head></head><body><img src="/media/verified/fixture.png"/></body></html>',
+      'utf8',
+    );
+
+    await expect(
+      buildStandaloneHtml({
+        inputPath: resolve(exportDirectory, 'index.html'),
+        outputPath: resolve(directory, 'standalone.html'),
+      }),
+    ).rejects.toThrow('outside the generated export');
+  });
+
+  it('rejects a verified image directory symlink outside the export directory', async () => {
+    const directory = await mkdtemp(resolve(tmpdir(), 'andrew-standalone-'));
+    temporaryDirectories.push(directory);
+    const exportDirectory = resolve(directory, 'out');
+    const outsideDirectory = resolve(directory, 'private-media');
+    await mkdir(resolve(exportDirectory, '_next/static/chunks'), {
+      recursive: true,
+    });
+    await mkdir(resolve(exportDirectory, 'media'), { recursive: true });
+    await mkdir(outsideDirectory);
+    await writeFile(resolve(outsideDirectory, 'fixture.png'), fixturePng);
+    await symlink(outsideDirectory, resolve(exportDirectory, 'media/verified'));
+    await writeFile(
+      resolve(exportDirectory, 'index.html'),
+      '<!DOCTYPE html><html><head></head><body><img src="/media/verified/fixture.png"/></body></html>',
+      'utf8',
+    );
+
+    await expect(
+      buildStandaloneHtml({
+        inputPath: resolve(exportDirectory, 'index.html'),
+        outputPath: resolve(directory, 'standalone.html'),
+      }),
+    ).rejects.toThrow('outside the generated export');
+  });
+
+  it('rejects a verified image directory symlink elsewhere within the export', async () => {
+    const directory = await mkdtemp(resolve(tmpdir(), 'andrew-standalone-'));
+    temporaryDirectories.push(directory);
+    const exportDirectory = resolve(directory, 'out');
+    const otherDirectory = resolve(exportDirectory, 'other-media');
+    await mkdir(resolve(exportDirectory, '_next/static/chunks'), {
+      recursive: true,
+    });
+    await mkdir(resolve(exportDirectory, 'media'), { recursive: true });
+    await mkdir(otherDirectory);
+    await writeFile(resolve(otherDirectory, 'fixture.png'), fixturePng);
+    await symlink(otherDirectory, resolve(exportDirectory, 'media/verified'));
+    await writeFile(
+      resolve(exportDirectory, 'index.html'),
+      '<!DOCTYPE html><html><head></head><body><img src="/media/verified/fixture.png"/></body></html>',
+      'utf8',
+    );
+
+    await expect(
+      buildStandaloneHtml({
+        inputPath: resolve(exportDirectory, 'index.html'),
+        outputPath: resolve(directory, 'standalone.html'),
+      }),
+    ).rejects.toThrow('outside the generated export');
+  });
+
+  it('rejects image files whose contents do not match their MIME type', async () => {
+    const directory = await mkdtemp(resolve(tmpdir(), 'andrew-standalone-'));
+    temporaryDirectories.push(directory);
+    const exportDirectory = resolve(directory, 'out');
+    const verifiedDirectory = resolve(exportDirectory, 'media/verified');
+    await mkdir(resolve(exportDirectory, '_next/static/chunks'), {
+      recursive: true,
+    });
+    await mkdir(verifiedDirectory, { recursive: true });
+    await writeFile(resolve(verifiedDirectory, 'fixture.jpg'), '<script/>');
+    await writeFile(
+      resolve(exportDirectory, 'index.html'),
+      '<!DOCTYPE html><html><head></head><body><img src="/media/verified/fixture.jpg"/></body></html>',
+      'utf8',
+    );
+
+    await expect(
+      buildStandaloneHtml({
+        inputPath: resolve(exportDirectory, 'index.html'),
+        outputPath: resolve(directory, 'standalone.html'),
+      }),
+    ).rejects.toThrow('Unsupported or invalid verified image');
   });
 
   it('rejects inline presentation attributes that a strict style policy would block', async () => {

@@ -85,13 +85,39 @@ try {
   await page.waitForFunction(() => location.hash === '#pricing');
   assert(!(await dialog.isVisible()), 'Mobile navigation did not close.');
 
-  await page
-    .locator('button[aria-controls="equipment-refrigerated-cabinets-details"]')
-    .click();
-  await page
-    .getByText('Точная причина определяется после диагностики')
-    .first()
-    .waitFor({ state: 'visible' });
+  assert(
+    (await page.locator('button[aria-controls$="-details"]').count()) === 0,
+    'Standalone equipment cards still have obsolete detail expanders.',
+  );
+
+  const photos = page.locator('[data-media-slot="verified"] img');
+  const photoCount = await photos.count();
+  assert(
+    photoCount === 10,
+    `Expected 10 verified photos, found ${photoCount}.`,
+  );
+  for (let index = 0; index < photoCount; index += 1) {
+    const photo = photos.nth(index);
+    await photo.scrollIntoViewIfNeeded();
+    const imageStatus = await photo.evaluate(async (image) => {
+      try {
+        await image.decode();
+      } catch {
+        return { embedded: false, loaded: false };
+      }
+      return {
+        embedded: /^data:image\/(?:jpeg|png|webp);base64,/u.test(
+          image.currentSrc,
+        ),
+        loaded: image.complete && image.naturalWidth > 0,
+      };
+    });
+    assert(
+      imageStatus.embedded,
+      `Verified photo ${index + 1} is not embedded.`,
+    );
+    assert(imageStatus.loaded, `Verified photo ${index + 1} did not load.`);
+  }
 
   await page
     .getByRole('link', { name: 'Оставить заявку', exact: true })

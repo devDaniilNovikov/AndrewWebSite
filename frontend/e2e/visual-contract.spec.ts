@@ -56,8 +56,27 @@ test('enforces the behavior-based responsive visual contract', async ({
   await expect(page.locator('[data-media-slot="placeholder"]')).not.toHaveCount(
     0,
   );
-  await expect(page.locator('[data-media-slot="verified"]')).toHaveCount(0);
-  await expect(page.locator('img')).toHaveCount(0);
+  await expect(page.locator('[data-media-slot="verified"]')).toHaveCount(10);
+  const verifiedPhotos = page.locator('[data-media-slot="verified"] img');
+  await expect(verifiedPhotos).toHaveCount(10);
+  expect(
+    await verifiedPhotos.evaluateAll((images) =>
+      images.every((image) => {
+        const width = Number(image.getAttribute('width'));
+        const height = Number(image.getAttribute('height'));
+        return (
+          image instanceof HTMLImageElement &&
+          image.alt.length > 0 &&
+          width > 0 &&
+          height > 0 &&
+          getComputedStyle(image).objectFit === 'contain'
+        );
+      }),
+    ),
+  ).toBe(true);
+  const teamPhoto = page.locator('#about img');
+  await teamPhoto.scrollIntoViewIfNeeded();
+  await expect(teamPhoto).toHaveJSProperty('naturalWidth', 1087);
   await expect(page.locator('link[rel="preload"][as="font"]')).toHaveCount(1);
   await expect(page.locator('[data-section="hero"] [data-reveal]')).toHaveCount(
     0,

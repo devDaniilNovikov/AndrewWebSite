@@ -37,108 +37,91 @@ export const benefitItems = [
   },
 ] as const;
 
+export const aboutTeamPhoto = {
+  alt: 'Три специалиста на площадке монтажа холодильной камеры',
+  height: 1447,
+  src: '/media/verified/about-team-installation.webp',
+  width: 1087,
+} as const;
+
 export const equipmentItems = [
   {
     id: 'equipment-refrigerated-cabinets',
     icon: 'snowflake',
-    title: 'Холодильные шкафы',
-    text: 'Коммерческое оборудование для хранения продуктов.',
+    title: 'Холодильные камеры',
+    photo: {
+      alt: 'Промышленная холодильная камера',
+      height: 941,
+      src: '/media/verified/equipment-cold-rooms.jpg',
+      width: 1672,
+    },
+    text: 'Промышленные холодильные камеры для хранения продуктов.',
     examples: ['Не охлаждает', 'Шумит', 'Обмерзает'],
-    symptoms: [
-      'Температура отклоняется от заданной',
-      'Оборудование не включается или работает без остановки',
-      'Появились посторонний шум, наледь или конденсат',
-    ],
-    workExamples: [
-      'Диагностика температурного режима',
-      'Проверка электрики и автоматики',
-      'Осмотр доступных узлов охлаждения',
-    ],
   },
   {
     id: 'equipment-display-cases',
     icon: 'store',
     title: 'Витрины и горки',
+    photo: {
+      alt: 'Холодильная витрина для выкладки товаров',
+      height: 676,
+      src: '/media/verified/equipment-display-cases.webp',
+      width: 1200,
+    },
     text: 'Торговое холодильное оборудование для залов и выкладки.',
     examples: ['Теплеет', 'Течёт', 'Покрывается наледью'],
-    symptoms: [
-      'Температура распределяется неравномерно',
-      'Появилась вода внутри или рядом с оборудованием',
-      'Воздух циркулирует слабее обычного',
-    ],
-    workExamples: [
-      'Проверка температурного режима',
-      'Диагностика отвода конденсата',
-      'Осмотр вентиляторов и автоматики',
-    ],
   },
   {
     id: 'equipment-ice-makers',
     icon: 'ice',
     title: 'Льдогенераторы',
+    photo: {
+      alt: 'Профессиональный льдогенератор',
+      height: 676,
+      src: '/media/verified/equipment-ice-makers.webp',
+      width: 1200,
+    },
     text: 'Профессиональное оборудование для заведений и производств.',
     examples: ['Не делает лёд', 'Медленный цикл', 'Протекает'],
-    symptoms: [
-      'Цикл приготовления льда не запускается',
-      'Количество или форма льда изменились',
-      'Появились вода, шум или индикация ошибки',
-    ],
-    workExamples: [
-      'Диагностика цикла приготовления льда',
-      'Проверка подачи и отвода воды',
-      'Осмотр датчиков и доступных узлов',
-    ],
   },
   {
     id: 'equipment-chest-freezers',
     icon: 'box',
     title: 'Морозильные лари',
+    photo: {
+      alt: 'Профессиональный морозильный ларь',
+      height: 941,
+      src: '/media/verified/equipment-chest-freezers.jpg',
+      width: 1672,
+    },
     text: 'Морозильное оборудование для торговых объектов.',
     examples: ['Не морозит', 'Обмерзает', 'Не включается'],
-    symptoms: [
-      'Температура выше заданной',
-      'На стенках быстро появляется наледь',
-      'Компрессор не запускается или работает непрерывно',
-    ],
-    workExamples: [
-      'Проверка температурного режима',
-      'Диагностика электрики и автоматики',
-      'Осмотр уплотнения и узлов охлаждения',
-    ],
   },
   {
     id: 'equipment-refrigeration-systems',
     icon: 'fan',
     title: 'Холодильные системы',
+    photo: {
+      alt: 'Промышленная холодильная система',
+      height: 941,
+      src: '/media/verified/equipment-refrigeration-systems.jpg',
+      width: 1672,
+    },
     text: 'Холодильные контуры, автоматика и связанные узлы.',
     examples: ['Не запускается', 'Шумит', 'Теряет температуру'],
-    symptoms: [
-      'Система не выходит на заданный режим',
-      'Появились посторонний шум или вибрация',
-      'Автоматика сообщает об ошибке',
-    ],
-    workExamples: [
-      'Первичная диагностика системы',
-      'Проверка автоматики и электрики',
-      'Осмотр доступных компонентов',
-    ],
   },
   {
     id: 'equipment-cabinets-and-tables',
     icon: 'cabinet',
     title: 'Шкафы и столы',
+    photo: {
+      alt: 'Профессиональные холодильные шкафы и столы',
+      height: 941,
+      src: '/media/verified/equipment-cabinets-and-tables.jpg',
+      width: 1672,
+    },
     text: 'Профессиональное оборудование кухонь и торговых объектов.',
     examples: ['Не охлаждает', 'Течёт', 'Работает нестабильно'],
-    symptoms: [
-      'Рабочая температура меняется без причины',
-      'Внутри появляется вода или наледь',
-      'Оборудование включается с перебоями',
-    ],
-    workExamples: [
-      'Диагностика температурного контура',
-      'Проверка отвода конденсата',
-      'Осмотр автоматики и узлов охлаждения',
-    ],
   },
 ] as const;
 
@@ -175,14 +158,51 @@ export const serviceItems = [
   },
 ] as const;
 
-export const workPlaceholders = [
-  { id: 'work-retail-site', label: 'Кейс торгового объекта', icon: 'store' },
+export const workItems = [
+  {
+    id: 'work-retail-site',
+    label: 'Кейс торгового объекта',
+    icon: 'store',
+    photo: {
+      alt: 'Испаритель внутри промышленного холодильного шкафа',
+      height: 1086,
+      src: '/media/verified/work-retail-site.jpg',
+      width: 1448,
+    },
+    title: 'Реставрация испарителя холодильного шкафа/стола',
+    problem: 'Утечка фреона в системе.',
+    result:
+      'Реставрация испарителя путем замены трубок и уголков. Утечки нет, пожизненная гарантия.',
+  },
   {
     id: 'work-refrigerated-cabinet',
     label: 'Кейс холодильного шкафа',
     icon: 'cabinet',
+    photo: {
+      alt: 'Холодильная установка с ресиверами и медными трубопроводами',
+      height: 1086,
+      src: '/media/verified/work-refrigerated-cabinet.jpg',
+      width: 1448,
+    },
+    title: 'Поиск утечки промышленного агрегата',
+    problem: 'Утечка фреона в централи холодильной системы.',
+    result:
+      'Система была опрессована, была найдена утечка в нескольких местах и была устранена.',
   },
-  { id: 'work-ice-maker', label: 'Кейс ледогенератора', icon: 'ice' },
+  {
+    id: 'work-ice-maker',
+    label: 'Кейс ледогенератора',
+    icon: 'ice',
+    photo: {
+      alt: 'Внутренний узел льдогенератора с компрессором и теплообменником',
+      height: 1086,
+      src: '/media/verified/work-ice-maker.jpg',
+      width: 1448,
+    },
+    title: 'Переход ледогенератора на воздушное охлаждение',
+    problem: 'Чрезмерное потребление воды и утечка фреона.',
+    result: 'Ледогенератор стабильно работает и меньше потребляет воды.',
+  },
 ] as const;
 
 export const pricingItems = [
@@ -272,7 +292,7 @@ export type PreviewIcon =
   | (typeof benefitItems)[number]['icon']
   | (typeof equipmentItems)[number]['icon']
   | (typeof serviceItems)[number]['icon']
-  | (typeof workPlaceholders)[number]['icon']
+  | (typeof workItems)[number]['icon']
   | (typeof pricingItems)[number]['icon']
   | (typeof maintenanceItems)[number]['icon']
   | 'menu'

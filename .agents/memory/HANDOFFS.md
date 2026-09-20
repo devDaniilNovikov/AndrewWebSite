@@ -8,7 +8,7 @@ Startup reads only `## Active chain`; closed chains are cold, found by tag.
 
 | Task | Chain (chronological) | State | Topics |
 | --- | --- | --- | --- |
-| `fix-remove-test-notice` | `2026-09-09-173950-fix-remove-test-notice-handoff.md` | PR #131 reviewed and Ready; squash merge authorized | frontend, nginx, testing, tracker |
+| `task-equipment-card-images` | `2026-09-13-124308-task-equipment-card-images-handoff.md` | In progress; ten photos and all three supplied case descriptions are integrated locally, duplicate equipment details are removed, and rights plus pictured-person consent were confirmed before authorized Draft PR publication | frontend, media, accessibility, testing |
 
 Note: chain files named before the UTC rule (LES-20260718-008) keep their
 original names and may sort out of true order; this table's chronology is
@@ -22,6 +22,7 @@ design.
 
 | Task | Handoffs | Final | Outcome | Topics |
 | --- | --- | --- | --- | --- |
+| `fix-remove-test-notice` | 1 | `2026-09-09-173950-fix-remove-test-notice-handoff.md` | merged as `4dd990d`; retained source branch | frontend, nginx, testing, tracker |
 | `task-backend-contract-plans` | 1 | `2026-07-17-backend-superpowers-handoff.md` | merged; Superpowers backend plans committed | backend, process |
 | `task-backend-skeleton` | 2 | `2026-07-18-094835-backend-skeleton-ready-handoff.md` | merged | backend |
 | `fix-preserve-merged-branches` | 1 | `2026-07-18-101804-branch-retention-handoff.md` | merged; retention policy adopted (DEC-20260718-005) | process, incident |

@@ -1,9 +1,10 @@
-import Image from 'next/image';
 import type { PreviewIcon } from '../../content/preview-content';
 
 export type VerifiedLocalPhoto = Readonly<{
   alt: string;
+  height: number;
   src: `/media/verified/${string}`;
+  width: number;
 }>;
 
 export function Container({
@@ -289,16 +290,20 @@ export function MediaSlot({
 
   return (
     <div
-      className={`relative min-h-40 overflow-hidden ${className}`}
+      className={`overflow-hidden bg-white ${className}`}
       data-media-slot="verified"
     >
-      <Image
+      {/* The static CSP forbids next/image's generated inline color style. */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- local, dimensioned media is required by the static CSP contract */}
+      <img
         alt={photo.alt}
-        className="object-cover"
-        fill
+        className="block h-auto w-full object-contain"
+        decoding="async"
+        height={photo.height}
+        loading="lazy"
         sizes={sizes}
         src={photo.src}
-        unoptimized
+        width={photo.width}
       />
     </div>
   );
