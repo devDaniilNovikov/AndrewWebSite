@@ -1,7 +1,7 @@
 import {
   pricingItems,
   processSteps,
-  workPlaceholders,
+  workItems,
 } from '../../content/preview-content';
 import {
   Container,
@@ -23,12 +23,12 @@ export function WorksSection() {
       <Container>
         <Reveal>
           <SectionHeading
-            description="Формат карточек готов для подтверждённых объектов, неисправностей, результатов и стоимости."
+            description="Подтверждённые примеры выполненных работ."
             title="Выполненные работы"
           />
         </Reveal>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {workPlaceholders.map((item) => (
+          {workItems.map((item) => (
             <article
               aria-labelledby={`${item.id}-title`}
               className="flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_10px_34px_rgba(15,23,42,0.05)]"
@@ -39,14 +39,17 @@ export function WorksSection() {
                 className="min-h-40 w-full border-b border-slate-200"
                 icon={item.icon}
                 label={item.label}
+                photo={item.photo}
               />
               <div className="flex min-w-0 flex-1 flex-col p-5">
-                <PlaceholderBadge>Структура кейса</PlaceholderBadge>
+                <PlaceholderBadge>
+                  {item.photo ? 'Выполненная работа' : 'Структура кейса'}
+                </PlaceholderBadge>
                 <h3
                   className="mt-3 text-lg font-semibold leading-6 text-navy"
                   id={`${item.id}-title`}
                 >
-                  {item.label}
+                  {item.title}
                 </h3>
                 <dl className="mt-4 space-y-3">
                   <div>
@@ -54,7 +57,7 @@ export function WorksSection() {
                       Неисправность
                     </dt>
                     <dd className="mt-1 text-base leading-6 text-slate-600">
-                      Данные не опубликованы.
+                      {item.problem}
                     </dd>
                   </div>
                   <div>
@@ -62,7 +65,7 @@ export function WorksSection() {
                       Результат
                     </dt>
                     <dd className="mt-1 text-base leading-6 text-slate-600">
-                      Данные не опубликованы.
+                      {item.result}
                     </dd>
                   </div>
                 </dl>

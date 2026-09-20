@@ -113,7 +113,7 @@ export function EquipmentSection() {
       <Container>
         <Reveal>
           <SectionHeading
-            description="Выберите категорию, чтобы посмотреть частые симптомы и примеры диагностических работ."
+            description="Выберите тип оборудования и оставьте заявку — уточним симптомы и задачу."
             title="Оборудование, с которым мы работаем"
           />
         </Reveal>

@@ -1,0 +1,62 @@
+{
+  "about-team-installation.webp": {
+    "received": "2026-09-18",
+    "source": "User-supplied attachment codex-clipboard-8bc04778-0661-4be5-afd3-1e2c22387bfb.jpg",
+    "sourceSha256": "6dd7966926815984411ff00b49fd2535ce8dd5c570b27d1f3734113a8d0eed7a",
+    "placement": "О компании — фотография команды"
+  },
+  "equipment-cold-rooms.jpg": {
+    "received": "2026-09-13",
+    "source": "User-supplied attachment IMAGE 2026-09-13 05:59:22.jpg",
+    "sourceSha256": "e38d3a74b3155cc8f3f92a52c7a0b79220af0ab14c42b081e892a87c7e4a73b4",
+    "placement": "Холодильные камеры"
+  },
+  "equipment-cabinets-and-tables.jpg": {
+    "received": "2026-09-13",
+    "source": "User-supplied attachment IMAGE 2026-09-13 05:59:44.jpg",
+    "sourceSha256": "3abf7f6a1285db556ba5162ee597c975085c864347b4bb11a0040c86c086450d",
+    "placement": "Шкафы и столы"
+  },
+  "equipment-chest-freezers.jpg": {
+    "received": "2026-09-15",
+    "source": "User-supplied folder file морозильные лари.jpg",
+    "sourceSha256": "6eabf2d59ad7701dbc813a105b7a5170bfc10afd4e5a0e1550a2c12da6e88816",
+    "placement": "Морозильные лари"
+  },
+  "equipment-display-cases.webp": {
+    "received": "2026-09-13",
+    "source": "User-supplied attachment IMAGE 2026-09-13 05:23:10.jpg",
+    "sourceSha256": "ca3e759ff38bf184e987ad8f07bfc355eef970a6d57c0672dffc591688346642",
+    "placement": "Витрины и горки"
+  },
+  "equipment-ice-makers.webp": {
+    "received": "2026-09-13",
+    "source": "User-supplied attachment IMAGE 2026-09-13 05:23:34.jpg",
+    "sourceSha256": "98990fed7576921252a1723a5ad062e85364974980f82c329b774afa78dba82d",
+    "placement": "Льдогенераторы"
+  },
+  "equipment-refrigeration-systems.jpg": {
+    "received": "2026-09-15",
+    "source": "User-supplied folder file холодильные системы.jpg",
+    "sourceSha256": "a510a558331e35f5ea1e1ade6d3c857d8eee1ff1099ce861ce3d56e4d664c0ce",
+    "placement": "Холодильные системы"
+  },
+  "work-ice-maker.jpg": {
+    "received": "2026-09-16",
+    "source": "User-supplied folder file IMAGE 2026-09-16 04:35:13.jpg",
+    "sourceSha256": "35760910f153802132650210946a53b8f2a66f30f24bbaeb2a94a68d72f991ff",
+    "placement": "Переход ледогенератора на воздушное охлаждение"
+  },
+  "work-refrigerated-cabinet.jpg": {
+    "received": "2026-09-16",
+    "source": "User-supplied folder file Photographi/v1/value.jpg",
+    "sourceSha256": "6ef7bf43fc32c230f5e55fb3f17d0b49a5a30899e57ef2bbb33bae3d3fe7eb84",
+    "placement": "Поиск утечки промышленного агрегата"
+  },
+  "work-retail-site.jpg": {
+    "received": "2026-09-16",
+    "source": "User-supplied folder file Photographi/v3/value.jpg",
+    "sourceSha256": "8f51057f8fb946c18e8de14befa742c56b4c37c8b9b7ef3026806b9ed42f65f7",
+    "placement": "Реставрация испарителя холодильного шкафа/стола"
+  }
+}

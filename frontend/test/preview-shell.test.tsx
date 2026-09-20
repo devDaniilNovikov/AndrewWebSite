@@ -97,7 +97,22 @@ describe('PreviewShell', () => {
     ).toBeInTheDocument();
   });
 
-  it('keeps every blocked business fact visibly placeholder-only', () => {
+  it('shows the supplied team photograph in the about section without a placeholder', () => {
+    const { container } = render(<PreviewShell />);
+    const aboutSection = container.querySelector('#about');
+
+    expect(aboutSection).toBeInTheDocument();
+    expect(
+      within(aboutSection as HTMLElement).getByRole('img', {
+        name: 'Три специалиста на площадке монтажа холодильной камеры',
+      }),
+    ).toHaveAttribute('src', '/media/verified/about-team-installation.webp');
+    expect(
+      aboutSection?.querySelector('[data-media-slot="placeholder"]'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps blocked facts as placeholders while rendering supplied photos', () => {
     const { container } = render(<PreviewShell />);
 
     expect(screen.queryByText('Фото будет добавлено')).not.toBeInTheDocument();
@@ -115,13 +130,55 @@ describe('PreviewShell', () => {
     expect(
       screen.getAllByText('Данные не опубликованы.').length,
     ).toBeGreaterThan(0);
-    expect(container.querySelector('img')).not.toBeInTheDocument();
+    expect(container.querySelectorAll('img')).toHaveLength(10);
+    expect(
+      screen.getByRole('img', {
+        name: 'Три специалиста на площадке монтажа холодильной камеры',
+      }),
+    ).toHaveAttribute('src', '/media/verified/about-team-installation.webp');
+    expect(
+      screen.getByRole('img', { name: 'Промышленная холодильная камера' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: 'Холодильная витрина для выкладки товаров',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'Профессиональный льдогенератор' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'Профессиональный морозильный ларь' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'Промышленная холодильная система' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: 'Профессиональные холодильные шкафы и столы',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: 'Испаритель внутри промышленного холодильного шкафа',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: 'Холодильная установка с ресиверами и медными трубопроводами',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: 'Внутренний узел льдогенератора с компрессором и теплообменником',
+      }),
+    ).toBeInTheDocument();
     expect(
       container.querySelectorAll('[data-media-slot="placeholder"]').length,
     ).toBeGreaterThan(0);
     expect(
-      container.querySelector('[data-media-slot="verified"]'),
-    ).not.toBeInTheDocument();
+      container.querySelectorAll('[data-media-slot="verified"]'),
+    ).toHaveLength(10);
     expect(container.querySelector('a[href^="tel:"]')).not.toBeInTheDocument();
     expect(container.querySelector('a[href^="http"]')).not.toBeInTheDocument();
   });
@@ -310,7 +367,9 @@ describe('MediaSlot', () => {
       <MediaSlot
         photo={{
           alt: 'Мастер у оборудования',
+          height: 800,
           src: '/media/verified/hero.webp',
+          width: 1200,
         }}
       />,
     );

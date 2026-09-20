@@ -5,7 +5,14 @@ import {
   realpath,
   writeFile,
 } from 'node:fs/promises';
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import {
+  dirname,
+  extname,
+  isAbsolute,
+  relative,
+  resolve,
+  sep,
+} from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   injectStandaloneContentSecurityPolicy,
@@ -23,6 +30,12 @@ const defaultOutputPath = resolve(
 const nextAssetPrefix = '/_next/';
 const turbopackCurrentScriptExpression =
   '"object"==typeof document?document.currentScript:void 0';
+const verifiedImageMimeTypes = new Map([
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
+  ['.png', 'image/png'],
+  ['.webp', 'image/webp'],
+]);
 
 const standaloneBootstrap = String.raw`
 <script data-standalone-bootstrap="true">
@@ -259,6 +272,69 @@ async function inlineFlightAssets(html, inputPath) {
   );
 }
 
+function hasExpectedImageSignature(image, mimeType) {
+  if (mimeType === 'image/jpeg') {
+    return (
+      image.length >= 3 &&
+      image[0] === 0xff &&
+      image[1] === 0xd8 &&
+      image[2] === 0xff
+    );
+  }
+  if (mimeType === 'image/png') {
+    return image
+      .subarray(0, 8)
+      .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+  return (
+    image.length >= 12 &&
+    image.toString('ascii', 0, 4) === 'RIFF' &&
+    image.toString('ascii', 8, 12) === 'WEBP'
+  );
+}
+
+async function inlineVerifiedImages(html, inputPath) {
+  const exportDirectory = dirname(inputPath);
+  const canonicalExportDirectory = await realpath(exportDirectory);
+  const verifiedDirectory = resolve(exportDirectory, 'media/verified');
+  const verifiedPrefix = `media${sep}verified${sep}`;
+  const inlined = new Map();
+  const output = await replaceAsync(
+    html,
+    /\/media\/verified\/([a-z0-9][a-z0-9._-]*\.(?:jpe?g|png|webp))(?=[\\"'<>\s?&#]|$)/giu,
+    async (match) => {
+      const name = match[1];
+      if (inlined.has(name)) return inlined.get(name);
+
+      const mimeType = verifiedImageMimeTypes.get(extname(name).toLowerCase());
+      const imagePath = await resolveContainedPath(
+        exportDirectory,
+        resolve(verifiedDirectory, name),
+      );
+      if (
+        !relative(canonicalExportDirectory, imagePath).startsWith(
+          verifiedPrefix,
+        )
+      ) {
+        throw new Error('Standalone asset is outside the generated export.');
+      }
+      const image = await readFile(imagePath);
+      if (!mimeType || !hasExpectedImageSignature(image, mimeType)) {
+        throw new Error(`Unsupported or invalid verified image: ${name}`);
+      }
+
+      const dataUri = `data:${mimeType};base64,${image.toString('base64')}`;
+      inlined.set(name, dataUri);
+      return dataUri;
+    },
+  );
+
+  if (output.includes('/media/verified/')) {
+    throw new Error('Standalone export still contains a verified image URL.');
+  }
+  return output;
+}
+
 export async function buildStandaloneHtml({
   inputPath = defaultInputPath,
   outputPath = defaultOutputPath,
@@ -272,6 +348,7 @@ export async function buildStandaloneHtml({
   );
   html = await inlineScripts(html, inputPath);
   html = await inlineFlightAssets(html, inputPath);
+  html = await inlineVerifiedImages(html, inputPath);
   html = html.replace('<html ', '<html data-standalone-export="true" ');
   html = html.replace('</body>', `${standaloneNavigation}</body>`);
 

@@ -39,11 +39,41 @@ delivery does not change the lead-processing or analytics implementation.
   hosted preview.
 
 The home-page order is header, hero, benefit strip, equipment grid, services,
-completed-work placeholders, repair CTA, pricing placeholders, request
+completed-work cards, repair CTA, pricing placeholders, request
 process, team/company section, planned-maintenance section, review
 placeholders, contact and form shell, then footer. The cookie banner and any
 analytics UI visible in the reference are design artifacts and are not part of
 the preview while the analytics vendor and legal text remain unresolved.
+
+The user supplied and assigned six equipment photographs on 2026-09-13 and
+2026-09-15:
+`equipment-cold-rooms.jpg` belongs to “Холодильные камеры”,
+`equipment-display-cases.webp` belongs to “Витрины и горки”,
+`equipment-ice-makers.webp` belongs to “Льдогенераторы”,
+`equipment-chest-freezers.jpg` belongs to “Морозильные лари”,
+`equipment-refrigeration-systems.jpg` belongs to “Холодильные системы”, and
+`equipment-cabinets-and-tables.jpg` belongs to “Шкафы и столы”. These local assets
+replace all six home-page equipment media placeholders.
+
+On 2026-09-16 the user supplied `work-ice-maker.jpg` for the completed-work card
+“Переход ледогенератора на воздушное охлаждение” together with its problem and
+result copy, and `work-refrigerated-cabinet.jpg` for “Кейс холодильного шкафа”.
+The latter is titled “Поиск утечки промышленного агрегата”; its supplied
+problem records a refrigerant leak in the central refrigeration system, and
+its supplied result records pressure testing, discovery of leaks in several
+places, and remediation. The user also supplied `work-retail-site.jpg` and the
+copy for “Реставрация испарителя холодильного шкафа/стола”: a refrigerant leak
+in the system was addressed by replacing evaporator tubes and elbows, with the
+user-supplied result stating that the leak is gone and the work carries a
+lifetime warranty. Missing media elsewhere remain placeholder-first.
+
+On 2026-09-18 the user supplied `about-team-installation.webp` for the
+“О компании” team's photograph placeholder. The portrait image is shown in
+full without cropping; this placement does not independently verify the
+subjects' identities. On 2026-09-20 the user confirmed rights to publish all
+ten supplied photos and consent of people pictured in the team photograph.
+The offline standalone HTML embeds the verified images as data URIs; hosted
+preview pages serve the same local files with the normal static CSP.
 
 Product pages reuse the same demonstration banner, header, compact split hero,
 light card grids, dark information bands, contact section, and footer. They do
@@ -52,18 +82,21 @@ to fill space.
 
 ## Visual system
 
-| Token | Value |
-| --- | --- |
-| `navy` | `#0B1220` |
-| `surface` | `#F6F8FB` |
-| `primary` | `#176BFF` |
-| `accent` | `#28B8D5` |
+| Token           | Value                 |
+| --------------- | --------------------- |
+| `navy`          | `#0B1220`             |
+| `surface`       | `#F6F8FB`             |
+| `primary`       | `#176BFF`             |
+| `accent`        | `#28B8D5`             |
 | `content-width` | approximately `72rem` |
 
 - Use a locally bundled Inter Variable font and no remote font request.
 - Preserve the reference's compact corporate rhythm, thin dividers, small
   radii, light split hero, dark CTA/price bands, blue calls to action, and
   light gray media placeholders.
+- Equipment cards show the assigned photo, title, short description, compact
+  request examples, and one request CTA. They do not repeat symptom or work
+  lists in an expandable panel.
 - Match composition, palette, rhythm, and information density rather than
   attempting a pixel diff against the 724 by 2172 reference export.
 - Do not add GSAP, 3D, glassmorphism, parallax, scroll hijacking, or continuous

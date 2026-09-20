@@ -10,6 +10,7 @@ import {
 import { LeadCta } from './LeadCta';
 import { Reveal } from './Reveal';
 import {
+  aboutTeamPhoto,
   maintenanceItems,
   navigationItems,
 } from '../../content/preview-content';
@@ -64,11 +65,11 @@ export function AboutSection() {
       id="about"
     >
       <Container className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch lg:gap-10">
-        <Reveal className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <Reveal className="self-start overflow-hidden rounded-xl border border-slate-200 bg-white">
           <MediaSlot
-            className="h-full min-h-80"
-            icon="team"
-            label="Место для подтверждённой фотографии команды"
+            className="min-h-80"
+            photo={aboutTeamPhoto}
+            sizes="(min-width: 1024px) 50vw, 100vw"
           />
         </Reveal>
         <Reveal className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
