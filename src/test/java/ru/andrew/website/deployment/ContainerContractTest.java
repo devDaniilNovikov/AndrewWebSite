@@ -6,59 +6,57 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Guards the shape of the production image: a frontend build stage, a backend build stage
+ * compiled from the exact sources in this repository, and a pinned Java 25 runtime that
+ * serves the static frontend through Nginx and proxies {@code /api/} to the Spring Boot jar.
+ *
+ * <p>Runtime hardening of the image (non-root user, liveness health check) is asserted by
+ * the {@code container-build} job in {@code .github/workflows/ci.yml} against the built
+ * image rather than against the Dockerfile text.
+ */
 class ContainerContractTest {
-    private static final String BUILD_IMAGE = "eclipse-temurin:25.0.3_9-jdk-noble"
-            + "@sha256:735baf2edc6cd6485240144a84fa4db142b9a6f47b4eb4080f31058d200f9813";
+    private static final String FRONTEND_BUILD_IMAGE = "node:24.14.0-alpine";
+    private static final String BACKEND_BUILD_IMAGE = "eclipse-temurin:25.0.3_9-jdk-noble";
     private static final String RUNTIME_IMAGE = "eclipse-temurin:25.0.3_9-jre-noble"
             + "@sha256:fbcf915c585659b30eb766ada4d6d7cfc9ec1040bf521e95bf61b10a25af73db";
 
     @Test
-    void dockerfileIsMultiStageNonRootAndChecksLiveness() throws Exception {
-        String dockerfile = Files.readString(Path.of("Dockerfile"));
-
-        assertThat(dockerfile).contains(
-                "AS backend-build",
-                "COPY Dockerfile .dockerignore ./",
-                "COPY --from=backend-build",
-                "FROM " + RUNTIME_IMAGE,
-                "USER 10001:10001");
-        assertThat(dockerfile).doesNotContain("apk add", "-alpine");
-        assertThat(dockerfile).contains(
-                "/bin/bash -ec",
-                "/dev/tcp/127.0.0.1/8081",
-                "GET /actuator/health/liveness HTTP/1.1",
-                "test \"$status\" = 200");
-        assertThat(dockerfile)
-                .doesNotContain("127.0.0.1:8080/actuator/health/liveness");
-        assertThat(dockerfile).contains(
-                "ENTRYPOINT [\"java\", "
-                        + "\"--enable-native-access=ALL-UNNAMED\", "
-                        + "\"-jar\", \"/app/application.jar\"]");
-        assertThat(dockerfile).doesNotContain("ENV SPRING_DATASOURCE_PASSWORD");
-        assertThat(dockerfile).doesNotContain("ENV TELEGRAM_BOT_TOKEN");
-
-        int dockerfileCopy = dockerfile.indexOf("COPY Dockerfile .dockerignore ./");
-        String verifyCommand = "RUN ./mvnw -B -DexcludedGroups=database verify";
-        int mavenVerify = dockerfile.indexOf(verifyCommand);
-        assertThat(dockerfileCopy).isGreaterThanOrEqualTo(0);
-        assertThat(mavenVerify).isGreaterThan(dockerfileCopy);
-        assertThat(dockerfile)
-                .doesNotContain("-DskipTests", "maven.test.skip");
-        assertThat(dockerfile.lines()
-                        .filter(line -> line.startsWith("RUN ./mvnw") && line.contains("verify")))
-                .containsExactly(verifyCommand);
-    }
-
-    @Test
-    void dockerfilePinsEveryBaseImageAndAvoidsMutablePackageRepositories() throws Exception {
+    void dockerfileBuildsFrontendAndBackendFromRepositorySources() throws Exception {
         String dockerfile = Files.readString(Path.of("Dockerfile"));
 
         assertThat(dockerfile.lines().filter(line -> line.startsWith("FROM ")))
                 .containsExactly(
-                        "FROM " + BUILD_IMAGE + " AS backend-build",
+                        "FROM " + FRONTEND_BUILD_IMAGE + " AS frontend-build",
+                        "FROM " + BACKEND_BUILD_IMAGE + " AS backend-build",
                         "FROM " + RUNTIME_IMAGE);
-        assertThat(dockerfile)
-                .doesNotContain("apt-get", "apk add", "curl", "-alpine");
+
+        assertThat(dockerfile).contains(
+                "COPY frontend/ ./",
+                "RUN pnpm run build:standalone",
+                "COPY --from=frontend-build /app/out /var/www/html");
+
+        int sourcesCopy = dockerfile.indexOf("COPY src src");
+        int backendBuild = dockerfile.indexOf("RUN ./mvnw -B clean package");
+        assertThat(sourcesCopy).isGreaterThanOrEqualTo(0);
+        assertThat(backendBuild).isGreaterThan(sourcesCopy);
+        assertThat(dockerfile).contains(
+                "COPY --from=backend-build /workspace/target/*.jar /app/application.jar");
+    }
+
+    @Test
+    void runtimeStartsProductionProfileWithoutBakedSecrets() throws Exception {
+        String dockerfile = Files.readString(Path.of("Dockerfile"));
+
+        assertThat(dockerfile).contains(
+                "-Dspring.profiles.active=prod",
+                "--enable-native-access=ALL-UNNAMED",
+                "-jar /app/application.jar");
+        assertThat(dockerfile).doesNotContain(
+                "ENV SPRING_DATASOURCE_PASSWORD",
+                "ENV TELEGRAM_BOT_TOKEN",
+                "ENV SENTRY_DSN",
+                "ENV LEAD_FINGERPRINT_HMAC_KEY");
     }
 
     @Test

@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,10 +17,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import ru.andrew.website.telegram.JdbcOutboxRepository;
+import ru.andrew.website.testing.DatabaseTest;
 import ru.andrew.website.testing.MutableClock;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
-@Tag("database")
+@DatabaseTest
 @SpringBootTest
 @ActiveProfiles("test")
 @Import({PostgresTestConfiguration.class, RetentionTestConfiguration.class})

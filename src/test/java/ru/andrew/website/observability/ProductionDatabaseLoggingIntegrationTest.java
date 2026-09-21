@@ -3,7 +3,6 @@ package ru.andrew.website.observability;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.sql.DataSource;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +15,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.ErrorHandler;
+import ru.andrew.website.testing.DatabaseTest;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
 @SpringBootTest(properties = {
@@ -36,7 +36,7 @@ import ru.andrew.website.testing.PostgresTestConfiguration;
         ProductionTelemetryIntegrationTest.CaptureConfiguration.class
 })
 @ExtendWith(OutputCaptureExtension.class)
-@Tag("database")
+@DatabaseTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ProductionDatabaseLoggingIntegrationTest {
     @Autowired

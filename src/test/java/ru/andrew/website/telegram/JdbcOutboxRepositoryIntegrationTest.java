@@ -12,7 +12,6 @@ import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,9 +19,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import ru.andrew.website.testing.DatabaseTest;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
-@Tag("database")
+@DatabaseTest
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(PostgresTestConfiguration.class)

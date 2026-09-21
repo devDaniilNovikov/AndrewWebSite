@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,9 +19,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
+import ru.andrew.website.testing.DatabaseTest;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
-@Tag("database")
+@DatabaseTest
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(PostgresTestConfiguration.class)

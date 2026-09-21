@@ -18,7 +18,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,10 +38,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import ru.andrew.website.privacy.RetentionRepository;
+import ru.andrew.website.testing.DatabaseTest;
 import ru.andrew.website.testing.MutableClock;
 import ru.andrew.website.testing.PostgresTestConfiguration;
 
-@Tag("database")
+@DatabaseTest
 @SpringBootTest
 @ActiveProfiles("test")
 @Import({
