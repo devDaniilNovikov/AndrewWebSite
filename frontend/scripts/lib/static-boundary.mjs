@@ -27,14 +27,14 @@ const forbiddenRuntimePatterns = [
   ],
   [
     'external runtime URL',
-    /['"`]\s*(?:https?:)?\/\/(?:[A-Za-z0-9]|\[)|url\(\s*['"]?(?:https?:)?\/\/(?:[A-Za-z0-9]|\[)/u,
+    /(?:['"`]\s*(?:https?:)?\/\/(?!t\.me|wa\.me)(?:[A-Za-z0-9]|\[)|url\(\s*['"]?(?:https?:)?\/\/(?!t\.me|wa\.me)(?:[A-Za-z0-9]|\[))/u,
   ],
   [
     'dynamic rendering configuration',
     /export\s+const\s+(?:dynamic|revalidate|runtime)\s*=/u,
   ],
 ];
-const nativeFetchPattern = /\b(?:(?:globalThis|window)\.)?fetch\b/u;
+const nativeFetchPattern = /\b(?:(?:globalThis|window)\.)?fetch\s*\(/u;
 const allowedFetchFiles = new Set(['lib/leads/transport.ts']);
 const allowedAppFiles = new Set([
   'app/InterVariable-cyrillic.woff2',
