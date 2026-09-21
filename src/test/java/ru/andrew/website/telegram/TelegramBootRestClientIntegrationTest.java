@@ -25,9 +25,11 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.andrew.website.leads.LeadAcceptanceTransaction;
 
+// 500ms keeps the read-timeout test well under its 1s fake response while leaving a
+// loaded CI runner enough headroom to answer the redirect request in time.
 @SpringBootTest(properties = {
-        "spring.http.clients.connect-timeout=100ms",
-        "spring.http.clients.read-timeout=100ms",
+        "spring.http.clients.connect-timeout=500ms",
+        "spring.http.clients.read-timeout=500ms",
         NO_DATABASE
 })
 @ActiveProfiles("test")
