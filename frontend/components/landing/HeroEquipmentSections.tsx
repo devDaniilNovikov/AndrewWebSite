@@ -1,6 +1,7 @@
 import {
   benefitItems,
   equipmentItems,
+  heroPhoto,
   serviceItems,
 } from '../../content/preview-content';
 import {
@@ -54,11 +55,13 @@ export function HeroSection() {
 
         <div className="relative min-h-[22rem] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 lg:min-h-[31rem] lg:rounded-none lg:border-y-0 lg:border-r-0">
           <MediaSlot
-            className="h-full min-h-[22rem] lg:min-h-[31rem]"
-            icon="snowflake"
-            label="Коммерческое холодильное оборудование"
+            className="absolute inset-0"
+            fit="cover"
+            photo={heroPhoto}
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
           />
-          <div className="absolute inset-x-5 bottom-5 rounded-lg border border-white/70 bg-white/90 p-4 shadow-lg backdrop-blur-sm">
+          <div className="absolute inset-x-5 bottom-5 rounded-lg border border-white/70 bg-white/90 p-4 shadow-lg">
             <PlaceholderBadge>Сервисная модель</PlaceholderBadge>
             <p className="mt-2 text-base font-semibold leading-6 text-navy">
               Диагностика задачи, подбор специалиста и контроль результата.

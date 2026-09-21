@@ -37,6 +37,13 @@ export const benefitItems = [
   },
 ] as const;
 
+export const heroPhoto = {
+  alt: 'Производственный цех с коммерческим холодильным оборудованием: шкафы, витрины, холодильная камера и льдогенератор',
+  height: 1086,
+  src: '/media/verified/hero-commercial-refrigeration.webp',
+  width: 1448,
+} as const;
+
 export const aboutTeamPhoto = {
   alt: 'Три специалиста на площадке монтажа холодильной камеры',
   height: 1447,

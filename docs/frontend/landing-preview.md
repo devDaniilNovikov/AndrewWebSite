@@ -75,6 +75,15 @@ ten supplied photos and consent of people pictured in the team photograph.
 The offline standalone HTML embeds the verified images as data URIs; hosted
 preview pages serve the same local files with the normal static CSP.
 
+On 2026-09-21 the user supplied `hero-commercial-refrigeration.webp` for the
+home-page hero media block (“Сервисная модель”), the last remaining home-page
+media placeholder. Unlike the other photographs it is rendered in `cover`
+mode: it fills the hero block edge to edge and is cropped to the block's
+proportions, with the “Сервисная модель” card kept on top of it. It loads
+eagerly with high fetch priority because it is the largest above-the-fold
+image. The home page now shows eleven verified photographs and no media
+placeholders.
+
 Product pages reuse the same demonstration banner, header, compact split hero,
 light card grids, dark information bands, contact section, and footer. They do
 not duplicate every home-page section or invent route-specific business facts
