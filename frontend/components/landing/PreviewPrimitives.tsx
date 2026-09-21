@@ -277,16 +277,29 @@ export function MediaSlot({
   icon = 'image',
   className = '',
   sizes = '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
+  fit = 'contain',
+  priority = false,
 }: Readonly<{
   photo?: VerifiedLocalPhoto;
   label?: string;
   icon?: PreviewIcon;
   className?: string;
   sizes?: string;
+  /** `cover` fills the slot edge to edge (cropping as needed); `contain` keeps the photo's own aspect ratio. */
+  fit?: 'contain' | 'cover';
+  /** Above-the-fold media loads eagerly with high fetch priority instead of lazily. */
+  priority?: boolean;
 }>) {
   if (!photo) {
     return <MediaPlaceholder className={className} icon={icon} label={label} />;
   }
+
+  // In cover mode the slot takes its box from the caller (e.g. `absolute inset-0`)
+  // and the photo fills that box edge to edge.
+  const imageClassName =
+    fit === 'cover'
+      ? 'block h-full w-full object-cover'
+      : 'block h-auto w-full object-contain';
 
   return (
     <div
@@ -297,10 +310,11 @@ export function MediaSlot({
       {/* eslint-disable-next-line @next/next/no-img-element -- local, dimensioned media is required by the static CSP contract */}
       <img
         alt={photo.alt}
-        className="block h-auto w-full object-contain"
+        className={imageClassName}
         decoding="async"
+        fetchPriority={priority ? 'high' : undefined}
         height={photo.height}
-        loading="lazy"
+        loading={priority ? 'eager' : 'lazy'}
         sizes={sizes}
         src={photo.src}
         width={photo.width}

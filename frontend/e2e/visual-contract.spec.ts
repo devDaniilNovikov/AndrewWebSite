@@ -53,12 +53,10 @@ test('enforces the behavior-based responsive visual contract', async ({
         document.documentElement.clientWidth,
     ),
   ).toBe(true);
-  await expect(page.locator('[data-media-slot="placeholder"]')).not.toHaveCount(
-    0,
-  );
-  await expect(page.locator('[data-media-slot="verified"]')).toHaveCount(10);
+  await expect(page.locator('[data-media-slot="placeholder"]')).toHaveCount(0);
+  await expect(page.locator('[data-media-slot="verified"]')).toHaveCount(11);
   const verifiedPhotos = page.locator('[data-media-slot="verified"] img');
-  await expect(verifiedPhotos).toHaveCount(10);
+  await expect(verifiedPhotos).toHaveCount(11);
   expect(
     await verifiedPhotos.evaluateAll((images) =>
       images.every((image) => {
@@ -69,7 +67,7 @@ test('enforces the behavior-based responsive visual contract', async ({
           image.alt.length > 0 &&
           width > 0 &&
           height > 0 &&
-          getComputedStyle(image).objectFit === 'contain'
+          ['contain', 'cover'].includes(getComputedStyle(image).objectFit)
         );
       }),
     ),

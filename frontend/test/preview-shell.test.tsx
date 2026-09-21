@@ -112,6 +112,33 @@ describe('PreviewShell', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('fills the hero media block edge to edge with the supplied equipment photo', () => {
+    const { container } = render(<PreviewShell />);
+    const hero = container.querySelector('[data-section="hero"]');
+
+    expect(hero).toBeInTheDocument();
+    const photo = within(hero as HTMLElement).getByRole('img', {
+      name: 'Производственный цех с коммерческим холодильным оборудованием: шкафы, витрины, холодильная камера и льдогенератор',
+    });
+    expect(photo).toHaveAttribute(
+      'src',
+      '/media/verified/hero-commercial-refrigeration.webp',
+    );
+    expect(photo).toHaveAttribute('loading', 'eager');
+    expect(photo).toHaveAttribute('fetchpriority', 'high');
+    expect(photo).toHaveClass('object-cover', 'h-full', 'w-full');
+    expect(photo.closest('[data-media-slot="verified"]')).toHaveClass(
+      'absolute',
+      'inset-0',
+    );
+    expect(
+      hero?.querySelector('[data-media-slot="placeholder"]'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(hero as HTMLElement).getByText('Сервисная модель'),
+    ).toBeInTheDocument();
+  });
+
   it('keeps blocked facts as placeholders while rendering supplied photos', () => {
     const { container } = render(<PreviewShell />);
 
@@ -130,7 +157,7 @@ describe('PreviewShell', () => {
     expect(
       screen.getAllByText('Данные не опубликованы.').length,
     ).toBeGreaterThan(0);
-    expect(container.querySelectorAll('img')).toHaveLength(10);
+    expect(container.querySelectorAll('img')).toHaveLength(11);
     expect(
       screen.getByRole('img', {
         name: 'Три специалиста на площадке монтажа холодильной камеры',

@@ -93,8 +93,8 @@ try {
   const photos = page.locator('[data-media-slot="verified"] img');
   const photoCount = await photos.count();
   assert(
-    photoCount === 10,
-    `Expected 10 verified photos, found ${photoCount}.`,
+    photoCount === 11,
+    `Expected 11 verified photos, found ${photoCount}.`,
   );
   for (let index = 0; index < photoCount; index += 1) {
     const photo = photos.nth(index);
