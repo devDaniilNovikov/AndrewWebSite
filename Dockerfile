@@ -1,12 +1,12 @@
-# --- Этап 1: Сборка фронтенда ---
+# --- Stage 1: frontend (static export in production mode: form enabled, no preview banner) ---
 FROM node:24.14.0-alpine AS frontend-build
 WORKDIR /app
-RUN npm install -g pnpm
+RUN npm install -g pnpm@11.18.0
 COPY frontend/ ./
-RUN pnpm install
-RUN pnpm run build:standalone
+RUN pnpm install --frozen-lockfile
+RUN pnpm run build:production
 
-# --- Этап 2: Сборка бэкенда ---
+# --- Stage 2: backend ---
 FROM eclipse-temurin:25.0.3_9-jdk-noble AS backend-build
 WORKDIR /workspace
 COPY .mvn .mvn
@@ -16,32 +16,25 @@ COPY Dockerfile .dockerignore ./
 COPY src src
 RUN ./mvnw -B clean package -Dmaven.test.skip=true
 
-# --- Этап 3: Финальный продакшен-контейнер с Nginx ---
+# --- Stage 3: runtime: nginx on 8080 in front of the application on 127.0.0.1:8090 ---
 FROM eclipse-temurin:25.0.3_9-jre-noble@sha256:fbcf915c585659b30eb766ada4d6d7cfc9ec1040bf521e95bf61b10a25af73db
 
-# Устанавливаем Nginx в Java-контейнер
-RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
 
 WORKDIR /app
 COPY --from=backend-build /workspace/target/*.jar /app/application.jar
-
-# Копируем результат сборки фронтенда прямо в корневую папку Nginx
 COPY --from=frontend-build /app/out /var/www/html
+COPY deploy/nginx.conf /etc/nginx/nginx.conf
+COPY deploy/entrypoint.sh /app/entrypoint.sh
 
-# Настраиваем простейший конфиг Nginx: все запросы идут на фронтенд, а /api — в Java
-RUN echo 'server { \
-    listen 8080; \
-    root /var/www/html; \
-    index index.html; \
-    location / { \
-        try_files $uri.html $uri $uri/ /index.html; \
-    } \
-    location /api/ { \
-        proxy_pass http://127.0.0.1:8080/; \
-    } \
-}' > /etc/nginx/sites-available/default
-
+USER 10001:10001
 EXPOSE 8080
 
-# Запускаем и Java (в фоновом режиме), и Nginx (на порту 8080)
-CMD ["sh", "-c", "java --enable-native-access=ALL-UNNAMED -Dspring.profiles.active=prod -jar /app/application.jar & nginx -g 'daemon off;'"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD ["/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8081 && printf 'GET /actuator/health/liveness HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\":\"UP\"' <&3"]
+
+ENTRYPOINT ["/app/entrypoint.sh"]

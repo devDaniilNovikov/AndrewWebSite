@@ -47,3 +47,9 @@ id_ed25519
 *.md
 !frontend/
 !frontend/**
+# Local build output never belongs in the image; the frontend stage installs and builds itself.
+frontend/node_modules
+frontend/.next
+frontend/out
+frontend/coverage
+frontend/.pnpm-store
