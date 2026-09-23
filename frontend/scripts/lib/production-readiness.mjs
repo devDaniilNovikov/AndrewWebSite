@@ -14,7 +14,11 @@ export const blockerIds = Object.freeze([
 ]);
 
 const allowedStates = new Set(['missing', 'verified']);
-const defaultManifestPath = resolve('content/production-readiness.json');
+// The gate self-test points this at a temporary manifest; builds use the committed one.
+const defaultManifestPath = resolve(
+  process.env.PRODUCTION_READINESS_MANIFEST ||
+    'content/production-readiness.json',
+);
 
 export async function loadProductionReadiness(
   manifestUrl = defaultManifestPath,

@@ -243,6 +243,24 @@ describe('PreviewShell', () => {
     );
   });
 
+  it('drops the pre-publication banner and enables the form in a production build', () => {
+    vi.stubEnv('NEXT_PUBLIC_BUILD_MODE', 'production');
+    try {
+      render(<PreviewShell />);
+
+      expect(
+        screen.queryByText(/Предпубликационная версия/iu),
+      ).not.toBeInTheDocument();
+      const form = screen.getByRole('form', { name: 'Форма заявки' });
+      expect(within(form).getByLabelText('Имя')).toBeEnabled();
+      expect(
+        within(form).getByRole('button', { name: 'Отправить заявку' }),
+      ).toBeEnabled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('opens and closes the mobile drawer with complete focus restoration', () => {
     render(<PreviewShell />);
 
