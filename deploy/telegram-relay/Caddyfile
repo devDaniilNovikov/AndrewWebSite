@@ -1,0 +1,30 @@
+# Telegram relay for hosts that cannot reach api.telegram.org (see docs/backend/operations.md).
+# RELAY_IP is the relay's public IPv4; TELEGRAM_BOT_ID is the numeric part of the bot token.
+# The token travels in the request path, so request and proxy-error logs stay off.
+{
+	default_sni {$RELAY_IP}
+	log default {
+		exclude http.log.error
+	}
+}
+
+{$RELAY_IP} {
+	tls {
+		issuer acme {
+			profile shortlived
+		}
+	}
+
+	@send {
+		method POST
+		path_regexp ^/bot{$TELEGRAM_BOT_ID}:[A-Za-z0-9_-]+/sendMessage$
+	}
+
+	handle @send {
+		reverse_proxy https://api.telegram.org
+	}
+
+	handle {
+		respond 404
+	}
+}
