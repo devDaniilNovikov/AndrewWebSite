@@ -1,7 +1,6 @@
 package ru.andrew.website.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -21,15 +20,14 @@ import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.andrew.website.leads.AcceptanceOutcome;
-import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadDelivery;
 
 @SpringBootTest(
         webEnvironment = WebEnvironment.RANDOM_PORT,
         properties = {
                 "spring.main.cloud-platform=kubernetes",
                 "LEAD_FINGERPRINT_HMAC_KEY="
-                        + "production-forwarded-header-key-material-0001",
-                NO_DATABASE
+                        + "production-forwarded-header-key-material-0001"
         })
 @ActiveProfiles("test")
 @Import(ForwardHeadersServerContractTest.ErrorDispatchTestConfiguration.class)
@@ -41,8 +39,8 @@ class ForwardHeadersServerContractTest {
     @LocalServerPort
     int port;
 
-    @TestBean(methodName = "testLeadAcceptanceTransaction", enforceOverride = true)
-    LeadAcceptanceTransaction transaction;
+    @TestBean(methodName = "testLeadDelivery", enforceOverride = true)
+    LeadDelivery delivery;
 
     @Test
     void configuredHealthEndpointsRemainAvailableAndMinimal() throws Exception {
@@ -56,10 +54,10 @@ class ForwardHeadersServerContractTest {
 
             HttpResponse<String> readiness =
                     get(client, "/actuator/health/readiness");
-            assertThat(readiness.statusCode()).isEqualTo(503);
+            assertThat(readiness.statusCode()).isEqualTo(200);
             assertThat(readiness.headers().firstValue(HttpHeaders.CACHE_CONTROL))
                     .contains("no-store");
-            assertThat(readiness.body()).isEqualTo("{\"status\":\"DOWN\"}");
+            assertThat(readiness.body()).isEqualTo("{\"status\":\"UP\"}");
         }
     }
 
@@ -177,7 +175,7 @@ class ForwardHeadersServerContractTest {
         }
     }
 
-    private static LeadAcceptanceTransaction testLeadAcceptanceTransaction() {
+    private static LeadDelivery testLeadDelivery() {
         return (lead, fingerprint) -> AcceptanceOutcome.CREATED;
     }
 

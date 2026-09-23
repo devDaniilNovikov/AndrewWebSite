@@ -194,7 +194,7 @@ class PerimeterRateLimitFilterTest {
 
     private static MockHttpServletRequest publicRequest(String method, String path) {
         MockHttpServletRequest request = new MockHttpServletRequest(method, path);
-        request.setLocalPort(ProductionHttpInvariantGuard.PUBLIC_SERVER_PORT);
+        request.setLocalPort(ProductionHttpInvariantGuard.APPLICATION_SERVER_PORT);
         request.setRemoteAddr("192.0.2.44");
         return request;
     }

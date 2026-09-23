@@ -1,38 +1,26 @@
 package ru.andrew.website.observability;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.registry.otlp.OtlpMeterRegistry;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.andrew.website.leads.AcceptanceOutcome;
-import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadDelivery;
 import ru.andrew.website.leads.LeadMetrics;
 import ru.andrew.website.leads.LeadRejectionReason;
-import ru.andrew.website.privacy.RetentionHeartbeat;
-import ru.andrew.website.privacy.RetentionMetrics;
-import ru.andrew.website.telegram.OutboxRepository;
-import ru.andrew.website.telegram.TelegramMetrics;
-import ru.andrew.website.telegram.WorkerHeartbeat;
 
-@SpringBootTest(properties = NO_DATABASE)
+@SpringBootTest
 @ActiveProfiles("test")
 class TelemetryPrivacyTest {
     private static final String APPLICATION = "andrew-website";
@@ -43,7 +31,7 @@ class TelemetryPrivacyTest {
             Map.of(
                     "andrew.leads.accepted",
                     Map.of("outcome", Set.of(
-                            "created", "duplicate", "retained", "honeypot")),
+                            "created", "duplicate", "honeypot")),
                     "andrew.leads.rejected",
                     Map.of("reason", Set.of(
                             "validation", "conflict", "payload",
@@ -54,28 +42,7 @@ class TelemetryPrivacyTest {
                             "uri", Set.of(CLIENT_ROUTE),
                             "outcome", Set.of(
                                     "delivered", "retryable",
-                                    "permanent_failure")),
-                    "andrew.telegram.delivery",
-                    Map.of(
-                            "outcome", Set.of(
-                                    "delivered", "retry", "blocked"),
-                            "reason", Set.of(
-                                    "success", "network", "telegram_429",
-                                    "telegram_4xx", "telegram_5xx",
-                                    "telegram_unexpected", "lease_expired",
-                                    "privacy_expired")),
-                    "andrew.telegram.queue.depth",
-                    Map.of("state", Set.of(
-                            "pending", "processing", "retry",
-                            "blocked", "delivered")),
-                    "andrew.telegram.worker.last_success.age",
-                    Map.of(),
-                    "andrew.privacy.anonymized",
-                    Map.of(),
-                    "andrew.privacy.deleted",
-                    Map.of(),
-                    "andrew.privacy.last_success.age",
-                    Map.of());
+                                    "permanent_failure")));
 
     @Autowired
     MeterRegistry registry;
@@ -83,11 +50,8 @@ class TelemetryPrivacyTest {
     @Autowired
     ObservationRegistry observations;
 
-    @Autowired
-    ObjectProvider<OtlpMeterRegistry> otlp;
-
     @MockitoBean
-    LeadAcceptanceTransaction transaction;
+    LeadDelivery delivery;
 
     @BeforeEach
     void clearMeters() {
@@ -95,15 +59,7 @@ class TelemetryPrivacyTest {
     }
 
     @Test
-    void testProfileNeverCreatesAnOtlpExporter() {
-        assertThat(otlp.getIfAvailable()).isNull();
-    }
-
-    @Test
     void centralFilterAllowsOnlyCanonicalMetersAndExactTags() {
-        Clock clock = Clock.fixed(
-                Instant.parse("2026-07-26T00:00:00Z"),
-                ZoneOffset.UTC);
         var leadMetrics = new LeadMetrics(registry);
         for (AcceptanceOutcome outcome : AcceptanceOutcome.values()) {
             leadMetrics.accepted(outcome);
@@ -111,19 +67,6 @@ class TelemetryPrivacyTest {
         for (LeadRejectionReason reason : LeadRejectionReason.values()) {
             leadMetrics.rejected(reason);
         }
-
-        WorkerHeartbeat workerHeartbeat = new WorkerHeartbeat(clock);
-        TelegramMetrics telegramMetrics = new TelegramMetrics(
-                registry,
-                mock(OutboxRepository.class),
-                workerHeartbeat,
-                clock);
-        telegramMetrics.delivery("delivered", "success");
-
-        RetentionMetrics retentionMetrics = new RetentionMetrics(
-                registry, new RetentionHeartbeat(clock), clock);
-        retentionMetrics.anonymized(1);
-        retentionMetrics.deleted(1);
 
         Observation observation = Observation.createNotStarted(
                         "andrew.telegram.client", observations)
@@ -140,15 +83,6 @@ class TelemetryPrivacyTest {
                 .containsExactlyInAnyOrderElementsOf(CONTRACTS.keySet());
         assertThat(registry.getMeters())
                 .allSatisfy(TelemetryPrivacyTest::assertCanonicalMeter);
-        assertThat(registry.find("andrew.telegram.queue.depth").gauges())
-                .allSatisfy(gauge ->
-                        assertThat(gauge.value()).isFinite());
-        assertThat(registry.get(
-                        "andrew.telegram.worker.last_success.age")
-                .gauge().value()).isFinite();
-        assertThat(registry.get(
-                        "andrew.privacy.last_success.age")
-                .gauge().value()).isFinite();
     }
 
     @Test
@@ -166,11 +100,13 @@ class TelemetryPrivacyTest {
                 .tag("requestId", "11111111-1111-4111-8111-111111111111")
                 .register(registry)
                 .increment();
-        Counter.builder("andrew.privacy.deleted")
+        Counter.builder("andrew.leads.rejected")
+                .tag("reason", "validation")
                 .tag("profile", "prod")
                 .register(registry)
                 .increment();
-        Counter.builder("andrew.privacy.anonymized")
+        Counter.builder("andrew.leads.accepted")
+                .tag("outcome", "created")
                 .tag("application", "attacker-controlled")
                 .register(registry)
                 .increment();

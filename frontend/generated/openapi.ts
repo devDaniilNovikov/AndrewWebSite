@@ -13,7 +13,7 @@ export type paths = {
         };
         /**
          * Dependency-free process liveness
-         * @description Available in production only on 127.0.0.1:8081. Uses only application liveness state. It never probes PostgreSQL, Telegram, OTLP, the outbox worker, or the retention worker.
+         * @description Available in production only on 127.0.0.1:8081. Uses only application liveness state. It never probes Telegram.
          */
         readonly get: operations["getLiveness"];
         readonly put?: never;
@@ -32,8 +32,8 @@ export type paths = {
             readonly cookie?: never;
         };
         /**
-         * Minimal dependency and worker readiness
-         * @description Available in production only on 127.0.0.1:8081. Returns UP only when PostgreSQL is available and the outbox worker has completed a successful poll in the last 45 seconds, after a 45-second startup grace. A successful poll finishes its full batch and durably records every delivery decision; exceptions and failed state writes do not advance the heartbeat. It never discloses which dependency is degraded.
+         * Minimal application readiness
+         * @description Available in production only on 127.0.0.1:8081. Reflects only the application readiness state; Telegram availability is reported per request as 503 instead. It never discloses details.
          */
         readonly get: operations["getReadiness"];
         readonly put?: never;
@@ -54,8 +54,8 @@ export type paths = {
         readonly get?: never;
         readonly put?: never;
         /**
-         * Accept a lead for durable asynchronous delivery
-         * @description Before media or body processing, a coarse per-instance rolling perimeter admits at most 10,000 requests across every public method and path in each minute. After the body boundary, a lead-only rolling global window admits at most 60 requests in every half-open interval (t - 60 seconds, t], and a separate bounded per-connection-address lead bucket has burst 5 and refills 1 token per minute. Forwarded client headers are ignored until Timeweb proxy CIDRs are verified. The empty 202 response deliberately does not reveal whether the request was newly committed, idempotently accepted, safely accepted after fingerprint retention, or synthetically accepted. A honeypot request needs only a non-empty `website`; legitimate fields may be absent. Telegram delivery is asynchronous and at least once.
+         * Accept a lead and deliver it to Telegram
+         * @description Before media or body processing, a coarse per-instance rolling perimeter admits at most 10,000 requests across every public method and path in each minute. After the body boundary, a lead-only rolling global window admits at most 60 requests in every half-open interval (t - 60 seconds, t], and a separate bounded per-connection-address lead bucket has burst 5 and refills 1 token per minute. The client address is the X-Real-IP value set by the container's nginx; other forwarded headers are ignored. The empty 202 response deliberately does not reveal whether the lead was just delivered, recognized as a repeat of a delivered request, or synthetically accepted. A honeypot request needs only a non-empty `website`; legitimate fields may be absent. Delivery to Telegram happens before the response.
          */
         readonly post: operations["submitLead"];
         readonly delete?: never;
@@ -223,7 +223,7 @@ export type components = {
                 readonly "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Durable acceptance cannot be completed because PostgreSQL is unavailable. */
+        /** @description The lead could not be delivered to Telegram; nothing was remembered, so a retry with the same requestId sends it again. */
         readonly ServiceUnavailable: {
             headers: {
                 readonly [name: string]: unknown;
@@ -234,7 +234,7 @@ export type components = {
                  *       "type": "urn:andrew:problem:service-unavailable",
                  *       "title": "Service unavailable",
                  *       "status": 503,
-                 *       "detail": "The request cannot be accepted durably at this time.",
+                 *       "detail": "The request could not be delivered right now.",
                  *       "instance": "/api/leads"
                  *     }
                  */
@@ -367,7 +367,7 @@ export interface operations {
             };
         };
         readonly responses: {
-            /** @description Accepted. The response has no body and no acceptance-kind metadata. For a legitimate first submission, it is emitted only after the lead and outbox transaction commits. It is also used indistinguishably for equal duplicates, retained request IDs whose fingerprints were removed, and synthetic acceptance. */
+            /** @description Accepted. The response has no body and no acceptance-kind metadata. For a legitimate first submission, it is emitted only after Telegram accepted the message. It is also used indistinguishably for a repeated submission of an already delivered request (no second message is sent) and for synthetic acceptance. */
             readonly 202: {
                 headers: {
                     readonly [name: string]: unknown;

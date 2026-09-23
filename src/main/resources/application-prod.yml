@@ -5,43 +5,18 @@ spring:
   main:
     banner-mode: "off"
     log-startup-info: false
+server:
+  address: 127.0.0.1
+  port: 8090
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Real-IP
+      internal-proxies: 127\.0\.0\.1
 management:
   server:
     address: 127.0.0.1
     port: 8081
-  otlp:
-    metrics:
-      export:
-        enabled: true
-        url: ${OTLP_METRICS_URL}
-        headers:
-          Authorization: ${OTLP_AUTHORIZATION}
-        step: 30s
-sentry:
-  enabled: true
-  dsn: ${SENTRY_DSN}
-  environment: prod
-  server-name: andrew-website
-  debug: false
-  enable-external-configuration: false
-  enable-spotlight: false
-  enable-pretty-serialization-output: false
-  use-git-commit-id-as-release: false
-  send-modules: false
-  sample-rate: 1.0
-  send-default-pii: false
-  max-request-body-size: none
-  max-breadcrumbs: 0
-  strict-trace-continuation: true
-  traces-sample-rate: 0.10
-  profile-session-sample-rate: 1.0
-  profile-lifecycle: TRACE
-  logs:
-    enabled: true
-  logging:
-    enabled: false
-  metrics:
-    enabled: true
 logging:
   structured:
     format:
@@ -51,16 +26,10 @@ logging:
         include: false
   level:
     root: "OFF"
-    com.zaxxer.hikari: "OFF"
-    io.micrometer.core.instrument.push: "OFF"
-    io.micrometer.registry.otlp: "OFF"
     org.apache.catalina: "OFF"
-    org.flywaydb: "OFF"
-    org.postgresql: "OFF"
-    ru.andrew.website.common.ProductionStartupFailureReporter: ERROR
-    ru.andrew.website.observability.TelemetryConfiguration: ERROR
-    org.springframework.jdbc: "OFF"
     org.springframework.web: "OFF"
+    ru.andrew.website.common.ProductionStartupFailureReporter: ERROR
+    ru.andrew.website.leads.TelegramLeadDelivery: ERROR
 app:
   leads:
     fingerprint-key: ${LEAD_FINGERPRINT_HMAC_KEY}

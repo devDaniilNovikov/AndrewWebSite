@@ -33,7 +33,7 @@ const activeContactChannels = [
   {
     icon: 'phone' as const,
     label: 'Telegram',
-    href: 'https://t.me/AndrewGukovBot_bot',
+    href: 'https://t.me/andrew_177',
     external: true,
   },
   {

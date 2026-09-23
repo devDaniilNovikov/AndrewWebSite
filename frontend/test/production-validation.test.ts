@@ -1,5 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
@@ -23,13 +29,43 @@ const blockerIds = [
   'licensed_photographs',
 ] as const;
 
+function withMissingManifest<T>(run: (manifestPath: string) => T): T {
+  const directory = mkdtempSync(resolve(tmpdir(), 'andrew-readiness-'));
+  const manifestPath = resolve(directory, 'readiness.json');
+  try {
+    writeFileSync(
+      manifestPath,
+      JSON.stringify(
+        Object.fromEntries(blockerIds.map((id) => [id, 'missing'])),
+      ),
+    );
+    return run(manifestPath);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
 describe('production content validation', () => {
-  it('loads the canonical manifest with every blocker missing', async () => {
+  it('loads the committed manifest with every blocker verified', async () => {
     const readiness = await loadProductionReadiness();
 
     expect(productionBlockerIds).toEqual(blockerIds);
-    expect(findMissingBlockerIds(readiness)).toEqual(blockerIds);
-    expect(Object.values(readiness)).toEqual(blockerIds.map(() => 'missing'));
+    expect(findMissingBlockerIds(readiness)).toEqual([]);
+    expect(Object.values(readiness)).toEqual(blockerIds.map(() => 'verified'));
+  });
+
+  it('lets the committed content through the production gate', () => {
+    const result = spawnSync(
+      process.execPath,
+      ['scripts/validate-production-content.mjs'],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, PRODUCTION_READINESS_MANIFEST: '' },
+      },
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
   });
 
   it('accepts only canonical IDs and readiness states', async () => {
@@ -72,12 +108,11 @@ describe('production content validation', () => {
   });
 
   it('fails closed with every canonical blocker ID and no content values', () => {
-    const result = spawnSync(
-      process.execPath,
-      ['scripts/validate-production-content.mjs'],
-      {
+    const result = withMissingManifest((manifestPath) =>
+      spawnSync(process.execPath, ['scripts/validate-production-content.mjs'], {
         encoding: 'utf8',
-      },
+        env: { ...process.env, PRODUCTION_READINESS_MANIFEST: manifestPath },
+      }),
     );
 
     expect(result.status).toBe(1);
@@ -93,16 +128,15 @@ describe('production content validation', () => {
     mkdirSync(outputDirectory, { recursive: true });
     writeFileSync(resolve(outputDirectory, 'stale-preview.txt'), 'preview');
 
-    const result = spawnSync(
-      process.execPath,
-      ['scripts/build.mjs', 'production'],
-      {
+    const result = withMissingManifest((manifestPath) =>
+      spawnSync(process.execPath, ['scripts/build.mjs', 'production'], {
         encoding: 'utf8',
         env: {
           ...process.env,
           NEXT_PUBLIC_PREVIEW_API_ORIGIN: 'http://127.0.0.1:4174',
+          PRODUCTION_READINESS_MANIFEST: manifestPath,
         },
-      },
+      }),
     );
 
     expect(result.status).toBe(1);

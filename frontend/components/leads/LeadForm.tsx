@@ -449,11 +449,13 @@ export function LeadForm() {
     >
       <div className="flex flex-col gap-2 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-xl font-semibold">Оставить заявку</h3>
-        <PlaceholderBadge inverse>
-          {policy.enabled
-            ? 'Подключение к форме активно'
-            : 'Backend формы не подключён'}
-        </PlaceholderBadge>
+        {policy.enabled && policy.mode === 'production' ? null : (
+          <PlaceholderBadge inverse>
+            {policy.enabled
+              ? 'Подключение к форме активно'
+              : 'Backend формы не подключён'}
+          </PlaceholderBadge>
+        )}
       </div>
 
       {validationErrorMessages.length > 0 ? (

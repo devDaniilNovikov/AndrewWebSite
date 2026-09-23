@@ -209,6 +209,27 @@ describe('LeadForm', () => {
     expect(payload).not.toHaveProperty('sourceSection');
   });
 
+  it('posts to the same-origin endpoint without preview badges in a production build', async () => {
+    vi.stubEnv('NEXT_PUBLIC_BUILD_MODE', 'production');
+    const fetchMock = vi.fn().mockResolvedValue({
+      headers: new Headers(),
+      status: 202,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<LeadForm />);
+
+    const form = screen.getByRole('form', { name: 'Форма заявки' });
+    expect(form).not.toHaveTextContent('Подключение к форме активно');
+    expect(form).not.toHaveTextContent('Backend формы не подключён');
+
+    fillValidLead();
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить заявку' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/leads');
+    expect(await screen.findByText(SUCCESS_MESSAGE)).toBeInTheDocument();
+  });
+
   it('ignores unsafe lead context and keeps the default repair context', async () => {
     enableLoopbackPreview();
     const fetchMock = vi.fn().mockResolvedValue({

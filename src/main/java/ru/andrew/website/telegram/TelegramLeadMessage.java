@@ -5,7 +5,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 public record TelegramLeadMessage(
-        long leadId,
         UUID requestId,
         String name,
         String phone,
@@ -15,9 +14,6 @@ public record TelegramLeadMessage(
         Instant createdAt) {
 
     public TelegramLeadMessage {
-        if (leadId <= 0) {
-            throw new IllegalArgumentException("leadId must be positive");
-        }
         Objects.requireNonNull(requestId, "requestId must not be null");
         requireText(name, "name");
         requireText(phone, "phone");
@@ -28,7 +24,7 @@ public record TelegramLeadMessage(
 
     @Override
     public String toString() {
-        return "TelegramLeadMessage[leadId=" + leadId + ", content=<redacted>]";
+        return "TelegramLeadMessage[content=<redacted>]";
     }
 
     private static void requireText(String value, String field) {

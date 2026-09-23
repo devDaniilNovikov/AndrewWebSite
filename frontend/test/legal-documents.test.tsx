@@ -25,11 +25,11 @@ describe('published legal documents', () => {
   });
 
   it('serves extensionless document URLs before matching export directories', async () => {
-    const dockerfile = await readFile(
-      resolve(process.cwd(), '..', 'Dockerfile'),
+    const nginx = await readFile(
+      resolve(process.cwd(), '..', 'deploy', 'nginx.conf'),
       'utf8',
     );
 
-    expect(dockerfile).toContain('try_files $uri.html $uri $uri/ /index.html;');
+    expect(nginx).toContain('try_files $uri.html $uri $uri/ /index.html;');
   });
 });

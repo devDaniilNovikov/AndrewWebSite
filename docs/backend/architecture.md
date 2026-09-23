@@ -1,10 +1,11 @@
 # Backend architecture and executable contracts
 
 ## Status and scope
+This document is the backend design for AndrewWebSite. It defines the names, types, boundaries, and operating rules reused by the OpenAPI contract. The MVP is a Russian-language B2B static website plus one public lead command. It has no login, sessions, user accounts, administration UI, CRM, ecommerce, booking, payments, CMS, blog, database, or message broker.
 
-This document is the binding Phase 0 backend design for AndrewWebSite. It defines the names, types, boundaries, transactions, and operating rules reused by the OpenAPI contract and the implementation plans. The MVP is a Russian-language B2B static website plus one public lead command. It has no login, sessions, user accounts, administration UI, CRM, ecommerce, booking, payments, CMS, blog, Redis, or separate message broker.
+Since 2026-09-21 the backend is database-free: an accepted lead is delivered synchronously to the owner's Telegram chat before the visitor receives a response. The decision record is [`docs/superpowers/specs/2026-09-21-lead-form-telegram-delivery-design.md`](../superpowers/specs/2026-09-21-lead-form-telegram-delivery-design.md). PostgreSQL, Flyway, the Telegram outbox worker, the retention worker, Sentry, and OTLP export were removed; the task chain and traceability sections below record how the earlier design was built.
 
-The fixed platform is Java 25 LTS, Spring Boot 4.1.0, one root Maven module, Maven Wrapper, PostgreSQL 18, and one final Java container. The Java root package is `ru.andrew.website`. The frontend remains owned under `frontend/` and uses Next.js 16.2.11, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only during the build.
+The fixed platform is Java 25 LTS, Spring Boot 4.1.0, one root Maven module, Maven Wrapper, and one final container running nginx plus the Spring Boot JAR. The Java root package is `ru.andrew.website`. The frontend remains owned under `frontend/` and uses Next.js 16.2.11, React 19.2.x, strict TypeScript, Tailwind CSS 4, Motion, and Node 24 only during the build.
 
 ## System and trust boundaries
 
@@ -12,47 +13,45 @@ The fixed platform is Java 25 LTS, Spring Boot 4.1.0, one root Maven module, Mav
 Public browser
   | same-origin HTTPS: static GET/HEAD, POST /api/leads
   v
-Timeweb Cloud App Platform ingress (proxy trust not yet established)
+Timeweb Cloud App Platform proxy (appends the visitor to X-Forwarded-For)
   |
   v
-Single non-root Spring Boot container
-  |-- coarse public perimeter admission (all methods and paths)
-  |-- static resource handler
-  |-- public web/security boundary
-  |-- lead intake transaction
-  |-- Telegram outbox worker
-  |-- privacy retention worker
-  |-- safe health and telemetry
-  |     ^ loopback-only 127.0.0.1:8081 health probes
-  |
-  +---- TLS/VPC ----> managed PostgreSQL 18 in the Moscow region
-  +---- HTTPS ------> Telegram Bot API
-  +---- HTTPS/OTLP -> Grafana Cloud collector (production only after gate)
+Single container, uid 10001
+  |-- nginx on 0.0.0.0:8080
+  |     |-- static frontend export (/var/www/html)
+  |     |-- = /api/leads  --X-Real-IP--> 127.0.0.1:8090
+  |     +-- any other /api/ or /actuator/ path -> 404
+  |-- Spring Boot on 127.0.0.1:8090
+  |     |-- coarse public perimeter admission
+  |     |-- public web/security boundary and rate limits
+  |     |-- lead acceptance and synchronous Telegram delivery
+  |     +-- in-memory idempotency registry
+  +-- management on 127.0.0.1:8081 (liveness/readiness, container HEALTHCHECK)
+        |
+        +---- HTTPS ------> Telegram Bot API
 ```
 
-The public browser and all request headers are untrusted. Until Timeweb publishes or confirms the actual forwarding behavior and trusted proxy CIDRs, the application ignores `Forwarded` and `X-Forwarded-For` for rate-limit identity and uses only `HttpServletRequest.getRemoteAddr()` plus server-local limiters. Enabling forwarded-header processing is a production change gate, not a default.
+The public browser and all request headers are untrusted. nginx takes the last `X-Forwarded-For` element (the address the platform proxy observed; the TCP peer when the header is absent), sends it to the application as `X-Real-IP`, and removes `X-Forwarded-For`, `X-Forwarded-Host`, `X-Forwarded-Port`, `X-Forwarded-Proto`, and `Forwarded`. Tomcat's `RemoteIpValve` trusts `X-Real-IP` only from `127.0.0.1`; `ProductionHttpInvariantGuard` fails startup unless exactly this layout is configured. Rate-limit identity is therefore the visitor address, and a visitor cannot choose it.
 
 Before media-type, body, routing, or authorization work, one coarse rolling perimeter gate admits at most 10,000 requests per application instance in every half-open `(t - 60 seconds, t]` interval across every method and public path, including malformed and otherwise rejected traffic. Its fixed problem response reveals neither the requested path nor the connection address. The limit reuses the canonical 10,000-entry in-memory client bound as a deliberately high availability ceiling; it is not the stricter lead-submission policy. The production management connector is bound to `127.0.0.1:8081`, bypasses this public gate, and is unreachable through the public listener, so platform liveness and readiness probes cannot consume or be starved by public admissions.
 
 After body-size validation, the lead-only global limiter is a rolling window, not a token bucket: for every instant `t`, the half-open interval `(t - 60 seconds, t]` contains at most 60 admitted `POST /api/leads` requests. It stores only the at-most-60 admission timestamps needed for that window; timestamps at or before `t - 60 seconds` expire before the next decision. A separate bounded per-connection-address token bucket has capacity 5 and refills exactly one token per minute. The per-connection decision is evaluated first so traffic already rejected for one connection cannot consume lead-global admissions; a request that passes it then attempts the rolling global decision, so any request passing both lead gates is necessarily within the global cap. A rejection returns the ceiling in whole seconds until the applicable oldest timestamp or client token becomes available.
 
-PostgreSQL, Telegram, OTLP, and Sentry are outbound dependencies. Credentials and Sentry DSNs cross into the container only through an access-controlled platform secret store that encrypts them at rest and delivers runtime bindings through the platform's protected channel as described in `operations.md`; no secret is embedded in a file, image layer, log, metric, health response, or exception response. The process necessarily receives the usable value in memory because the Telegram protocol authenticates with the token in an HTTPS request path and the Sentry SDK needs a DSN destination; application-level ciphertext cannot be sent in their place.
+Telegram is the only outbound dependency. The bot token, chat ID, and HMAC key cross into the container only as platform runtime bindings described in `operations.md`; no secret is embedded in a file, image layer, log, metric, health response, or exception response. The process necessarily holds the token in memory because the Telegram protocol authenticates with it in the HTTPS request path.
 
 ## Container and component boundaries
-
 One Spring Boot process contains these feature packages:
 
 | Package | Responsibility | May depend on |
 | --- | --- | --- |
 | `ru.andrew.website` | `AndrewWebsiteApplication` bootstrap only | feature configuration |
-| `ru.andrew.website.common` | UTC `Clock` and other cross-feature value-only infrastructure | JDK and Spring configuration only |
-| `ru.andrew.website.web` | public route allowlist, stateless security, RFC 9457 mapping, payload/content-type checks, CORS, client address, rate limits, static fallback | Spring MVC/Security, lead application port |
-| `ru.andrew.website.leads` | request DTOs, normalization, HMAC fingerprinting, idempotency decision, transactional lead/outbox creation | `JdbcClient`, transaction manager, `Clock` |
-| `ru.andrew.website.telegram` | Telegram gateway, outbox claim/lease state machine, scheduler, retry policy, bounded telemetry | lead projection, `JdbcClient`, `RestClient`, `Clock`, `MeterRegistry` |
-| `ru.andrew.website.privacy` | 29-day anonymization, queue privacy block, 12-month deletion, retention heartbeat | `JdbcClient`, transaction manager, `Clock`, `MeterRegistry` |
-| `ru.andrew.website.observability` | minimal health contributors, worker heartbeats, redaction policy, bounded metrics | dependency probes and heartbeat ports only |
+| `ru.andrew.website.common` | UTC `Clock`, profile guard, detail-free production startup failure reporting | JDK and Spring configuration only |
+| `ru.andrew.website.web` | security chain, perimeter and lead rate limits, body limit, problem responses, production HTTP invariant guard | leads metrics |
+| `ru.andrew.website.leads` | request DTOs, normalization, HMAC fingerprinting, `LeadDelivery`, `TelegramLeadDelivery`, `LeadIdempotencyRegistry` | Telegram gateway port, `Clock` |
+| `ru.andrew.website.telegram` | Telegram gateway, message formatting, endpoint guard, bounded client telemetry | `RestClient`, `ObservationRegistry` |
+| `ru.andrew.website.observability` | health cache headers, bounded meter filter, production logging invariant guard | Micrometer, Spring configuration |
 
-Feature internals expose explicit ports; controllers do not issue SQL, workers do not parse HTTP requests, and the Telegram gateway does not own queue state. Records and enums are immutable.
+Controllers do not call Telegram directly, and the gateway neither remembers requests nor decides idempotency. Records and enums are immutable.
 
 ## Public HTTP surface
 
@@ -65,7 +64,7 @@ Production health operations are available only to the loopback management conne
 - `GET /actuator/health/liveness`;
 - `GET /actuator/health/readiness`.
 
-Static `GET` and `HEAD` requests are served from the packaged frontend. `/api/**` and `/actuator/**` never fall through to static content. The public listener has no actuator mappings. `/actuator/health`, `/actuator/metrics`, `/actuator/prometheus`, environment, configuration, shutdown, heap, mappings, loggers, and every other actuator endpoint are unavailable externally. There are no authentication or login routes.
+Static `GET` and `HEAD` requests are served by nginx from the frontend export. nginx answers every other `/api/` and `/actuator/` path with `404`, so they never fall through to static content, and the application connector itself is reachable only from loopback. `/actuator/health`, `/actuator/metrics`, `/actuator/prometheus`, environment, configuration, shutdown, heap, mappings, loggers, and every other actuator endpoint are unavailable externally. There are no authentication or login routes.
 
 Production is same-origin and has no CORS allowlist. The `local` profile may allow only explicitly configured development origins. The lead endpoint is stateless, uses no cookies, and has CSRF disabled only for `POST /api/leads`; all other non-safe methods remain denied by the route allowlist.
 
@@ -93,7 +92,7 @@ known fields, but they must still cross the normal JSON type boundary (`UUID`, s
 enum, or boolean) because deserialization and unknown-property rejection happen before
 classification. After the common request-size, media-type, JSON-deserialization, and
 rate-limit boundary, the service checks `website != null && !website.isEmpty()` before Bean Validation or
-normalization and returns the exact empty `202` without persistence, HMAC, or Telegram
+normalization and returns the exact empty `202` without HMAC or Telegram
 side effects. Thus `{"website":"filled-by-bot"}` is accepted synthetically, while an
 unknown property or an invalid typed known property is `400`. The website value has no
 field-size bound beyond the 16 KiB body limit because it is never stored.
@@ -101,130 +100,45 @@ field-size bound beyond the 16 KiB body limit because it is never stored.
 For legitimate requests, `requestId` must be a canonical RFC-variant UUIDv4. `LeadNormalizer.normalize(LeadRequest)` produces immutable `NormalizedLead` fields `requestId`, `name`, `phoneDigits`, `comment`, `sourcePath`, `intent`, and `consentedAt`. The payload fingerprint excludes `requestId`, `website`, and `consentedAt`; it is HMAC-SHA-256 over UTF-8 canonical JSON with keys in this fixed order: `name`, `phone`, `comment`, `sourcePath`, `intent`, `consent`. `comment` is JSON `null` when absent and `consent` is always JSON `true`. Production obtains the HMAC key only from `LEAD_FINGERPRINT_HMAC_KEY`; startup fails if its UTF-8 representation has fewer than 32 bytes. Only the `test` profile may bind the visibly non-production value `test-only-key-material-not-for-production-0001`.
 
 ## End-to-end lead and idempotency flow
-
-1. The web boundary rejects bodies over 16 KiB as `413`, non-JSON media types as `415`, malformed JSON, unknown fields, and typed deserialization failures as `400`, and exhausted bounded token buckets as `429`.
+1. nginx rejects bodies over 32 KiB; the application rejects bodies over 16 KiB as `413`, non-JSON media types as `415`, malformed JSON, unknown fields, and typed deserialization failures as `400`, and exhausted limits as `429`.
 2. A non-empty honeypot returns an empty `202` and stops.
 3. The service normalizes the request and computes its keyed fingerprint without logging any request field.
-4. In one PostgreSQL transaction, lock or insert by `request_id`:
-   - no retained row: insert one `leads` row and one `telegram_outbox` row;
-   - retained row with equal non-null fingerprint: insert nothing;
-   - retained row with a different non-null fingerprint: roll back and return `409`;
-   - retained row with a null fingerprint: insert nothing and return safe `202`.
-5. Only after the transaction commits does the controller return the same empty `202` for first acceptance, equal duplicate, post-retention replay, and honeypot.
-6. PostgreSQL unavailable before commit returns `503`; a rollback can never produce `202`.
+4. `TelegramLeadDelivery` looks up `requestId` in `LeadIdempotencyRegistry`:
+   - remembered with an equal fingerprint: return `202` without sending again;
+   - remembered with a different fingerprint: return `409`;
+   - otherwise send the Telegram message now.
+5. Telegram confirms (`2xx`): remember `requestId` with the fingerprint and return the empty `202`.
+6. Any failure (network, timeout, `429`, `4xx`, `5xx`, redirect) returns `503` and writes one ERROR line `Telegram delivery failed: <code>`; nothing is remembered, so the form's retry with the same `requestId` sends again.
 
-The unique `leads.request_id` constraint is the concurrency authority. A racing loser rereads the committed row and applies the same equal/conflict/null-fingerprint decision. No response reveals which acceptance branch occurred.
+Concurrent requests that reuse one `requestId` are not serialized; the form never submits the same attempt in parallel. A response lost after Telegram accepted the message can lead to a second, identical message on retry.
 
-## Persistence contract
+## Idempotency registry
 
-Flyway migration `src/main/resources/db/migration/V1__lead_outbox_baseline.sql` creates both tables. Forward-only migration `V2__privacy_identity_hardening.sql` clears legacy anonymized source paths and adds the privacy-shape and UUIDv4 guards. All timestamps use `timestamp with time zone` and application/database values are UTC.
-
-### `leads`
-
-| Column | PostgreSQL type | Constraints and meaning |
-| --- | --- | --- |
-| `id` | `bigint generated by default as identity` | primary key |
-| `request_id` | `uuid` | not null; RFC-variant UUIDv4 while active; constraint `uk_leads_request_id` unique |
-| `payload_fingerprint` | `bytea` | nullable only after anonymization; 32 bytes while present |
-| `name` | `varchar(100)` | nullable only after anonymization |
-| `phone` | `varchar(15)` | nullable only after anonymization; normalized digits |
-| `comment` | `varchar(1000)` | nullable |
-| `source_path` | `varchar(2048)` | not null while active; replaced with `/` on anonymization |
-| `intent` | `varchar(16)` | not null; check `repair` or `maintenance` |
-| `consented_at` | `timestamptz` | not null |
-| `created_at` | `timestamptz` | not null |
-| `anonymized_at` | `timestamptz` | nullable; once set, PII and fingerprint are null and `source_path = '/'` |
-
-Checks enforce a 32-byte fingerprint when non-null, phone length 7–15 when non-null, valid intent, UUIDv4 for newly inserted or updated active rows, and the all-or-none PII invariant (`anonymized_at is null` with name/phone/fingerprint present, or `anonymized_at is not null` with all four PII columns null and `source_path = '/'`). The UUID constraint is introduced `NOT VALID` so a legacy non-v4 row can still transition to the anonymized shape; every new or changed active row is protected. Index `idx_leads_retention(created_at, id) where anonymized_at is null` supports anonymization; `idx_leads_anonymized_cleanup(anonymized_at, id) where anonymized_at is not null` supports deletion.
-
-### `telegram_outbox`
-
-| Column | PostgreSQL type | Constraints and meaning |
-| --- | --- | --- |
-| `id` | `bigint generated by default as identity` | primary key |
-| `lead_id` | `bigint` | not null; unique; foreign key to `leads(id)` with cascade delete |
-| `state` | `varchar(16)` | `pending`, `processing`, `retry`, `blocked`, or `delivered` |
-| `attempt_count` | `integer` | not null default 0; non-negative; incremented on claim |
-| `next_attempt_at` | `timestamptz` | not null; claim eligibility |
-| `lease_token` | `uuid` | present only while processing |
-| `lease_until` | `timestamptz` | present only while processing |
-| `last_error_code` | `varchar(64)` | nullable bounded technical code; never exception text or PII |
-| `created_at` | `timestamptz` | not null |
-| `updated_at` | `timestamptz` | not null |
-| `delivered_at` | `timestamptz` | present only when delivered |
-
-The outbox stores no name, phone, comment, message JSON, or other duplicate PII. Check constraints enforce state-dependent lease and delivery columns. `idx_telegram_outbox_claim(next_attempt_at, id) where state in ('pending','retry')` and `idx_telegram_outbox_expired_lease(lease_until, id) where state = 'processing'` bound queue scans.
-
-## Queue transactions and state machine
-
-Polling occurs every 15 seconds. A claim transaction first recovers at most 10 expired `processing` rows to `retry` through an ordered `FOR UPDATE SKIP LOCKED` CTE, clears their lease, assigns `next_attempt_at = now()`, and records `last_error_code = 'lease_expired'`. It then selects at most 10 due `pending`/`retry` rows whose joined lead is non-anonymized and younger than the 29-day operational privacy threshold, ordered by `next_attempt_at, id`, using `FOR UPDATE OF telegram_outbox SKIP LOCKED`. It changes each to `processing`, increments `attempt_count`, assigns a random `lease_token`, and sets `lease_until = now() + interval '2 minutes'`. The transaction returns immutable `ClaimedDelivery` values plus the bounded recovery count and commits before any Telegram HTTP call; each committed recovery increments the fixed `retry/lease_expired` delivery counter.
-
-Immediately before send, the worker rejects a claim that cannot preserve both the lease and the privacy window for the complete configured HTTP timeout budget. That budget is derived from the Boot-managed connect plus read timeouts, and production startup fails unless the worker lease is longer. Reload uses an explicit observation time and a privacy cutoff advanced by that budget, so the selected lead must remain younger than the 29-day threshold through the latest possible completion time. An absent projection is never sent.
-
-After reload, the worker recomputes the absolute latest start as `min(lease_until, created_at + 29 days) - HTTP timeout budget`. It rechecks that deadline before handing the message to the gateway, and the gateway checks it again after message formatting immediately before the `RestClient` call. Reaching the deadline is fail-closed. If retention commits between reload and gateway handoff, the worker atomically records or confirms `blocked/privacy_expired`, and cached PII never reaches the external call. Any other stale or missing ownership aborts the poll. Every delivery completion update matches `id`, `state = 'processing'`, `lease_token`, and `lease_until > now`; a stale worker therefore cannot overwrite a recovery or privacy decision.
-
-| From | Event | To | Atomic effects |
-| --- | --- | --- | --- |
-| `pending` | due claim | `processing` | increment attempt; set two-minute lease/token |
-| `retry` | due claim | `processing` | increment attempt; set two-minute lease/token |
-| `processing` | Telegram success | `delivered` | clear lease; set `delivered_at`; clear error |
-| `processing` | timeout, network error, 5xx, or 429 | `retry` | clear lease; set bounded error code and `next_attempt_at` |
-| `processing` | Telegram non-429 4xx | `blocked` | clear lease; set `telegram_permanent_<status>` |
-| `processing` | lease expires | `retry` | clear lease; set due now and `lease_expired` |
-| `pending`, `retry`, or `processing` | lead reaches privacy threshold | `blocked` | clear lease; set `privacy_expired`; no later delivery |
-| `blocked` | none in MVP | `blocked` | terminal |
-| `delivered` | none | `delivered` | terminal |
-
-For delivery attempt number `n >= 1`, exponential delay is `min(30 seconds * 2^(n - 1), 6 hours)`, calculated without numeric overflow. For Telegram 429, parse a positive bounded `retry_after` and use `min(6 hours, max(exponential delay, retry_after seconds))`. Invalid `retry_after` is treated as a normal transient failure. Telegram HTTP occurs outside the claim transaction.
-
-Delivery is at least once. A crash before the HTTP call leaves a lease that is recovered. A crash during a call also recovers after lease expiry. A crash after Telegram accepts but before `delivered` commits can send a duplicate; including `requestId` in the Telegram message lets the recipient recognize it. A database failure while recording an outcome leaves the lease to recover. This accepted duplicate window cannot be removed without a Telegram-side idempotency contract.
+`LeadIdempotencyRegistry` keeps `requestId → (fingerprint, expiresAt)` in process memory for one hour and at most 10 000 entries. Expired entries are purged on every write; when full, the oldest entry is evicted. It never holds a name, phone, comment, or message. A restart forgets the registry; that only widens the duplicate-message window described above.
 
 ## Telegram message and gateway
-
-`TelegramGateway.send(TelegramLeadMessage, Instant latestStart)` returns a sealed `TelegramDeliveryResult`: `Delivered`, `Retryable(code, retryAfter)`, or `PermanentFailure(code)`. The message contains the normalized name, phone, optional comment, source path, intent, lead creation time, and `requestId`. It is assembled as plain text only after claim and is never persisted in the outbox or logged. The synchronous gateway uses the Boot-managed `RestClient.Builder`, fails closed when the absolute latest start has passed, and classifies every HTTP status without logging a Telegram response body; only the bounded 429 body is parsed for a positive integral `retry_after`. Because the Telegram protocol places the credential in the request path and Spring network exceptions retain the expanded URI, framework HTTP observations are disabled and all preconfigured request interceptors are removed from this client. This explicitly prevents Sentry's `RestClient` auto-instrumentation from observing the token-bearing URI. A dedicated `andrew.telegram.client` observation exposes only the static `/bot{token}/sendMessage` route, method, and bounded delivery outcome; it never receives the framework exception. The JSON request projection has a redacted `toString` so framework DEBUG logging cannot expose the destination or message. Bot token and chat ID come only from `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, and production startup fails if either is absent.
-
-## Privacy lifecycle
-
-The retention worker runs hourly against a supplied `Clock` and updates bounded batches. At `created_at <= now - 29 days`, one transaction:
-
-1. changes all non-delivered outbox states, including leased `processing`, to `blocked` with `privacy_expired` and clears leases;
-2. nulls `name`, `phone`, `comment`, and `payload_fingerprint`, replaces `source_path` with `/`, and sets `anonymized_at`;
-3. commits both effects together.
-
-This 29-day operational threshold provides a one-day margin before the hard 30-day PII limit and applies even when Telegram is unavailable. At `anonymized_at <= now - 12 months`, technical rows are deleted; cascade removes the associated outbox row. After both bounded drains, one indexed snapshot checks for any remaining anonymization- or deletion-eligible row without taking a row lock. A row skipped because another transaction holds its lock therefore prevents the complete-pass heartbeat from advancing. The retained `request_id` gives safe replay only until that deletion. PostgreSQL backup retention must be at most 30 days, and the Telegram destination auto-delete must be at most 30 days; both are verified production release gates.
+`TelegramGateway.send(TelegramLeadMessage)` returns a sealed `TelegramDeliveryResult`: `Delivered`, `Retryable(code, retryAfter)`, or `PermanentFailure(code)`. The message is plain text with only the owner-facing contact details: `Имя`, `Телефон` (digits), and `Комментарий` when present. It is never persisted or logged. The synchronous gateway uses the Boot-managed `RestClient.Builder` (connect 3 s, read 8 s, no redirects — below the form's 15 s budget) and classifies every HTTP status without logging a Telegram response body. Because the Telegram protocol places the credential in the request path and Spring network exceptions retain the expanded URI, framework HTTP observations are disabled and all preconfigured request interceptors are removed from this client. A dedicated `andrew.telegram.client` observation exposes only the static `/bot{token}/sendMessage` route, method, and bounded outcome. The JSON request projection has a redacted `toString`. Bot token and chat ID come only from `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`; production uses the fixed `https://api.telegram.org` origin.
 
 ## Logging and telemetry contract
+Application logs never contain a lead name, phone, comment, request body, canonical payload, fingerprint, Telegram message, bot token, chat ID, or exception content derived from those values; `requestId` is not a log or metric tag. In `prod` the console uses ECS JSON, the root level is `OFF`, and only `ProductionStartupFailureReporter` and `TelegramLeadDelivery` may log, at `ERROR`. `ProductionLoggingInvariantGuard` fails startup if that configuration is weakened.
 
-Application logs never contain a lead name, phone, comment, request body, canonical payload, fingerprint, Telegram message, bot token, chat ID, database credentials, OTLP headers, or exception content derived from those values. Safe correlation uses generated bounded operation IDs, outbox numeric IDs, state, outcome code, and aggregate counts; `requestId` is not a log or metric tag.
+Micrometer meters stay in process (no exporter) and use only enumerated tags:
 
-Micrometer names are bounded and use only enumerated tags:
-
-- `andrew.leads.accepted` with `outcome=created|duplicate|retained|honeypot`;
+- `andrew.leads.accepted` with `outcome=created|duplicate|honeypot`;
 - `andrew.leads.rejected` with `reason=validation|conflict|payload|media_type|rate_limit|unavailable`;
-- `andrew.telegram.client` with `method=POST`, the static token-free route, and `outcome=delivered|retryable|permanent_failure`;
-- `andrew.telegram.delivery` with `outcome=delivered|retry|blocked` and fixed
-  `reason=success|network|telegram_429|telegram_4xx|telegram_5xx|telegram_unexpected|lease_expired|privacy_expired`;
-- `andrew.telegram.queue.depth` with `state` from `OutboxState`;
-- `andrew.telegram.worker.last_success.age`;
-- `andrew.privacy.anonymized`, `andrew.privacy.deleted`, and `andrew.privacy.last_success.age`.
-
-No PII, raw URL, exception message, dynamic status text, or request ID is a metric tag. OTLP is added and enabled only in `task-backend-observability`. Sentry error, performance, continuous-profile, log, and application-metric export is enabled only for `prod` and only with a secret-store supplied `SENTRY_DSN`. Every other Sentry control is fixed in versioned configuration and enforced at startup; non-DSN `SENTRY_*`, command-line, system-property, and unknown `sentry.*` bindings fail closed. The fixed controls include `send-default-pii=false`, request bodies and breadcrumbs disabled, no outbound trace propagation, strict trace continuation, 10% transaction sampling, full continuous-profile session sampling, automatic Logback forwarding disabled, and SDK debug/spotlight output disabled.
-
-Sentry callbacks remove request, user, breadcrumb, tag, extra, message, thread, module, fingerprint, debug, release, distribution, and unknown payload data; environment, platform, and server name are overwritten with trusted constants. Error events without a structured exception are dropped; retained exceptions keep only their type plus stack frame identity needed for grouping, while exception values, local variables, source context, absolute paths, native addresses, and other frame payloads are cleared. A pre-start sampler admits tracing and trace-lifecycle profiling only for `POST /api/leads` and the two exact health routes; every other request receives rate zero even if an inbound parent trace requests sampling. Every started transaction receives a bounded final name so the filter finishes it; the `untracked` sentinel is dropped before export. Accepted transactions retain only duration plus rebuilt trace/span/profiler identity with bounded operation/status; child spans, measurements, baggage, thread metadata, and other context are removed. The logs and metrics APIs admit only the fixed `andrew.application.ready` INFO event and the single `andrew.application.startup=1` counter emitted after a successful application start. No Prometheus/raw metrics endpoint is public.
+- `andrew.telegram.client` with `method=POST`, the static token-free route, and `outcome=delivered|retryable|permanent_failure`.
 
 ## Health and heartbeat semantics
-
-On the loopback-only management listener, `/actuator/health/liveness` is dependency-free and includes only Spring application liveness. It never checks PostgreSQL, Telegram, worker delivery, retention, or OTLP.
-
-On the same listener, `/actuator/health/readiness` returns only `{"status":"UP"}` or `{"status":"DOWN"}`. It is `UP` only when PostgreSQL accepts the bounded validation query and the outbox worker has completed a successful poll within 45 seconds. A successful poll means lease recovery and claiming completed and the entire claimed batch finished: every Telegram delivered/retry/blocked decision was durably recorded, while a privacy-invalidated reload was safely skipped. An empty completed poll is successful. Any exception from reload, send, or state persistence, or any lease-token state update returning false, aborts the poll and does not advance the heartbeat. The worker has a 45-second startup grace. Telegram availability itself is not readiness because expected Telegram failures become durable queue outcomes. Retention success is not readiness; its last-success heartbeat becomes stale after two hours and raises an operational alert. Health bodies never include dependency names, errors, hostnames, durations, counts, or configuration. Every liveness and readiness response, including `200` and `503`, has exactly `Cache-Control: no-store`; a path-scoped response filter pins that value and MockMvc tests protect both paths.
+On the loopback-only management listener, `/actuator/health/liveness` includes only Spring application liveness and `/actuator/health/readiness` only Spring readiness; both return just `{"status":"UP"}` or `{"status":"DOWN"}`. Telegram availability is not part of either probe: a Telegram outage is reported to the visitor as `503`. Every liveness and readiness response has exactly `Cache-Control: no-store`. The container `HEALTHCHECK` probes liveness on `127.0.0.1:8081`.
 
 ## Build and runtime topology
+The Dockerfile builds the frontend with `pnpm run build:production` on `node:24.14.0-alpine` (the production content gate must pass), packages the JAR with `./mvnw -B clean package -Dmaven.test.skip=true` (CI runs the full `./mvnw -B verify` on the same commit), and assembles the runtime on the pinned `eclipse-temurin:25.0.3_9-jre-noble` image with nginx. The image runs as `10001:10001`, contains no Node runtime, exposes only `8080`, and starts `deploy/entrypoint.sh`, which runs the JAR (`prod` profile) and nginx and exits non-zero as soon as either process exits so the platform restarts the container. `deploy/nginx.conf` keeps all writable paths in `/tmp` and has no access log. `.dockerignore` excludes secrets, key material, and local frontend build output; `ContainerContractTest` pins the Dockerfile, entrypoint, and nginx contract.
 
-Phase 1 creates root `pom.xml`, `.mvn/wrapper/`, `mvnw`, `mvnw.cmd`, and `src/`. Phase 5 may start only after the merged frontend supplies its package-manager manifest, lockfile, static-export command, tests, and output path. Maven then runs Node 24 only in the build stage, invokes the manifest-declared manager directly through Corepack with a writable `COREPACK_HOME` and no shim installation, copies `frontend/out/` into generated static resources, and packages one executable Spring Boot JAR. Before any `COPY frontend/`, `.dockerignore` excludes root and nested `.env*`, local secret/credential directories, and private-key/keystore material; an executable container contract test pins those exclusions. Host and CI `./mvnw -B verify` run the PostgreSQL Testcontainers suites with Docker available. The containerized `backend-build` uses `./mvnw -B -DexcludedGroups=database verify`, excluding only the nested-Docker database group while still running every other test; broad test skipping is forbidden. The final container uses the glibc-based Java 25 Noble runtime required by async-profiler, enables Java native access explicitly, runs the JAR as a non-root numeric user, exposes no Node runtime, binds the public application to `0.0.0.0:8080`, binds management to `127.0.0.1:8081`, and health-checks liveness through that private connector.
-
-Production gates are: PostgreSQL 18 in the same Moscow region/VPC; verified secret-store encryption at rest, access control, protected runtime bindings, and fail-fast startup; schema migration success; backup retention no more than 30 days; Telegram auto-delete no more than 30 days; verified OTLP and Sentry delivery; verified Timeweb proxy behavior before forwarded-header trust; complete smoke tests; and an explicitly user-authorized squash merge. No plan mutates production infrastructure or embeds a production domain, phone, legal text, or credential.
+Production gates are: runtime bindings present and valid (startup fails otherwise), the bot able to write to the configured chat, Telegram auto-delete in that chat no longer than 30 days, complete smoke tests, and an explicitly user-authorized squash merge.
 
 ## Ordered product-task dependency chain
+Historical: this chain built the earlier PostgreSQL/outbox design that the 2026-09-21 decision replaced.
+
 
 The [canonical Git Flow](../../.agents/workflows/GIT_FLOW.md) governs every product task: `main` is the only long-lived branch; one approved task uses one dedicated external worktree and one lowercase `task-*` or `fix-*` branch created from the latest `origin/main`; the user-authorized Sentry integration is the one-time exact branch-name exception `integration-sentry`; direct pushes to `main`, stacked PRs, reused worktrees, and auto-merge are forbidden. The PR opens as Draft only after explicit current user publication authorization, becomes Ready only after a separate current user authorization plus green required CI and complete Codex review, and squash-merges only after explicit user authorization. After merge, confirm `main` and the linked issue, preserve the remote source branch and verify automatic head-branch deletion remains disabled, remove the local worktree only after checking that it has no tracked or untracked work to preserve, and run `git fetch --prune`. The next task waits for its predecessor to reach `main`:
 
@@ -247,6 +161,8 @@ task-backend-contract-plans
 The skeleton merge triggers only the normal `push` CI path. It does not assign Jules. `task-ci-backend-gates` starts only when `JULES_ALLOWED_ACTOR` authors a sanitized Issue and that same allowed account applies exactly one label, `jules-action`. Never add both `jules` and `jules-action`. `jules-ci-failure.yml` is only the eligible failed-push repair path; `pr-event-relay.yml` is disabled by default and never assigns Jules.
 
 ## Requirement-to-plan traceability
+Historical: rows about PostgreSQL, the outbox worker, retention, OTLP, and Sentry describe removed code.
+
 
 | Approved requirement | Product task | Executable plan |
 | --- | --- | --- |

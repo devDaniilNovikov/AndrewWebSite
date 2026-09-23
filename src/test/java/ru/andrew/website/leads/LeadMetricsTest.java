@@ -16,11 +16,11 @@ class LeadMetricsTest {
         }
 
         assertThat(registry.find("andrew.leads.accepted").meters())
-                .hasSize(4)
+                .hasSize(3)
                 .allSatisfy(meter -> {
                     assertThat(meter.getId().getTags()).hasSize(1);
                     assertThat(meter.getId().getTag("outcome"))
-                            .isIn("created", "duplicate", "retained", "honeypot");
+                            .isIn("created", "duplicate", "honeypot");
                 });
     }
 

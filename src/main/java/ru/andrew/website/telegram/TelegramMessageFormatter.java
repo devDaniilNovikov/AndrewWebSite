@@ -11,18 +11,11 @@ public final class TelegramMessageFormatter {
             "Telegram message exceeds supported text length";
 
     public String format(TelegramLeadMessage message) {
+        // The owner reads only the contact details; the other lead fields stay out of the chat.
         String formatted = """
-                ID заявки: %s
-                Время UTC: %s
-                Тип: %s
-                Источник: %s
                 Имя: %s
                 Телефон: %s"""
                 .formatted(
-                        message.requestId(),
-                        message.createdAt(),
-                        singleLine(message.intent()),
-                        singleLine(message.sourcePath()),
                         singleLine(message.name()),
                         singleLine(message.phone()));
         if (message.comment() != null) {

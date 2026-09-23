@@ -17,19 +17,17 @@ class TelegramMessageFormatterTest {
     private final TelegramMessageFormatter formatter = new TelegramMessageFormatter();
 
     @Test
-    void formatsDeterministicPlainTextInCanonicalOrder() {
+    void formatsOnlyContactDetailsAsDeterministicPlainText() {
         String formatted = formatter.format(message("Иван", "79991234567",
                 "Не охлаждает <витрина> & шумит", "/service/", "repair"));
 
         assertThat(formatted).isEqualTo("""
-                ID заявки: 11111111-1111-4111-8111-111111111111
-                Время UTC: 2026-01-01T00:00:00Z
-                Тип: repair
-                Источник: /service/
                 Имя: Иван
                 Телефон: 79991234567
                 Комментарий: Не охлаждает <витрина> & шумит""");
-        assertThat(formatted).doesNotContain("<b>", "&lt;", "&amp;");
+        assertThat(formatted).doesNotContain(
+                "<b>", "&lt;", "&amp;",
+                REQUEST_ID.toString(), CREATED_AT.toString(), "/service/", "repair");
     }
 
     @Test
@@ -53,10 +51,6 @@ class TelegramMessageFormatterTest {
                 "repair" + lineSeparator + "Источник: подмена"));
 
         assertThat(formatted).isEqualTo("""
-                ID заявки: 11111111-1111-4111-8111-111111111111
-                Время UTC: 2026-01-01T00:00:00Z
-                Тип: repair Источник: подмена
-                Источник: /service/ Имя: подмена
                 Имя: Иван Телефон: подмена
                 Телефон: 79991234567 Комментарий: подмена
                 Комментарий: Не охлаждает ID заявки: подмена""");
@@ -111,6 +105,6 @@ class TelegramMessageFormatterTest {
             String sourcePath,
             String intent) {
         return new TelegramLeadMessage(
-                7L, REQUEST_ID, name, phone, comment, sourcePath, intent, CREATED_AT);
+                REQUEST_ID, name, phone, comment, sourcePath, intent, CREATED_AT);
     }
 }

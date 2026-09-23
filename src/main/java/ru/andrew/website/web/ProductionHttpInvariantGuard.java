@@ -37,10 +37,12 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
     private static final EndpointId HEALTH_ENDPOINT = HealthEndpoint.ID;
     private static final Set<EndpointId> PUBLIC_ENDPOINTS = Set.of(HEALTH_ENDPOINT);
     private static final Set<String> LIVENESS_MEMBERS = Set.of("livenessState");
-    private static final Set<String> READINESS_MEMBERS = Set.of(
-            "readinessState", "dbReadiness", "telegramWorkerReadiness");
-    static final int PUBLIC_SERVER_PORT = 8080;
+    private static final Set<String> READINESS_MEMBERS = Set.of("readinessState");
+    static final String LOOPBACK_ADDRESS = "127.0.0.1";
+    static final int APPLICATION_SERVER_PORT = 8090;
     static final int MANAGEMENT_SERVER_PORT = 8081;
+    static final String CLIENT_ADDRESS_HEADER = "X-Real-IP";
+    static final String TRUSTED_PROXY_PATTERN = "127\\.0\\.0\\.1";
     private static final int ORDER = ConfigDataEnvironmentPostProcessor.ORDER + 3;
 
     @Override
@@ -75,9 +77,7 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
         if (webApplicationType != WebApplicationType.SERVLET
                 || hasUnsafeServerBinding(server)
                 || hasUnsafeManagementBinding(managementServer)
-                || server.getForwardHeadersStrategy() != ForwardHeadersStrategy.NONE
-                || StringUtils.hasText(tomcat.getRemoteip().getProtocolHeader())
-                || StringUtils.hasText(tomcat.getRemoteip().getRemoteIpHeader())
+                || hasUnsafeClientAddressResolution(server, tomcat)
                 || StringUtils.hasText(server.getServlet().getContextPath())
                 || !isRootServletPath(mvc.getServlet().getPath())
                 || !appWeb.rateLimit().enabled()
@@ -113,13 +113,12 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
         return ORDER;
     }
 
+    // Only nginx in the same container may reach the application connector.
     private static boolean hasUnsafeServerBinding(ServerProperties server) {
-        Integer port = server.getPort();
-        if (port != null && port != PUBLIC_SERVER_PORT) {
-            return true;
-        }
         var address = server.getAddress();
-        return address != null && !"0.0.0.0".equals(address.getHostAddress());
+        return !Integer.valueOf(APPLICATION_SERVER_PORT).equals(server.getPort())
+                || address == null
+                || !LOOPBACK_ADDRESS.equals(address.getHostAddress());
     }
 
     private static boolean hasUnsafeManagementBinding(
@@ -128,7 +127,19 @@ public final class ProductionHttpInvariantGuard implements EnvironmentPostProces
         var address = managementServer.getAddress();
         return !Integer.valueOf(MANAGEMENT_SERVER_PORT).equals(port)
                 || address == null
-                || !"127.0.0.1".equals(address.getHostAddress());
+                || !LOOPBACK_ADDRESS.equals(address.getHostAddress());
+    }
+
+    // nginx overwrites X-Real-IP with the visitor address; Tomcat must trust that header
+    // from loopback only and must not honour any other forwarded client information.
+    private static boolean hasUnsafeClientAddressResolution(
+            ServerProperties server, TomcatServerProperties tomcat) {
+        var remoteIp = tomcat.getRemoteip();
+        return server.getForwardHeadersStrategy() != ForwardHeadersStrategy.NATIVE
+                || !CLIENT_ADDRESS_HEADER.equals(remoteIp.getRemoteIpHeader())
+                || !TRUSTED_PROXY_PATTERN.equals(remoteIp.getInternalProxies())
+                || StringUtils.hasText(remoteIp.getTrustedProxies())
+                || StringUtils.hasText(remoteIp.getProtocolHeader());
     }
 
     private static boolean hasUnsafeExposure(WebEndpointProperties endpoints) {

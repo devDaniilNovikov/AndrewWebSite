@@ -11,19 +11,19 @@ public class LeadAcceptanceService {
     private final Validator validator;
     private final LeadNormalizer normalizer;
     private final LeadFingerprintService fingerprints;
-    private final LeadAcceptanceTransaction transaction;
+    private final LeadDelivery delivery;
     private final Clock clock;
 
     public LeadAcceptanceService(
             Validator validator,
             LeadNormalizer normalizer,
             LeadFingerprintService fingerprints,
-            LeadAcceptanceTransaction transaction,
+            LeadDelivery delivery,
             Clock clock) {
         this.validator = validator;
         this.normalizer = normalizer;
         this.fingerprints = fingerprints;
-        this.transaction = transaction;
+        this.delivery = delivery;
         this.clock = clock;
     }
 
@@ -41,6 +41,6 @@ public class LeadAcceptanceService {
         Instant now = clock.instant();
         NormalizedLead lead = normalizer.normalize(request, now);
         LeadFingerprint fingerprint = fingerprints.fingerprint(lead);
-        return transaction.accept(lead, fingerprint);
+        return delivery.accept(lead, fingerprint);
     }
 }

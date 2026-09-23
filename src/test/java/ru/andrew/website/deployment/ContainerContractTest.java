@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Guards the shape of the production image: a frontend build stage, a backend build stage
- * compiled from the exact sources in this repository, and a pinned Java 25 runtime that
- * serves the static frontend through Nginx and proxies {@code /api/} to the Spring Boot jar.
+ * compiled from the exact sources in this repository, and a pinned Java 25 runtime where
+ * nginx serves the static frontend on 8080 and proxies only {@code /api/leads} to the
+ * Spring Boot application on loopback.
  *
- * <p>Runtime hardening of the image (non-root user, liveness health check) is asserted by
- * the {@code container-build} job in {@code .github/workflows/ci.yml} against the built
- * image rather than against the Dockerfile text.
+ * <p>The {@code container-build} job in {@code .github/workflows/ci.yml} additionally
+ * asserts the non-root user and the liveness health check against the built image.
  */
 class ContainerContractTest {
     private static final String FRONTEND_BUILD_IMAGE = "node:24.14.0-alpine";
@@ -33,7 +33,8 @@ class ContainerContractTest {
 
         assertThat(dockerfile).contains(
                 "COPY frontend/ ./",
-                "RUN pnpm run build:standalone",
+                "RUN pnpm install --frozen-lockfile",
+                "RUN pnpm run build:production",
                 "COPY --from=frontend-build /app/out /var/www/html");
 
         int sourcesCopy = dockerfile.indexOf("COPY src src");
@@ -45,18 +46,58 @@ class ContainerContractTest {
     }
 
     @Test
-    void runtimeStartsProductionProfileWithoutBakedSecrets() throws Exception {
+    void runtimeIsNonRootSupervisedAndHealthChecked() throws Exception {
         String dockerfile = Files.readString(Path.of("Dockerfile"));
 
         assertThat(dockerfile).contains(
+                "COPY deploy/nginx.conf /etc/nginx/nginx.conf",
+                "COPY deploy/entrypoint.sh /app/entrypoint.sh",
+                "USER 10001:10001",
+                "EXPOSE 8080",
+                "/dev/tcp/127.0.0.1/8081",
+                "GET /actuator/health/liveness",
+                "ENTRYPOINT [\"/app/entrypoint.sh\"]");
+        assertThat(dockerfile.indexOf("USER 10001:10001"))
+                .isGreaterThan(dockerfile.lastIndexOf("RUN "));
+        assertThat(dockerfile).doesNotContain(
+                "ENV TELEGRAM_BOT_TOKEN",
+                "ENV TELEGRAM_CHAT_ID",
+                "ENV LEAD_FINGERPRINT_HMAC_KEY");
+    }
+
+    @Test
+    void entrypointStartsProductionProfileAndStopsWithEitherProcess() throws Exception {
+        String entrypoint = Files.readString(Path.of("deploy/entrypoint.sh"));
+
+        assertThat(entrypoint).contains(
                 "-Dspring.profiles.active=prod",
                 "--enable-native-access=ALL-UNNAMED",
-                "-jar /app/application.jar");
-        assertThat(dockerfile).doesNotContain(
-                "ENV SPRING_DATASOURCE_PASSWORD",
-                "ENV TELEGRAM_BOT_TOKEN",
-                "ENV SENTRY_DSN",
-                "ENV LEAD_FINGERPRINT_HMAC_KEY");
+                "-jar /app/application.jar",
+                "nginx -e /dev/stderr -c /etc/nginx/nginx.conf -g 'daemon off;'",
+                "wait -n \"$java_pid\" \"$nginx_pid\"",
+                "exit 1");
+        assertThat(Files.isExecutable(Path.of("deploy/entrypoint.sh"))).isTrue();
+    }
+
+    @Test
+    void nginxExposesOnlyTheLeadEndpointAndForwardsOnlyTheVisitorAddress() throws Exception {
+        String nginx = Files.readString(Path.of("deploy/nginx.conf"));
+
+        assertThat(nginx).contains(
+                "listen 8080 default_server;",
+                "location = /api/leads {",
+                "proxy_pass http://127.0.0.1:8090;",
+                "proxy_set_header X-Real-IP $lead_client_ip;",
+                "proxy_set_header X-Forwarded-For \"\";",
+                "proxy_set_header X-Forwarded-Proto \"\";",
+                "proxy_set_header Forwarded \"\";",
+                "client_max_body_size 32k;",
+                "access_log off;",
+                "server_tokens off;",
+                "pid /tmp/nginx.pid;");
+        assertThat(nginx).containsSubsequence("location /api/ {", "return 404;");
+        assertThat(nginx).containsSubsequence("location /actuator/ {", "return 404;");
+        assertThat(nginx).doesNotContain("proxy_pass http://127.0.0.1:8090/", "user ");
     }
 
     @Test
