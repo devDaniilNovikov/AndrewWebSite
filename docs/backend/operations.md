@@ -71,8 +71,20 @@ Messages are plain text containing the lead's personal data, so auto-delete of n
 The Timeweb `MSK-1` zone cannot open TCP connections to `api.telegram.org` (confirmed on 2026-09-23: every lead failed with `network` after the 3 s connect timeout). The site stays in Moscow and reaches Telegram through a relay the operator controls: a small server abroad with Caddy. Caddy terminates HTTPS with a public certificate and forwards only this bot's `sendMessage` calls to `https://api.telegram.org`. Every other path returns `404`.
 
 - The relay sees the bot token and each lead message. It must be the operator's own server, with Caddy access logs disabled.
-- Set `TELEGRAM_BASE_URL` to the relay origin, for example `https://relay.example`, then redeploy.
+- Set `TELEGRAM_BASE_URL` to the relay origin, for example `https://203.0.113.10`, then redeploy.
 - Remove the variable to go back to direct delivery once the platform can reach Telegram again.
+
+Relay setup, on an Ubuntu server abroad reachable by SSH key only:
+
+1. `ufw` allows 22, 80 and 443 only. Port 80 is needed for Let's Encrypt validation.
+2. Install Caddy 2.11 or later from the official apt repository.
+3. Copy [`deploy/telegram-relay/Caddyfile`](../../deploy/telegram-relay/Caddyfile) to `/etc/caddy/Caddyfile`.
+4. Run `systemctl edit caddy` and add `Environment=RELAY_IP=<public IPv4>` and `Environment=TELEGRAM_BOT_ID=<digits before the colon in the token>` under `[Service]`.
+5. Run `systemctl restart caddy`.
+
+Caddy gets a six-day Let's Encrypt certificate for the IP address and renews it automatically, so no domain is needed. Check the relay without a real token:
+- `curl https://<ip>/` returns `404`.
+- `curl -X POST https://<ip>/bot<id>:fake/sendMessage` returns Telegram's `401`.
 
 ## Health and diagnostics
 

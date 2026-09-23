@@ -58,7 +58,8 @@ class TelegramConfigurationTest {
     static Stream<String> safeProductionOrigins() {
         return Stream.of(
                 "https://api.telegram.org",
-                "https://relay.example");
+                "https://relay.example",
+                "https://203.0.113.10");
     }
 
     @ParameterizedTest(name = "{0}")
