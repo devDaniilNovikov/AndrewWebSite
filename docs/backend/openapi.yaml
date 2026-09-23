@@ -4,8 +4,9 @@ info:
   title: AndrewWebSite Public and Operational Backend API
   version: 1.0.0
   description: >-
-    Executable contract for public durable lead intake and private minimal health probes.
-    Static pages are packaged with the application but are not API operations.
+    Executable contract for public lead intake with synchronous Telegram delivery and
+    private minimal health probes. Static pages are served by the container's nginx
+    and are not API operations.
     No login, administration, environment, configuration, shutdown, heap, or raw
     metrics endpoint is public.
 servers:
@@ -14,7 +15,7 @@ servers:
 security: []
 tags:
   - name: Leads
-    description: Anonymous, rate-limited durable lead intake.
+    description: Anonymous, rate-limited lead intake delivered to Telegram.
   - name: Health
     description: Minimal liveness and readiness probes on the loopback management listener.
 paths:
@@ -22,20 +23,19 @@ paths:
     post:
       tags: [Leads]
       operationId: submitLead
-      summary: Accept a lead for durable asynchronous delivery
+      summary: Accept a lead and deliver it to Telegram
       description: >-
         Before media or body processing, a coarse per-instance rolling perimeter
         admits at most 10,000 requests across every public method and path in each
         minute. After the body boundary, a lead-only rolling global window admits
         at most 60 requests in every half-open interval (t - 60 seconds, t], and a
         separate bounded per-connection-address lead bucket has burst 5 and refills
-        1 token per minute. Forwarded client headers are ignored until Timeweb proxy
-        CIDRs are verified. The empty 202 response
-        deliberately does not reveal whether the request was newly committed,
-        idempotently accepted, safely accepted after fingerprint retention, or
-        synthetically accepted. A honeypot request needs only a non-empty `website`;
-        legitimate fields may be absent. Telegram delivery is asynchronous and at
-        least once.
+        1 token per minute. The client address is the X-Real-IP value set by the
+        container's nginx; other forwarded headers are ignored. The empty 202
+        response deliberately does not reveal whether the lead was just delivered,
+        recognized as a repeat of a delivered request, or synthetically accepted. A
+        honeypot request needs only a non-empty `website`; legitimate fields may be
+        absent. Delivery to Telegram happens before the response.
       requestBody:
         required: true
         content:
@@ -72,10 +72,10 @@ paths:
         '202':
           description: >-
             Accepted. The response has no body and no acceptance-kind metadata.
-            For a legitimate first submission, it is emitted only after the lead
-            and outbox transaction commits. It is also used indistinguishably for
-            equal duplicates, retained request IDs whose fingerprints were removed,
-            and synthetic acceptance.
+            For a legitimate first submission, it is emitted only after Telegram
+            accepted the message. It is also used indistinguishably for a repeated
+            submission of an already delivered request (no second message is sent)
+            and for synthetic acceptance.
         '400':
           $ref: '#/components/responses/InvalidRequest'
         '409':
@@ -95,8 +95,7 @@ paths:
       summary: Dependency-free process liveness
       description: >-
         Available in production only on 127.0.0.1:8081. Uses only application
-        liveness state. It never probes PostgreSQL, Telegram, OTLP, the outbox
-        worker, or the retention worker.
+        liveness state. It never probes Telegram.
       responses:
         '200':
           description: The process is live.
@@ -124,14 +123,11 @@ paths:
     get:
       tags: [Health]
       operationId: getReadiness
-      summary: Minimal dependency and worker readiness
+      summary: Minimal application readiness
       description: >-
-        Available in production only on 127.0.0.1:8081. Returns UP only when
-        PostgreSQL is available and the outbox worker has completed a successful
-        poll in the last 45 seconds, after a 45-second startup grace. A successful
-        poll finishes its full batch and durably records every delivery decision;
-        exceptions and failed state writes do not advance the heartbeat. It never
-        discloses which dependency is degraded.
+        Available in production only on 127.0.0.1:8081. Reflects only the
+        application readiness state; Telegram availability is reported per request
+        as 503 instead. It never discloses details.
       responses:
         '200':
           description: The application is ready to accept lead traffic.
@@ -405,7 +401,7 @@ components:
                 detail: Wait before retrying.
                 instance: /
     ServiceUnavailable:
-      description: Durable acceptance cannot be completed because PostgreSQL is unavailable.
+      description: The lead could not be delivered to Telegram; nothing was remembered, so a retry with the same requestId sends it again.
       content:
         application/problem+json:
           schema:
@@ -414,5 +410,5 @@ components:
             type: urn:andrew:problem:service-unavailable
             title: Service unavailable
             status: 503
-            detail: The request cannot be accepted durably at this time.
+            detail: The request could not be delivered right now.
             instance: /api/leads
