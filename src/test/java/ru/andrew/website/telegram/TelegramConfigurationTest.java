@@ -48,15 +48,22 @@ class TelegramConfigurationTest {
                 .contains("<redacted>", "https://api.telegram.org");
     }
 
-    @Test
-    void productionAcceptsOnlyCanonicalTelegramApiOrigin() {
-        assertThatCode(() -> guard("prod", "https://api.telegram.org").afterPropertiesSet())
+    @ParameterizedTest
+    @MethodSource("safeProductionOrigins")
+    void productionAcceptsCanonicalOriginAndOperatorRelay(String origin) {
+        assertThatCode(() -> guard("prod", origin).afterPropertiesSet())
                 .doesNotThrowAnyException();
+    }
+
+    static Stream<String> safeProductionOrigins() {
+        return Stream.of(
+                "https://api.telegram.org",
+                "https://relay.example");
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("unsafeProductionOrigins")
-    void productionRejectsEveryNonCanonicalOrigin(String description, String origin) {
+    void productionRejectsEveryOriginThatIsNotBareHttps(String description, String origin) {
         TelegramEndpointGuard guard = guard("prod", origin);
 
         assertThatThrownBy(guard::afterPropertiesSet)
@@ -70,10 +77,12 @@ class TelegramConfigurationTest {
     static Stream<Arguments> unsafeProductionOrigins() {
         return Stream.of(
                 Arguments.of("HTTP", "http://api.telegram.org"),
-                Arguments.of("different host", "https://telegram.invalid"),
+                Arguments.of("upper-case scheme", "HTTPS://api.telegram.org"),
+                Arguments.of("no host", "https:relay"),
                 Arguments.of("user info", "https://user@api.telegram.org"),
                 Arguments.of("explicit port", "https://api.telegram.org:443"),
                 Arguments.of("path", "https://api.telegram.org/api"),
+                Arguments.of("trailing slash", "https://relay.example/"),
                 Arguments.of("query", "https://api.telegram.org?debug=true"),
                 Arguments.of("fragment", "https://api.telegram.org#debug"));
     }

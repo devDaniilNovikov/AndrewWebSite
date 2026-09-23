@@ -10,14 +10,12 @@ import org.springframework.stereotype.Component;
 @Component
 public final class TelegramEndpointGuard implements InitializingBean {
     static final String PRODUCTION_ENDPOINT_MESSAGE =
-            "Production Telegram endpoint must use the canonical API origin";
+            "Production Telegram endpoint must be a bare HTTPS origin";
     static final String LOCAL_ENDPOINT_MESSAGE =
             "Local Telegram endpoint must use an explicit loopback port";
     static final String TEST_ENDPOINT_MESSAGE =
             "Test Telegram endpoint must be non-routable or loopback";
 
-    private static final URI PRODUCTION_ORIGIN =
-            URI.create("https://api.telegram.org");
     private static final URI TEST_ORIGIN =
             URI.create("https://telegram.invalid");
     private static final Set<String> LOOPBACK_HOSTS =
@@ -36,7 +34,7 @@ public final class TelegramEndpointGuard implements InitializingBean {
     @Override
     public void afterPropertiesSet() {
         URI baseUrl = properties.baseUrl();
-        if (environment.matchesProfiles("prod") && !PRODUCTION_ORIGIN.equals(baseUrl)) {
+        if (environment.matchesProfiles("prod") && !isSafeProductionEndpoint(baseUrl)) {
             throw new IllegalStateException(PRODUCTION_ENDPOINT_MESSAGE);
         }
         if (environment.matchesProfiles("local") && !isSafeLocalEndpoint(baseUrl)) {
@@ -47,6 +45,19 @@ public final class TelegramEndpointGuard implements InitializingBean {
                 && !isSafeLocalEndpoint(baseUrl)) {
             throw new IllegalStateException(TEST_ENDPOINT_MESSAGE);
         }
+    }
+
+    // Production uses https://api.telegram.org unless the host network blocks it; then the operator
+    // points TELEGRAM_BASE_URL at their own relay. The bot token travels in the request path, so
+    // only an encrypted origin without port, path, query, fragment or credentials is accepted.
+    private static boolean isSafeProductionEndpoint(URI uri) {
+        return "https".equals(uri.getScheme())
+                && uri.getHost() != null
+                && uri.getPort() == -1
+                && uri.getRawUserInfo() == null
+                && isEmpty(uri.getRawPath())
+                && uri.getRawQuery() == null
+                && uri.getRawFragment() == null;
     }
 
     private static boolean isSafeLocalEndpoint(URI uri) {

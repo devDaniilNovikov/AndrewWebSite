@@ -24,7 +24,7 @@ Environment variables are names, not storage. Values are entered only in the pla
 | `LEAD_FINGERPRINT_HMAC_KEY` | `app.leads.fingerprint-key` | secret | required in `local` and `prod`; at least 32 UTF-8 bytes (for example `openssl rand -hex 32`); no default |
 | `TELEGRAM_BOT_TOKEN` | `app.telegram.bot-token` | secret | required in `local` and `prod`; never included in a logged URI |
 | `TELEGRAM_CHAT_ID` | `app.telegram.chat-id` | sensitive | required in `local` and `prod`; the bot must be able to write there (`/start` in a private chat, or membership in a group) |
-| `TELEGRAM_BASE_URL` | `app.telegram.base-url` | operational | `local` only; explicit loopback host and port; production uses the fixed `https://api.telegram.org` |
+| `TELEGRAM_BASE_URL` | `app.telegram.base-url` | operational | `local`: required, explicit loopback host and port. `prod`: optional, defaults to `https://api.telegram.org`; when the host network blocks Telegram, set it to the bare HTTPS origin of the operator relay (no port, path, trailing slash, query, or credentials; see [Telegram relay](#telegram-relay)) |
 | `LOCAL_CORS_ORIGINS` | `app.web.local-cors-origins` | operational | `local` only; absent in `prod` |
 
 No other binding is read. Former `SPRING_DATASOURCE_*`, `OTLP_*`, and `SENTRY_DSN` variables have no effect and should be removed from the platform.
@@ -47,7 +47,7 @@ The application exits before accepting traffic when:
 
 - the active-profile set is not exactly one allowed profile;
 - the HMAC key is missing or shorter than 32 bytes, or the Telegram token or chat ID is missing or blank;
-- production Telegram base URL is not `https://api.telegram.org`;
+- the production Telegram base URL is not a bare HTTPS origin;
 - the production HTTP layout differs from the table above, forwarded-header trust is anything but `X-Real-IP` from `127.0.0.1`, local CORS origins are set, the rate limiter is disabled, or an actuator endpoint other than health is exposed;
 - production logging is not ECS with `root: OFF`, or any logger other than the two allowed ERROR loggers is enabled.
 
@@ -62,9 +62,17 @@ A lead is sent while the visitor waits. `202` means Telegram accepted the messag
 | `telegram_permanent_401` | token rejected | replace `TELEGRAM_BOT_TOKEN` in the platform, redeploy |
 | `telegram_permanent_400`, `telegram_permanent_403` | chat not found, or the bot may not write there | fix `TELEGRAM_CHAT_ID`; send `/start` to the bot or add it to the group |
 | `telegram_429` | Telegram throttling | transient; retries succeed after the throttle window |
-| `telegram_5xx`, `network`, `telegram_unexpected` | Telegram or network unavailable | transient; check outbound HTTPS from the container |
+| `telegram_5xx`, `network`, `telegram_unexpected` | Telegram or network unavailable | usually transient; a `network` failure on every lead after about 3 s means the host network blocks `api.telegram.org`, so route through the [Telegram relay](#telegram-relay) |
 
 Messages are plain text containing the lead's personal data, so auto-delete of no more than 30 days in the destination chat is a production gate. Telegram bodies are never logged. Never paste a token, chat ID, full Telegram URL, or lead message into a task, issue, log, or chat.
+
+## Telegram relay
+
+The Timeweb `MSK-1` zone cannot open TCP connections to `api.telegram.org` (confirmed on 2026-09-23: every lead failed with `network` after the 3 s connect timeout). The site stays in Moscow and reaches Telegram through a relay the operator controls: a small server abroad with Caddy. Caddy terminates HTTPS with a public certificate and forwards only this bot's `sendMessage` calls to `https://api.telegram.org`. Every other path returns `404`.
+
+- The relay sees the bot token and each lead message. It must be the operator's own server, with Caddy access logs disabled.
+- Set `TELEGRAM_BASE_URL` to the relay origin, for example `https://relay.example`, then redeploy.
+- Remove the variable to go back to direct delivery once the platform can reach Telegram again.
 
 ## Health and diagnostics
 
