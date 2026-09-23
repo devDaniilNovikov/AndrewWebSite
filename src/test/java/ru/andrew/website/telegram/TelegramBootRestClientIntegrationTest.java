@@ -2,7 +2,6 @@ package ru.andrew.website.telegram;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -23,14 +22,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadDelivery;
 
 // 500ms keeps the read-timeout test well under its 1s fake response while leaving a
 // loaded CI runner enough headroom to answer the redirect request in time.
 @SpringBootTest(properties = {
         "spring.http.clients.connect-timeout=500ms",
-        "spring.http.clients.read-timeout=500ms",
-        NO_DATABASE
+        "spring.http.clients.read-timeout=500ms"
 })
 @ActiveProfiles("test")
 class TelegramBootRestClientIntegrationTest {
@@ -42,7 +40,7 @@ class TelegramBootRestClientIntegrationTest {
     private static ExecutorService fakeTelegramExecutor;
 
     @MockitoBean
-    LeadAcceptanceTransaction transaction;
+    LeadDelivery transaction;
 
     @Autowired
     TelegramGateway gateway;
@@ -69,7 +67,7 @@ class TelegramBootRestClientIntegrationTest {
         RESPONSE_MODE.set(ResponseMode.REDIRECT);
         REDIRECT_TARGET_CALLS.set(0);
 
-        assertThat(gateway.send(message(), Instant.MAX))
+        assertThat(gateway.send(message()))
                 .isEqualTo(new TelegramDeliveryResult.Retryable(
                         "telegram_unexpected", null));
         assertThat(REDIRECT_TARGET_CALLS).hasValue(0);
@@ -81,7 +79,7 @@ class TelegramBootRestClientIntegrationTest {
 
         TelegramDeliveryResult result = assertTimeout(
                 Duration.ofSeconds(2),
-                () -> gateway.send(message(), Instant.MAX));
+                () -> gateway.send(message()));
 
         assertThat(result)
                 .isEqualTo(new TelegramDeliveryResult.Retryable("network", null));
@@ -129,7 +127,6 @@ class TelegramBootRestClientIntegrationTest {
 
     private static TelegramLeadMessage message() {
         return new TelegramLeadMessage(
-                7L,
                 UUID.fromString("11111111-1111-4111-8111-111111111111"),
                 "Иван",
                 "79991234567",

@@ -8,7 +8,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import java.time.Duration;
 import java.util.Set;
@@ -32,14 +31,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
 import org.junit.jupiter.api.extension.ExtendWith;
 import ru.andrew.website.common.ProductionStartupFailureReporter;
-import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadDelivery;
 
-@SpringBootTest(properties = NO_DATABASE)
+@SpringBootTest
 @ActiveProfiles("test")
 @ExtendWith(OutputCaptureExtension.class)
 class AndrewWebsiteApplicationTest {
     @MockitoBean
-    LeadAcceptanceTransaction transaction;
+    LeadDelivery delivery;
 
     @Autowired
     RestClient.Builder restClientBuilder;
@@ -204,7 +203,7 @@ class AndrewWebsiteApplicationTest {
         assertThat(httpClientsProperties.getConnectTimeout())
                 .isEqualTo(Duration.ofSeconds(3));
         assertThat(httpClientsProperties.getReadTimeout())
-                .isEqualTo(Duration.ofSeconds(10));
+                .isEqualTo(Duration.ofSeconds(8));
         assertThat(httpClientsProperties.getRedirects())
                 .isEqualTo(HttpRedirects.DONT_FOLLOW);
     }

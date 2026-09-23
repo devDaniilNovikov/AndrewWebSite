@@ -2,7 +2,6 @@ package ru.andrew.website.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
-import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -15,9 +14,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
-import org.springframework.transaction.TransactionException;
 import ru.andrew.website.leads.IdempotencyConflictException;
 import ru.andrew.website.leads.InvalidLeadRequestException;
+import ru.andrew.website.leads.LeadDeliveryUnavailableException;
 import ru.andrew.website.leads.LeadMetrics;
 import ru.andrew.website.leads.LeadRejectionReason;
 
@@ -74,14 +73,14 @@ final class ProblemResponseAdvice {
         return response(problem);
     }
 
-    @ExceptionHandler({DataAccessException.class, TransactionException.class})
+    @ExceptionHandler(LeadDeliveryUnavailableException.class)
     ResponseEntity<ProblemDetail> serviceUnavailable(HttpServletRequest request) {
         metrics.rejected(LeadRejectionReason.UNAVAILABLE);
         ProblemDetail problem = problems.problem(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "urn:andrew:problem:service-unavailable",
                 "Service unavailable",
-                "The request cannot be accepted durably at this time.",
+                "The request could not be delivered right now.",
                 path(request));
         return response(problem);
     }

@@ -35,7 +35,6 @@ public final class LeadMetrics {
         return switch (outcome) {
             case CREATED -> "created";
             case DUPLICATE -> "duplicate";
-            case RETAINED -> "retained";
             case HONEYPOT -> "honeypot";
         };
     }

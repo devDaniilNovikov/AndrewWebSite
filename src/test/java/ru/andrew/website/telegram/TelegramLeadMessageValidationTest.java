@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class TelegramLeadMessageValidationTest {
     private static final UUID FICTIONAL_REQUEST_ID =
@@ -22,26 +21,23 @@ class TelegramLeadMessageValidationTest {
     private static final String FICTIONAL_SOURCE = "/fictional-test/";
     private static final String FICTIONAL_INTENT = "repair";
 
-    @ParameterizedTest
-    @ValueSource(longs = {0, -1})
-    void rejectsNonPositiveLeadId(long leadId) {
-        assertThatThrownBy(() -> message(
-                        leadId,
+    @Test
+    void redactsContentFromItsStringForm() {
+        assertThat(message(
                         FICTIONAL_REQUEST_ID,
                         FICTIONAL_NAME,
                         FICTIONAL_PHONE,
                         "fictional-comment",
                         FICTIONAL_SOURCE,
                         FICTIONAL_INTENT,
-                        FICTIONAL_CREATED_AT))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("leadId must be positive");
+                        FICTIONAL_CREATED_AT)
+                        .toString())
+                .isEqualTo("TelegramLeadMessage[content=<redacted>]");
     }
 
     @Test
     void rejectsNullRequestId() {
         assertThatThrownBy(() -> message(
-                        7L,
                         null,
                         FICTIONAL_NAME,
                         FICTIONAL_PHONE,
@@ -62,7 +58,6 @@ class TelegramLeadMessageValidationTest {
             String sourcePath,
             String intent) {
         assertThatThrownBy(() -> message(
-                        7L,
                         FICTIONAL_REQUEST_ID,
                         name,
                         phone,
@@ -97,7 +92,6 @@ class TelegramLeadMessageValidationTest {
     @Test
     void rejectsNullCreationTime() {
         assertThatThrownBy(() -> message(
-                        7L,
                         FICTIONAL_REQUEST_ID,
                         FICTIONAL_NAME,
                         FICTIONAL_PHONE,
@@ -112,7 +106,6 @@ class TelegramLeadMessageValidationTest {
     @Test
     void acceptsAbsentOrBlankOptionalComment() {
         assertThat(message(
-                                7L,
                                 FICTIONAL_REQUEST_ID,
                                 FICTIONAL_NAME,
                                 FICTIONAL_PHONE,
@@ -123,7 +116,6 @@ class TelegramLeadMessageValidationTest {
                         .comment())
                 .isNull();
         assertThat(message(
-                                7L,
                                 FICTIONAL_REQUEST_ID,
                                 FICTIONAL_NAME,
                                 FICTIONAL_PHONE,
@@ -136,7 +128,6 @@ class TelegramLeadMessageValidationTest {
     }
 
     private static TelegramLeadMessage message(
-            long leadId,
             UUID requestId,
             String name,
             String phone,
@@ -145,7 +136,6 @@ class TelegramLeadMessageValidationTest {
             String intent,
             Instant createdAt) {
         return new TelegramLeadMessage(
-                leadId,
                 requestId,
                 name,
                 phone,

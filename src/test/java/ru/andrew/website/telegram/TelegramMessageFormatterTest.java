@@ -111,6 +111,6 @@ class TelegramMessageFormatterTest {
             String sourcePath,
             String intent) {
         return new TelegramLeadMessage(
-                7L, REQUEST_ID, name, phone, comment, sourcePath, intent, CREATED_AT);
+                REQUEST_ID, name, phone, comment, sourcePath, intent, CREATED_AT);
     }
 }

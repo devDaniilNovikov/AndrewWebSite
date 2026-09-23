@@ -4,7 +4,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadDelivery;
 
 @SpringBootTest(properties = {
         "app.web.rate-limit.enabled=false",
@@ -23,8 +22,7 @@ import ru.andrew.website.leads.LeadAcceptanceTransaction;
         "app.leads.fingerprint-key=local-cors-key-material-for-tests-0000001",
         "app.telegram.bot-token=test-only-bot-token-not-a-secret",
         "app.telegram.chat-id=test-only-chat-not-a-destination",
-        "app.telegram.base-url=http://127.0.0.1:18081",
-        NO_DATABASE
+        "app.telegram.base-url=http://127.0.0.1:18081"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
@@ -36,7 +34,7 @@ class LocalCorsContractTest {
     MockMvc mvc;
 
     @MockitoBean
-    LeadAcceptanceTransaction transaction;
+    LeadDelivery delivery;
 
     @Test
     void configuredLoopbackOriginCanPostWithoutCredentials() throws Exception {

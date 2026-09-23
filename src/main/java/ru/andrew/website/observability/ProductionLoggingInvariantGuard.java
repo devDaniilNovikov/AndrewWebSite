@@ -1,7 +1,5 @@
 package ru.andrew.website.observability;
 
-import java.net.URI;
-import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.EnvironmentPostProcessor;
@@ -16,31 +14,21 @@ import org.springframework.util.StringUtils;
 import ru.andrew.website.AndrewWebsiteApplication;
 import ru.andrew.website.common.ProductionStartupFailureReporter;
 
-public final class ProductionOtlpInvariantGuard
+public final class ProductionLoggingInvariantGuard
         implements EnvironmentPostProcessor, Ordered {
     public static final String MESSAGE =
-            "OTLP configuration violates the telemetry boundary";
+            "Production logging configuration violates the telemetry boundary";
 
-    private static final String PREFIX =
-            "management.otlp.metrics.export.";
     private static final String APPLICATION = "andrew-website";
     private static final Set<String> SAFE_ERROR_LOGGERS =
             Set.of(
                     "ru.andrew.website.common"
                             + ".ProductionStartupFailureReporter",
-                    "ru.andrew.website.observability"
-                            + ".TelemetryConfiguration");
-    private static final Duration EXPORT_INTERVAL =
-            Duration.ofSeconds(30);
+                    "ru.andrew.website.leads"
+                            + ".TelegramLeadDelivery");
     private static final Set<String> PROTECTED_LOGGERS =
             Set.of(
-                    "com.zaxxer.hikari",
-                    "io.micrometer.core.instrument.push",
-                    "io.micrometer.registry.otlp",
                     "org.apache.catalina",
-                    "org.flywaydb",
-                    "org.postgresql",
-                    "org.springframework.jdbc",
                     "org.springframework.web");
     private static final Set<String> FORBIDDEN_LOGGING_PROPERTIES =
             Set.of(
@@ -69,19 +57,14 @@ public final class ProductionOtlpInvariantGuard
     public void postProcessEnvironment(
             ConfigurableEnvironment environment,
             SpringApplication application) {
-        if (environment.matchesProfiles("prod")) {
-            ProductionStartupFailureReporter
-                    .prepareEarlyFailure(application);
+        if (!environment.matchesProfiles("prod")) {
+            return;
         }
+        ProductionStartupFailureReporter
+                .prepareEarlyFailure(application);
         boolean valid;
         try {
-            Binder binder = Binder.get(environment);
-            boolean enabled = binder.bind(
-                            PREFIX + "enabled", Boolean.class)
-                    .orElse(false);
-            valid = environment.matchesProfiles("prod")
-                    ? enabled && isValid(binder)
-                    : !enabled;
+            valid = isValid(Binder.get(environment));
         } catch (RuntimeException invalidConfiguration) {
             valid = false;
         }
@@ -96,27 +79,6 @@ public final class ProductionOtlpInvariantGuard
     }
 
     private static boolean isValid(Binder binder) {
-        String url = binder.bind(PREFIX + "url", String.class)
-                .orElse("");
-        Map<String, String> headers = binder.bind(
-                        PREFIX + "headers",
-                        Bindable.mapOf(String.class, String.class))
-                .orElse(Map.of());
-        Duration step = binder.bind(
-                        PREFIX + "step", Duration.class)
-                .orElse(Duration.ZERO);
-        boolean openTelemetryEnabled = binder.bind(
-                        "management.opentelemetry.enabled",
-                        Boolean.class)
-                .orElse(true);
-        boolean mapsOpenTelemetryEnvironment = binder.bind(
-                        "management.opentelemetry.map-environment-variables",
-                        Boolean.class)
-                .orElse(true);
-        Map<String, String> resourceAttributes = binder.bind(
-                        "management.opentelemetry.resource-attributes",
-                        Bindable.mapOf(String.class, String.class))
-                .orElse(Map.of());
         String structuredConsole = binder.bind(
                         "logging.structured.format.console",
                         String.class)
@@ -153,13 +115,7 @@ public final class ProductionOtlpInvariantGuard
         boolean trace = binder.bind("trace", Boolean.class)
                 .orElse(false);
 
-        return isSafeUrl(url)
-                && isSafeHeaders(headers)
-                && EXPORT_INTERVAL.equals(step)
-                && !openTelemetryEnabled
-                && !mapsOpenTelemetryEnvironment
-                && resourceAttributes.isEmpty()
-                && "ecs".equals(structuredConsole)
+        return "ecs".equals(structuredConsole)
                 && !StringUtils.hasText(externalLoggingConfig)
                 && APPLICATION.equals(applicationName)
                 && isSafeApplicationVersion(
@@ -182,31 +138,6 @@ public final class ProductionOtlpInvariantGuard
         return configured == null
                 || StringUtils.hasText(packaged)
                 && packaged.equals(configured);
-    }
-
-    private static boolean isSafeUrl(String value) {
-        if (!StringUtils.hasText(value)) {
-            return false;
-        }
-        URI uri = URI.create(value);
-        return uri.isAbsolute()
-                && "https".equalsIgnoreCase(uri.getScheme())
-                && StringUtils.hasText(uri.getHost())
-                && uri.getRawUserInfo() == null
-                && uri.getRawQuery() == null
-                && uri.getRawFragment() == null;
-    }
-
-    private static boolean isSafeHeaders(
-            Map<String, String> headers) {
-        if (headers.size() != 1
-                || !headers.containsKey("Authorization")) {
-            return false;
-        }
-        String authorization = headers.get("Authorization");
-        return StringUtils.hasText(authorization)
-                && authorization.indexOf('\r') < 0
-                && authorization.indexOf('\n') < 0;
     }
 
     private static boolean hasSafeLoggingLevels(

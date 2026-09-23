@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,8 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(properties = {
-        "app.web.rate-limit.enabled=false",
-        NO_DATABASE
+        "app.web.rate-limit.enabled=false"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -36,12 +34,12 @@ class LeadControllerContractTest {
     MockMvc mvc;
 
     @MockitoBean
-    LeadAcceptanceTransaction transaction;
+    LeadDelivery delivery;
 
     @BeforeEach
     void defaultAcceptance() {
-        reset(transaction);
-        when(transaction.accept(any(), any())).thenReturn(AcceptanceOutcome.CREATED);
+        reset(delivery);
+        when(delivery.accept(any(), any())).thenReturn(AcceptanceOutcome.CREATED);
     }
 
     @Test
@@ -52,20 +50,20 @@ class LeadControllerContractTest {
                 .andExpect(status().isAccepted())
                 .andExpect(content().string(""));
 
-        reset(transaction);
+        reset(delivery);
         mvc.perform(post("/api/leads")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"website\":\"filled-by-bot\"}"))
                 .andExpect(status().isAccepted())
                 .andExpect(content().string(""));
-        verifyNoInteractions(transaction);
+        verifyNoInteractions(delivery);
 
         mvc.perform(post("/api/leads")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"website\":\"filled-by-bot\",\"comment\":null}"))
                 .andExpect(status().isAccepted())
                 .andExpect(content().string(""));
-        verifyNoInteractions(transaction);
+        verifyNoInteractions(delivery);
     }
 
     @ParameterizedTest
@@ -118,21 +116,21 @@ class LeadControllerContractTest {
                                 """))
                 .andExpect(status().isAccepted())
                 .andExpect(content().string(""));
-        verifyNoInteractions(transaction);
+        verifyNoInteractions(delivery);
     }
 
     @ParameterizedTest
     @MethodSource("invalidLegitimateStrictBoundaryBodies")
     void legitimateRequestRejectsNonCanonicalOrAmbiguousJson(String body) throws Exception {
         expectInvalidProblem(body);
-        verifyNoInteractions(transaction);
+        verifyNoInteractions(delivery);
     }
 
     @ParameterizedTest
     @MethodSource("invalidHoneypotStrictBoundaryBodies")
     void honeypotRejectsNonCanonicalOrAmbiguousKnownFields(String body) throws Exception {
         expectInvalidProblem(body);
-        verifyNoInteractions(transaction);
+        verifyNoInteractions(delivery);
     }
 
     @ParameterizedTest(name = "{0} rejects {1}")
@@ -140,13 +138,13 @@ class LeadControllerContractTest {
     void persistedTextRejectsNulAndMalformedUtf16BeforeTransaction(
             String field, String invalidCodeUnit, String body) throws Exception {
         expectInvalidProblem(body);
-        verifyNoInteractions(transaction);
+        verifyNoInteractions(delivery);
     }
 
     @ParameterizedTest
     @MethodSource("acceptedOutcomes")
     void internalAcceptanceOutcomeIsNeverDisclosed(AcceptanceOutcome outcome) throws Exception {
-        when(transaction.accept(any(), any())).thenReturn(outcome);
+        when(delivery.accept(any(), any())).thenReturn(outcome);
 
         mvc.perform(post("/api/leads")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -173,12 +171,12 @@ class LeadControllerContractTest {
                 "Invalid request",
                 400,
                 "One or more request fields are invalid.");
-        verifyNoInteractions(transaction);
+        verifyNoInteractions(delivery);
     }
 
     @Test
     void idempotencyConflictUsesTheExactProblemWithoutSubmittedValues() throws Exception {
-        when(transaction.accept(any(), any())).thenThrow(new IdempotencyConflictException());
+        when(delivery.accept(any(), any())).thenThrow(new IdempotencyConflictException());
 
         expectProblem(validBody(
                         "33333333-3333-4333-8333-333333333333",
@@ -234,8 +232,7 @@ class LeadControllerContractTest {
     private static Stream<AcceptanceOutcome> acceptedOutcomes() {
         return Stream.of(
                 AcceptanceOutcome.CREATED,
-                AcceptanceOutcome.DUPLICATE,
-                AcceptanceOutcome.RETAINED);
+                AcceptanceOutcome.DUPLICATE);
     }
 
     private static Stream<String> validStrictBoundaryBodies() {

@@ -17,31 +17,26 @@ class ProductionStartupFailureLoggingTest {
             Duration.ofSeconds(30);
     private static final List<String> PRIVATE_FAILURE_DATA =
             List.of(
-                    "jdbc:postgresql",
-                    "db.invalid",
-                    "fictional-db-user",
-                    "fictional-db-password",
-                    "fictional-startup-authorization",
-                    "publickey",
-                    "ingest.sentry.io",
+                    "fictional-telegram-user",
+                    "fictional-telegram-password",
+                    "telegram.invalid",
+                    "fictional-telegram-token",
+                    "fictional-config-password",
                     "UnknownHostException",
                     "error.message",
                     "stack_trace",
                     "started by");
 
     @Test
-    void failedDatabaseStartupEmitsOneGenericEcsEvent()
+    void failedContextStartupEmitsOneGenericEcsEvent()
             throws Exception {
         runFailureProbe(
                 List.of("--spring.profiles.active=prod"),
                 List.of(
-                        "--spring.datasource.url="
-                                + "jdbc:postgresql://db.invalid"
-                                + ":5432/private",
-                        "--spring.datasource.username="
-                                + "fictional-db-user",
-                        "--spring.datasource.password="
-                                + "fictional-db-password"),
+                        "--app.telegram.base-url="
+                                + "https://fictional-telegram-user"
+                                + ":fictional-telegram-password"
+                                + "@telegram.invalid"),
                 true);
     }
 
@@ -112,7 +107,7 @@ class ProductionStartupFailureLoggingTest {
             }
             assertThat(output.lines()
                             .filter(line -> !line.isBlank())
-                            .map(ProductionTelemetryIntegrationTest::parseJson)
+                            .map(ProductionLoggingIntegrationTest::parseJson)
                             .toList())
                     .singleElement()
                     .satisfies(event -> {
@@ -185,15 +180,7 @@ class ProductionStartupFailureLoggingTest {
                 "TELEGRAM_BOT_TOKEN",
                 "fictional-telegram-token",
                 "TELEGRAM_CHAT_ID",
-                "fictional-telegram-chat",
-                "OTLP_METRICS_URL",
-                "https://collector.invalid/v1/metrics",
-                "OTLP_AUTHORIZATION",
-                "Bearer fictional-startup-authorization",
-                "SENTRY_DSN",
-                "https://publickey@o1.ingest.sentry.io/1",
-                "TEST_SENTRY_CAPTURE_TRANSPORT",
-                "true"));
+                "fictional-telegram-chat"));
         return builder;
     }
 }

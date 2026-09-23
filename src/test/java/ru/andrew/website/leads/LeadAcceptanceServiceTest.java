@@ -15,29 +15,29 @@ class LeadAcceptanceServiceTest {
         Validator validator = mock(Validator.class);
         LeadNormalizer normalizer = mock(LeadNormalizer.class);
         LeadFingerprintService fingerprints = mock(LeadFingerprintService.class);
-        LeadAcceptanceTransaction transaction = mock(LeadAcceptanceTransaction.class);
+        LeadDelivery delivery = mock(LeadDelivery.class);
         Clock clock = mock(Clock.class);
         var service = new LeadAcceptanceService(
-                validator, normalizer, fingerprints, transaction, clock);
+                validator, normalizer, fingerprints, delivery, clock);
 
         assertThatThrownBy(() -> service.accept(null))
                 .isInstanceOf(InvalidLeadRequestException.class);
-        verifyNoInteractions(validator, normalizer, fingerprints, transaction, clock);
+        verifyNoInteractions(validator, normalizer, fingerprints, delivery, clock);
     }
 
     @Test
-    void honeypotClassificationPrecedesValidationNormalizationFingerprintAndTransaction() {
+    void honeypotClassificationPrecedesValidationNormalizationFingerprintAndDelivery() {
         Validator validator = mock(Validator.class);
         LeadNormalizer normalizer = mock(LeadNormalizer.class);
         LeadFingerprintService fingerprints = mock(LeadFingerprintService.class);
-        LeadAcceptanceTransaction transaction = mock(LeadAcceptanceTransaction.class);
+        LeadDelivery delivery = mock(LeadDelivery.class);
         Clock clock = mock(Clock.class);
         var service = new LeadAcceptanceService(
-                validator, normalizer, fingerprints, transaction, clock);
+                validator, normalizer, fingerprints, delivery, clock);
         var honeypot =
                 new LeadRequest(null, null, null, null, null, null, null, "filled-by-bot");
 
         assertThat(service.accept(honeypot)).isEqualTo(AcceptanceOutcome.HONEYPOT);
-        verifyNoInteractions(validator, normalizer, fingerprints, transaction, clock);
+        verifyNoInteractions(validator, normalizer, fingerprints, delivery, clock);
     }
 }

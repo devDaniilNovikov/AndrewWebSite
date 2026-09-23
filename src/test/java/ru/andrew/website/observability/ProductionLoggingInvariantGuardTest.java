@@ -18,165 +18,48 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.mock.env.MockEnvironment;
 import ru.andrew.website.AndrewWebsiteApplication;
 
-class ProductionOtlpInvariantGuardTest {
-    private static final String PREFIX =
-            "management.otlp.metrics.export.";
-
-    private final ProductionOtlpInvariantGuard guard =
-            new ProductionOtlpInvariantGuard();
+class ProductionLoggingInvariantGuardTest {
+    private final ProductionLoggingInvariantGuard guard =
+            new ProductionLoggingInvariantGuard();
 
     @Test
-    void acceptsTheCanonicalProductionExporterConfiguration() {
+    void acceptsTheCanonicalProductionLoggingConfiguration() {
         assertThatCode(() -> validate(safeEnvironment()))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void acceptsAdditionalLoggersThatStaySilent() {
+        assertThatCode(() -> validate(safeEnvironment().withProperty(
+                        "logging.level.com.example.fictional", "OFF")))
                 .doesNotThrowAnyException();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"local", "test"})
-    void acceptsOnlyDisabledExporterOutsideProduction(String profile) {
+    void ignoresLoggingOverridesOutsideProduction(String profile) {
         MockEnvironment environment = safeEnvironment();
         environment.setActiveProfiles(profile);
         environment
-                .withProperty(PREFIX + "enabled", "false")
-                .withProperty(PREFIX + "url", "http://user:@invalid/?x#y")
-                .withProperty(PREFIX + "headers.X-Private", "private-marker")
-                .withProperty(PREFIX + "step", "1h");
+                .withProperty("logging.level.root", "DEBUG")
+                .withProperty("logging.structured.format.console", "logstash")
+                .withProperty("debug", "true");
 
         assertThatCode(() -> validate(environment))
                 .doesNotThrowAnyException();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"local", "test"})
-    void rejectsEnabledExporterOutsideProduction(String profile) {
-        MockEnvironment environment = safeEnvironment();
-        environment.setActiveProfiles(profile);
-
-        assertFailure(catchThrowable(() -> validate(environment)));
-    }
-
-    @Test
-    void rejectsDisabledExporterWithOnlyAGenericFailure() {
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(
-                        PREFIX + "enabled", "false"))));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "",
-            " ",
-            "http://collector.invalid/v1/metrics",
-            "/v1/metrics",
-            "https:///v1/metrics",
-            "https://user:@collector.invalid/v1/metrics",
-            "https://collector.invalid/v1/metrics?tenant=private",
-            "https://collector.invalid/v1/metrics#private",
-            "not a URI"
-    })
-    void rejectsEveryUnsafeExporterUrl(String value) {
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(
-                        PREFIX + "url", value))));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"", " ", "Bearer value\runsafe", "Bearer value\nunsafe"})
-    void rejectsBlankOrMultilineAuthorization(String value) {
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(
-                        PREFIX + "headers.Authorization", value))));
-    }
-
-    @Test
-    void rejectsMissingWrongOrAdditionalHeaders() {
-        MockEnvironment missing = baseEnvironment()
-                .withProperty(PREFIX + "enabled", "true")
-                .withProperty(
-                        PREFIX + "url",
-                        "https://collector.invalid/v1/metrics")
-                .withProperty(PREFIX + "step", "30s");
-        assertFailure(catchThrowable(() -> validate(missing)));
-
-        assertFailure(catchThrowable(() -> validate(
-                baseEnvironment()
-                        .withProperty(PREFIX + "enabled", "true")
-                        .withProperty(
-                                PREFIX + "url",
-                                "https://collector.invalid/v1/metrics")
-                        .withProperty(
-                                PREFIX + "headers.authorization",
-                                "Bearer fictional")
-                        .withProperty(PREFIX + "step", "30s"))));
-
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(
-                        PREFIX + "headers.X-Extra", "not-allowed"))));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"1m", "29s", "not-a-duration"})
-    void rejectsNonCanonicalExportInterval(String value) {
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(
-                        PREFIX + "step", value))));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "management.opentelemetry.enabled",
-            "management.opentelemetry.map-environment-variables"
-    })
-    void rejectsOtherOpenTelemetryExportSurfaces(String property) {
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(property, "true"))));
-    }
-
-    @Test
-    void rejectsCustomOpenTelemetryResourceAttributes() {
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(
-                        "management.opentelemetry"
-                                + ".resource-attributes.private",
-                        "not-allowed"))));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "logging.level.io.micrometer.core.instrument"
-                    + ".push",
-            "logging.level.io.micrometer.registry.otlp"
-    })
-    void rejectsUnsafeInternalExporterLogging(String property) {
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(property, "INFO"))));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "logging.level.io.micrometer.core.instrument"
-                    + ".push.PushMeterRegistry",
-            "logging.level.io.micrometer.registry.otlp"
-                    + ".OtlpMeterRegistry",
-            "logging.level.org.flywaydb.core.FlywayExecutor"
-    })
-    void rejectsMoreSpecificSensitiveLoggerOverrides(String property) {
-        assertFailure(catchThrowable(() -> validate(
-                safeEnvironment().withProperty(property, "TRACE"))));
-    }
-
-    @ParameterizedTest
     @ValueSource(strings = {
             "logging.level.root",
             "logging.level.org.springframework.web",
-            "logging.level.org.springframework.jdbc.core",
-            "logging.level.com.zaxxer.hikari",
-            "logging.level.org.postgresql",
+            "logging.level.org.springframework.web.servlet",
+            "logging.level.org.apache.catalina",
             "logging.level.sql",
             "logging.level.ru.andrew.website.common"
                     + ".ProductionStartupFailureReporter",
-            "logging.level.ru.andrew.website.observability"
-                    + ".TelemetryConfiguration"
+            "logging.level.ru.andrew.website.leads"
+                    + ".TelegramLeadDelivery"
     })
     void rejectsEveryNonCanonicalProductionLogLevel(String property) {
         assertFailure(catchThrowable(() -> validate(
@@ -187,8 +70,8 @@ class ProductionOtlpInvariantGuardTest {
     void rejectsCaseVariantLoggerCollision() {
         assertFailure(catchThrowable(() -> validate(
                 safeEnvironment().withProperty(
-                        "logging.level.RU.andrew.website.observability"
-                                + ".TelemetryConfiguration",
+                        "logging.level.RU.andrew.website.leads"
+                                + ".TelegramLeadDelivery",
                         "TRACE"))));
     }
 
@@ -205,8 +88,7 @@ class ProductionOtlpInvariantGuardTest {
                 safeEnvironment()
                         .withProperty(
                                 "logging.group.secret",
-                                "io.micrometer.registry.otlp"
-                                        + ".OtlpMeterRegistry")
+                                "ru.andrew.website.leads")
                         .withProperty(
                                 "logging.level.secret", "OFF"))));
     }
@@ -263,20 +145,28 @@ class ProductionOtlpInvariantGuardTest {
     }
 
     @Test
+    void unbindableLoggingSettingFailsClosed() {
+        assertFailure(catchThrowable(() -> validate(
+                safeEnvironment().withProperty(
+                        "spring.main.log-startup-info",
+                        "fictional-not-a-boolean"))));
+    }
+
+    @Test
     void acceptsOnlyTheBuildDerivedApplicationVersion() {
-        assertThat(ProductionOtlpInvariantGuard
+        assertThat(ProductionLoggingInvariantGuard
                         .isSafeApplicationVersion(
                                 null, null))
                 .isTrue();
-        assertThat(ProductionOtlpInvariantGuard
+        assertThat(ProductionLoggingInvariantGuard
                         .isSafeApplicationVersion(
                                 "1.2.3", "1.2.3"))
                 .isTrue();
-        assertThat(ProductionOtlpInvariantGuard
+        assertThat(ProductionLoggingInvariantGuard
                         .isSafeApplicationVersion(
                                 "1.2.3", ""))
                 .isFalse();
-        assertThat(ProductionOtlpInvariantGuard
+        assertThat(ProductionLoggingInvariantGuard
                         .isSafeApplicationVersion(
                                 "1.2.3", "9.9.9"))
                 .isFalse();
@@ -298,6 +188,8 @@ class ProductionOtlpInvariantGuardTest {
                 .isEqualTo(ConfigDataEnvironmentPostProcessor.ORDER + 4);
     }
 
+    // Default properties rank below application-prod.yml, so the violation is one that
+    // no bundled profile configures.
     @Test
     void springFactoriesValidationRunsBeforeContextInitialization() {
         AtomicBoolean initialized = new AtomicBoolean();
@@ -310,7 +202,7 @@ class ProductionOtlpInvariantGuardTest {
                 "spring.profiles.active", "prod",
                 "LEAD_FINGERPRINT_HMAC_KEY",
                 "production-observability-key-material-0001",
-                PREFIX + "enabled", "false",
+                "debug", "true",
                 "spring.main.lazy-initialization", "true"));
         application.addListeners(
                 (ApplicationListener<ApplicationContextInitializedEvent>)
@@ -326,52 +218,21 @@ class ProductionOtlpInvariantGuardTest {
     }
 
     private static MockEnvironment safeEnvironment() {
-        return baseEnvironment()
-                .withProperty(PREFIX + "enabled", "true")
-                .withProperty(
-                        PREFIX + "url",
-                        "https://collector.invalid/v1/metrics")
-                .withProperty(
-                        PREFIX + "headers.Authorization",
-                        "Bearer fictional-authorization")
-                .withProperty(PREFIX + "step", "30s")
-                .withProperty(
-                        "management.opentelemetry.enabled", "false")
-                .withProperty(
-                        "management.opentelemetry"
-                                + ".map-environment-variables",
-                        "false")
-                .withProperty(
-                        "logging.level.io.micrometer.core.instrument"
-                                + ".push",
-                        "OFF")
-                .withProperty(
-                        "logging.level.io.micrometer.registry.otlp",
-                        "OFF")
-                .withProperty(
-                        "logging.level.org.flywaydb",
-                        "OFF")
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("prod");
+        return environment
                 .withProperty(
                         "logging.level.org.springframework.web",
-                        "OFF")
-                .withProperty(
-                        "logging.level.org.springframework.jdbc",
                         "OFF")
                 .withProperty(
                         "logging.level.org.apache.catalina",
                         "OFF")
                 .withProperty(
-                        "logging.level.com.zaxxer.hikari",
-                        "OFF")
-                .withProperty(
-                        "logging.level.org.postgresql",
-                        "OFF")
-                .withProperty(
                         "logging.level.root",
                         "OFF")
                 .withProperty(
-                        "logging.level.ru.andrew.website.observability"
-                                + ".TelemetryConfiguration",
+                        "logging.level.ru.andrew.website.leads"
+                                + ".TelegramLeadDelivery",
                         "ERROR")
                 .withProperty(
                         "logging.level.ru.andrew.website.common"
@@ -394,12 +255,6 @@ class ProductionOtlpInvariantGuardTest {
                         "false");
     }
 
-    private static MockEnvironment baseEnvironment() {
-        MockEnvironment environment = new MockEnvironment();
-        environment.setActiveProfiles("prod");
-        return environment;
-    }
-
     private static void assertFailure(Throwable failure) {
         Throwable root = failure;
         while (root.getCause() != null) {
@@ -407,12 +262,10 @@ class ProductionOtlpInvariantGuardTest {
         }
         assertThat(root)
                 .isInstanceOf(ApplicationContextException.class)
-                .hasMessage(ProductionOtlpInvariantGuard.MESSAGE)
+                .hasMessage(ProductionLoggingInvariantGuard.MESSAGE)
                 .hasNoCause();
         assertThat(failure.toString()).doesNotContain(
-                "collector.invalid",
-                "fictional-authorization",
-                "user:password",
-                "tenant=private");
+                "fictional-private-authorization",
+                "fictional-private-value");
     }
 }

@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import jakarta.servlet.DispatcherType;
 import java.nio.charset.StandardCharsets;
@@ -32,12 +31,11 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadDelivery;
 import ru.andrew.website.leads.LeadMetrics;
 
 @SpringBootTest(properties = {
-        "app.web.rate-limit.enabled=false",
-        NO_DATABASE
+        "app.web.rate-limit.enabled=false"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -58,7 +56,7 @@ class SecurityContractTest {
     FilterChainProxy springSecurityFilterChain;
 
     @MockitoBean
-    LeadAcceptanceTransaction transaction;
+    LeadDelivery delivery;
 
     @ParameterizedTest
     @ValueSource(strings = {"/api", "/api/unknown", "/actuator", "/actuator/health"})
@@ -177,7 +175,7 @@ class SecurityContractTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"));
         mvc.perform(get("/actuator/health/readiness"))
-                .andExpect(status().isServiceUnavailable())
+                .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"));
         mvc.perform(get("/actuator/health")).andExpect(status().isNotFound());
         mvc.perform(get("/actuator/env")).andExpect(status().isNotFound());

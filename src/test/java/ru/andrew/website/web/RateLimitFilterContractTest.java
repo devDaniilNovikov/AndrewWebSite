@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -19,9 +18,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadDelivery;
 
-@SpringBootTest(properties = NO_DATABASE)
+@SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class RateLimitFilterContractTest {
@@ -32,7 +31,7 @@ class RateLimitFilterContractTest {
     MockMvc mvc;
 
     @MockitoBean
-    LeadAcceptanceTransaction transaction;
+    LeadDelivery delivery;
 
     @Test
     void oversizedBodyDoesNotConsumeAdmissionAndForwardedHeadersNeverSplitTheBucket()

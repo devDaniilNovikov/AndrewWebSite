@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,6 +29,7 @@ import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcesso
 import org.springframework.boot.context.event.ApplicationContextInitializedEvent;
 import org.springframework.boot.health.autoconfigure.actuate.endpoint.HealthEndpointProperties;
 import org.springframework.boot.health.autoconfigure.actuate.endpoint.HealthEndpointProperties.Group;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
 import org.springframework.context.ApplicationContextException;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
@@ -49,8 +49,8 @@ class ProductionHttpInvariantGuardTest {
     @Test
     void acceptsCanonicalPrivateManagementConfiguration() {
         MockEnvironment environment = safeProductionEnvironment()
-                .withProperty("server.port", "8080")
-                .withProperty("server.address", "0.0.0.0")
+                .withProperty("server.port", "8090")
+                .withProperty("server.address", "127.0.0.1")
                 .withProperty("management.server.port", "8081")
                 .withProperty("management.server.address", "127.0.0.1")
                 .withProperty("management.endpoints.web.exposure.exclude", "env")
@@ -160,6 +160,25 @@ class ProductionHttpInvariantGuardTest {
         assertThat(invokePrivate("isRootServletPath", new Class<?>[] {String.class}, ""))
                 .isEqualTo(true);
         assertThat(invokePrivate("isPublic", new Class<?>[] {Show.class}, Show.NEVER))
+                .isEqualTo(false);
+    }
+
+    @Test
+    void privateApplicationBindingRequiresBothLoopbackValues() throws Exception {
+        ServerProperties properties = new ServerProperties();
+        properties.setPort(ProductionHttpInvariantGuard.APPLICATION_SERVER_PORT);
+
+        assertThat(invokePrivate(
+                        "hasUnsafeServerBinding",
+                        new Class<?>[] {ServerProperties.class},
+                        properties))
+                .isEqualTo(true);
+
+        properties.setAddress(InetAddress.getByName("127.0.0.1"));
+        assertThat(invokePrivate(
+                        "hasUnsafeServerBinding",
+                        new Class<?>[] {ServerProperties.class},
+                        properties))
                 .isEqualTo(false);
     }
 
@@ -320,7 +339,11 @@ class ProductionHttpInvariantGuardTest {
         MockEnvironment environment = new MockEnvironment();
         environment.setActiveProfiles("prod");
         return environment
-                .withProperty("server.forward-headers-strategy", "none")
+                .withProperty("server.port", "8090")
+                .withProperty("server.address", "127.0.0.1")
+                .withProperty("server.forward-headers-strategy", "native")
+                .withProperty("server.tomcat.remoteip.remote-ip-header", "X-Real-IP")
+                .withProperty("server.tomcat.remoteip.internal-proxies", "127\\.0\\.0\\.1")
                 .withProperty("management.server.port", "8081")
                 .withProperty("management.server.address", "127.0.0.1")
                 .withProperty("management.endpoints.web.base-path", "/actuator")
@@ -333,7 +356,7 @@ class ProductionHttpInvariantGuardTest {
                         "livenessState")
                 .withProperty(
                         "management.endpoint.health.group.readiness.include",
-                        "readinessState,dbReadiness,telegramWorkerReadiness")
+                        "readinessState")
                 .withProperty("spring.web.error.path", "/error")
                 .withProperty("spring.web.error.include-exception", "false")
                 .withProperty("spring.web.error.include-message", "never")
@@ -352,16 +375,16 @@ class ProductionHttpInvariantGuardTest {
         return application;
     }
 
+    // Default properties rank below application-prod.yml, so the violation is one that
+    // no bundled profile configures.
     private static Map<String, Object> startupProperties() {
-        String[] noDatabase = NO_DATABASE.split("=", 2);
         Map<String, Object> properties = new LinkedHashMap<>();
         properties.put("spring.profiles.active", "prod");
         properties.put(
                 "LEAD_FINGERPRINT_HMAC_KEY",
                 "production-http-invariant-key-material-0001");
         properties.put("spring.main.lazy-initialization", "true");
-        properties.put("server.port", "-1");
-        properties.put(noDatabase[0], noDatabase[1]);
+        properties.put("spring.main.web-application-type", "none");
         return Map.copyOf(properties);
     }
 
@@ -374,12 +397,14 @@ class ProductionHttpInvariantGuardTest {
                 property("disabled HTTP listener", "server.port", "-1"),
                 property("ephemeral HTTP listener", "server.port", "0"),
                 property("unexpected HTTP listener", "server.port", "8081"),
-                property("loopback-only HTTP listener", "server.address", "127.0.0.1"),
+                property("public HTTP listener port", "server.port", "8080"),
+                property("public HTTP listener address", "server.address", "0.0.0.0"),
                 property("IPv6-only HTTP listener", "server.address", "::"),
+                property("IPv6 loopback HTTP listener", "server.address", "::1"),
                 property(
-                        "native forwarded-header handling",
+                        "ignored forwarded client address",
                         "server.forward-headers-strategy",
-                        "native"),
+                        "none"),
                 property(
                         "framework forwarded-header handling",
                         "server.forward-headers-strategy",
@@ -392,6 +417,14 @@ class ProductionHttpInvariantGuardTest {
                         "Tomcat forwarded client address header",
                         "server.tomcat.remoteip.remote-ip-header",
                         "X-Forwarded-For"),
+                property(
+                        "Tomcat trusted proxies beyond loopback",
+                        "server.tomcat.remoteip.internal-proxies",
+                        ".*"),
+                property(
+                        "Tomcat trusted proxy list",
+                        "server.tomcat.remoteip.trusted-proxies",
+                        "203\\.0\\.113\\.1"),
                 property(
                         "disabled rate limiter",
                         "app.web.rate-limit.enabled",
@@ -440,7 +473,8 @@ class ProductionHttpInvariantGuardTest {
                         "actuator CORS origin pattern",
                         "management.endpoints.web.cors.allowed-origin-patterns[0]",
                         "*"),
-                property("same management port", "management.server.port", "8080"),
+                property("same management port", "management.server.port", "8090"),
+                property("public management port", "management.server.port", "8080"),
                 property("ephemeral management port", "management.server.port", "0"),
                 property("unexpected management port", "management.server.port", "8082"),
                 property(
@@ -516,13 +550,13 @@ class ProductionHttpInvariantGuardTest {
                         "management.endpoint.health.group.liveness.include",
                         "*"),
                 property(
-                        "reduced readiness membership",
+                        "expanded readiness membership",
                         "management.endpoint.health.group.readiness.include",
-                        "readinessState"),
+                        "readinessState,livenessState"),
                 property(
                         "excluded readiness contributor",
                         "management.endpoint.health.group.readiness.exclude",
-                        "dbReadiness"),
+                        "readinessState"),
                 property(
                         "global health status order",
                         "management.endpoint.health.status.order",

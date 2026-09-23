@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static ru.andrew.website.testing.TestAutoConfigurationExclusions.NO_DATABASE;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,9 +24,9 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.andrew.website.leads.LeadAcceptanceTransaction;
+import ru.andrew.website.leads.LeadDelivery;
 
-@SpringBootTest(properties = NO_DATABASE)
+@SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class LivenessContractTest {
@@ -35,7 +34,7 @@ class LivenessContractTest {
     MockMvc mvc;
 
     @MockitoBean
-    LeadAcceptanceTransaction transaction;
+    LeadDelivery delivery;
 
     @Test
     void livenessIsMinimalAndDependencyFree() throws Exception {
@@ -50,10 +49,10 @@ class LivenessContractTest {
     @Test
     void readinessAlsoDisablesCachingExactly() throws Exception {
         mvc.perform(get("/actuator/health/readiness").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isServiceUnavailable())
+                .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
-                .andExpect(jsonPath("$.status").value("DOWN"))
+                .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.components").doesNotExist());
     }
 

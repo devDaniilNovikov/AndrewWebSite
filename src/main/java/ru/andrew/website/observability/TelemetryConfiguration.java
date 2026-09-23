@@ -5,36 +5,23 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.config.MeterFilterReply;
-import io.micrometer.registry.otlp.OtlpConfig;
-import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.micrometer.metrics.autoconfigure.MeterRegistryCustomizer;
-import org.springframework.boot.micrometer.metrics.autoconfigure.export.otlp.OtlpMetricsProperties;
-import org.springframework.boot.task.SimpleAsyncTaskSchedulerCustomizer;
-import org.springframework.boot.task.ThreadPoolTaskSchedulerCustomizer;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
-import org.springframework.util.ErrorHandler;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(OtlpMetricsProperties.class)
 public class TelemetryConfiguration {
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(TelemetryConfiguration.class);
     private static final String APPLICATION = "andrew-website";
     private static final Map<String, Map<String, Set<String>>> CONTRACTS =
             Map.of(
                     "andrew.leads.accepted",
                     Map.of("outcome", Set.of(
-                            "created", "duplicate", "retained", "honeypot")),
+                            "created", "duplicate", "honeypot")),
                     "andrew.leads.rejected",
                     Map.of("reason", Set.of(
                             "validation", "conflict", "payload",
@@ -45,28 +32,7 @@ public class TelemetryConfiguration {
                             "uri", Set.of("/bot{token}/sendMessage"),
                             "outcome", Set.of(
                                     "delivered", "retryable",
-                                    "permanent_failure")),
-                    "andrew.telegram.delivery",
-                    Map.of(
-                            "outcome", Set.of(
-                                    "delivered", "retry", "blocked"),
-                            "reason", Set.of(
-                                    "success", "network", "telegram_429",
-                                    "telegram_4xx", "telegram_5xx",
-                                    "telegram_unexpected", "lease_expired",
-                                    "privacy_expired")),
-                    "andrew.telegram.queue.depth",
-                    Map.of("state", Set.of(
-                            "pending", "processing", "retry",
-                            "blocked", "delivered")),
-                    "andrew.telegram.worker.last_success.age",
-                    Map.of(),
-                    "andrew.privacy.anonymized",
-                    Map.of(),
-                    "andrew.privacy.deleted",
-                    Map.of(),
-                    "andrew.privacy.last_success.age",
-                    Map.of());
+                                    "permanent_failure")));
 
     @Bean
     @Order(Ordered.LOWEST_PRECEDENCE)
@@ -78,38 +44,6 @@ public class TelemetryConfiguration {
                         "application", APPLICATION,
                         "profile", profile)
                 .meterFilter(new CanonicalTelemetryFilter(profile));
-    }
-
-    @Bean
-    OtlpConfig boundedOtlpConfig(
-            OtlpMetricsProperties properties) {
-        return new BoundedOtlpConfig(
-                properties.isEnabled(),
-                Objects.requireNonNullElse(
-                        properties.getUrl(),
-                        OtlpConfig.DEFAULT.url()),
-                properties.getStep(),
-                Map.copyOf(Objects.requireNonNullElse(
-                        properties.getHeaders(), Map.of())));
-    }
-
-    @Bean("scheduledTaskErrorHandler")
-    ErrorHandler scheduledTaskErrorHandler() {
-        return failure -> LOGGER.error("Scheduled task failed");
-    }
-
-    @Bean
-    ThreadPoolTaskSchedulerCustomizer safeThreadPoolSchedulerErrors(
-            ErrorHandler scheduledTaskErrorHandler) {
-        return scheduler ->
-                scheduler.setErrorHandler(scheduledTaskErrorHandler);
-    }
-
-    @Bean
-    SimpleAsyncTaskSchedulerCustomizer safeSimpleSchedulerErrors(
-            ErrorHandler scheduledTaskErrorHandler) {
-        return scheduler ->
-                scheduler.setErrorHandler(scheduledTaskErrorHandler);
     }
 
     private record CanonicalTelemetryFilter(String profile)
@@ -143,34 +77,6 @@ public class TelemetryConfiguration {
             return validBusinessTags
                     ? MeterFilterReply.ACCEPT
                     : MeterFilterReply.DENY;
-        }
-    }
-
-    private record BoundedOtlpConfig(
-            boolean enabled,
-            String url,
-            Duration step,
-            Map<String, String> headers)
-            implements OtlpConfig {
-        private BoundedOtlpConfig {
-            Objects.requireNonNull(url, "url");
-            Objects.requireNonNull(step, "step");
-            headers = Map.copyOf(headers);
-        }
-
-        @Override
-        public String get(String key) {
-            return null;
-        }
-
-        @Override
-        public Map<String, String> resourceAttributes() {
-            return Map.of("service.name", APPLICATION);
-        }
-
-        @Override
-        public boolean publishMaxGaugeForHistograms() {
-            return false;
         }
     }
 }
