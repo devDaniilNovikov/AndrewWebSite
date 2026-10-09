@@ -163,7 +163,7 @@ export function PricingSection() {
                   </p>
                 </div>
                 <strong className="text-base font-semibold text-blue-200 sm:text-right">
-                  После диагностики
+                  {item.price}
                 </strong>
               </article>
             ))}
@@ -171,7 +171,7 @@ export function PricingSection() {
         </div>
         <div className="mt-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-surface p-5 text-navy sm:flex-row sm:items-center sm:justify-between lg:p-6">
           <p className="max-w-2xl text-base leading-6 text-slate-600">
-            Итог зависит от оборудования, неисправности, деталей и объёма работ.
+            Цена зависит от оборудования, неисправности, деталей и объёма работ.
             Уточним после диагностики.
           </p>
           <LeadCta
