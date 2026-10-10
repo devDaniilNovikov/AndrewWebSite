@@ -31,7 +31,7 @@ export function HeroSection() {
           </h1>
           <p className="mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
             Диагностика, ремонт и плановое обслуживание торгового и
-            профессионального холодильного оборудования.
+            промышленного холодильного оборудования.
           </p>
           <p className="mt-3 max-w-xl text-base leading-6 text-slate-500">
             Опишите симптомы — подберём формат обращения и уточним следующие

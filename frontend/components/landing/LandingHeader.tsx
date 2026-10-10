@@ -113,7 +113,7 @@ export function LandingHeader() {
         <div className="ml-auto hidden shrink-0 items-center gap-3 lg:flex">
           <span className="text-right">
             <a
-              className="block text-[0.8125rem] font-semibold leading-[1.125rem] text-navy underline hover:text-blue-600"
+              className="block text-[0.8125rem] font-bold leading-[1.125rem] text-navy underline hover:text-blue-600"
               href="tel:+79032375861"
             >
               +7 (903) 237-58-61
