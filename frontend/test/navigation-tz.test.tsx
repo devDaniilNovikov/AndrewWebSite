@@ -287,21 +287,30 @@ describe('MobileNavigation', () => {
     menuEvents.stop();
   });
 
-  it('renders disabled contact slots without inventing channel URLs', () => {
+  it('renders the published contact channels as links', () => {
     render(<MobileNavigation items={menuItems} />);
     fireEvent.click(screen.getByRole('button', { name: 'Открыть меню' }));
     const dialog = screen.getByRole('dialog', {
       name: 'Мобильная навигация',
     });
 
-    for (const channel of ['Телефон', 'Telegram', 'WhatsApp']) {
-      const slot = within(dialog).getByLabelText(
-        `${channel} — канал не опубликован`,
-      );
-      expect(slot).toHaveAttribute('aria-disabled', 'true');
-      expect(slot).not.toHaveAttribute('role', 'link');
-      expect(slot).not.toHaveAttribute('href');
+    const phone = within(dialog).getByRole('link', {
+      name: 'Телефон +7 (903) 237-58-61',
+    });
+    expect(phone).toHaveAttribute('href', 'tel:+79032375861');
+    expect(phone).not.toHaveAttribute('target');
+
+    for (const [name, href] of [
+      ['Telegram @AndrewGukovBot_bot', 'https://t.me/AndrewGukovBot_bot'],
+      ['WhatsApp +7 (903) 237-58-61', 'https://wa.me/79032375861'],
+    ] as const) {
+      const link = within(dialog).getByRole('link', { name });
+      expect(link).toHaveAttribute('href', href);
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }
+
+    expect(within(dialog).queryByText(/не опубликован/)).toBeNull();
   });
 
   it('closes on its request anchor and dispatches the shared CTA contract', () => {

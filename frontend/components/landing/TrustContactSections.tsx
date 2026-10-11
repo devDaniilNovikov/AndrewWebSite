@@ -27,18 +27,21 @@ const activeContactChannels = [
   {
     icon: 'phone' as const,
     label: 'Телефон',
+    value: '+7 (903) 237-58-61',
     href: 'tel:+79032375861',
     external: false,
   },
   {
     icon: 'phone' as const,
     label: 'Telegram',
-    href: 'https://t.me/andrew_177',
+    value: '@AndrewGukovBot_bot',
+    href: 'https://t.me/AndrewGukovBot_bot',
     external: true,
   },
   {
     icon: 'phone' as const,
     label: 'WhatsApp',
+    value: '+7 (903) 237-58-61',
     href: 'https://wa.me/79032375861',
     external: true,
   },
@@ -189,7 +192,7 @@ export function ContactSection() {
             </p>
             <div
               aria-label="Способы связи"
-              className="mt-7 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3"
+              className="mt-7 grid gap-3 md:grid-cols-3 lg:grid-cols-1"
               role="list"
             >
               {activeContactChannels.map((channel) => (
@@ -204,13 +207,18 @@ export function ContactSection() {
                   </span>
                   <span className="min-w-0">
                     <a
-                      className="block text-sm font-semibold tracking-tight text-navy underline transition-colors hover:text-blue-600 truncate"
+                      className="group block text-navy transition-colors hover:text-blue-600"
                       href={channel.href}
                       {...(channel.external
                         ? { target: '_blank', rel: 'noopener noreferrer' }
                         : {})}
                     >
-                      {channel.label}
+                      <span className="block text-xs font-medium text-slate-500 group-hover:text-blue-600">
+                        {channel.label}
+                      </span>{' '}
+                      <span className="block text-sm font-semibold tracking-tight underline wrap-anywhere">
+                        {channel.value}
+                      </span>
                     </a>
                   </span>
                 </div>
