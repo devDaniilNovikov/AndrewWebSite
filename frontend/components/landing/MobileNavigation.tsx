@@ -25,6 +25,27 @@ const focusableSelector = [
 const requestHeadingSelector = '[data-lead-heading], h1, h2, h3, h4, h5, h6';
 const bodyScrollLockClass = 'andrew-scroll-locked';
 
+const contactChannels = [
+  {
+    label: 'Телефон',
+    value: '+7 (903) 237-58-61',
+    href: 'tel:+79032375861',
+    external: false,
+  },
+  {
+    label: 'Telegram',
+    value: '@AndrewGukovBot_bot',
+    href: 'https://t.me/AndrewGukovBot_bot',
+    external: true,
+  },
+  {
+    label: 'WhatsApp',
+    value: '+7 (903) 237-58-61',
+    href: 'https://wa.me/79032375861',
+    external: true,
+  },
+] as const;
+
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -333,15 +354,16 @@ export function MobileNavigation({ items }: MobileNavigationProps) {
           >
             <p className="text-sm font-semibold">Контакты</p>
             <ul className="mt-2 grid gap-1 text-sm text-slate-600">
-              {(['Телефон', 'Telegram', 'WhatsApp'] as const).map((channel) => (
-                <li key={channel}>
-                  <span
-                    aria-disabled="true"
-                    aria-label={`${channel} — канал не опубликован`}
-                    className="flex min-h-11 cursor-not-allowed items-center rounded-md px-3 py-2 text-slate-500"
+              {contactChannels.map((channel) => (
+                <li key={channel.label}>
+                  <a
+                    className="flex min-h-11 items-center rounded-md px-3 py-2 transition-colors duration-200 hover:bg-primary/5 hover:text-primary-ink"
+                    href={channel.href}
+                    rel={channel.external ? 'noopener noreferrer' : undefined}
+                    target={channel.external ? '_blank' : undefined}
                   >
-                    {channel} — не опубликован
-                  </span>
+                    {channel.label} {channel.value}
+                  </a>
                 </li>
               ))}
             </ul>
